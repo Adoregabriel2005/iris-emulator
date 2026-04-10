@@ -131,15 +131,6 @@ The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)**
 | Star Wars: The Empire Strikes Back | ✅ Perfect |
 | The Activision Decathlon | ✅ Perfect |
 
-| Game | Issue |
-|---|---|
-| Cosmic Ark | Stars don't appear (timing edge case) |
-| Yars' Revenge | Shield flicker more intense than hardware |
-| BurgerTime | E7 mapper simplified — some graphics glitch |
-| Masters of the Universe | Minor visual artifacts |
-| H.E.R.O | Loud, deafening sound and black screen. Avoid opening |
-
-
 ### Atari 2600 — Not working ❌
 
 | Game | Reason |
@@ -152,6 +143,11 @@ The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)**
 | Kaboom! | Paddle controller not implemented |
 | Night Driver | Paddle controller not implemented |
 | Indy 500 | Driving controller not implemented |
+| Cosmic Ark | Stars don't appear (timing edge case) |
+| Yars' Revenge | Shield flicker more intense than hardware |
+| BurgerTime | E7 mapper simplified — some graphics glitch |
+| Masters of the Universe | Minor visual artifacts |
+| H.E.R.O | Loud, deafening sound and black screen. Avoid opening |
 
 **Missing mappers:** 3F, 3E, FE, FA, F0, AR, DPC, DPC+, UA, CV
 
