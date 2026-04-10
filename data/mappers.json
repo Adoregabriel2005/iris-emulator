@@ -1,6 +1,6 @@
 {
-  "717656f561823edaa69240471c3106963f5c307e": { "name": "Activision Decathlon (NTSC)", "type": "F8" },
-  "e0d47565df935c064bc4055636f37a0432ab3727": { "name": "Activision Decathlon [fixed] (NTSC)", "type": "F8" },
+  "717656f561823edaa69240471c3106963f5c307e": { "name": "Activision Decathlon (NTSC)", "type": "F8SC" },
+  "e0d47565df935c064bc4055636f37a0432ab3727": { "name": "Activision Decathlon [fixed] (NTSC)", "type": "F8SC" },
   "7a89163982d0b3c89ed87371334b6a10c56e1d2a": { "name": "Decathlon (PAL 16K)", "type": "F6" },
 
   "9a36214a9f4e7f3e5c7f4e7f3e5c7f4e7f3e5c7f": { "name": "Example banked entry", "type": "banked", "bank_size": 4096, "control_addrs": ["0x1FF8","0x1FF9"] }

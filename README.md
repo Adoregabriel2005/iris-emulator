@@ -131,8 +131,6 @@ The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)**
 | Star Wars: The Empire Strikes Back | ✅ Perfect |
 | The Activision Decathlon | ✅ Perfect |
 
-### Atari 2600 — Has issues ⚠️
-
 | Game | Issue |
 |---|---|
 | Cosmic Ark | Stars don't appear (timing edge case) |
