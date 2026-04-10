@@ -69,6 +69,8 @@ void MapperBanked::reset()
 {
     // Most F8 ROMs start in the LAST bank (bank 1 for 8KB)
     currentBank = bankCount > 1 ? bankCount - 1 : 0;
+    // Superchip RAM must be zeroed on reset
+    memset(scRAM, 0, sizeof(scRAM));
 }
 
 void MapperBanked::serialize(QDataStream &ds) const
