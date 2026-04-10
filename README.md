@@ -162,17 +162,27 @@ The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)**
 | California Games | ✅ Playable |
 | Chip's Challenge | ✅ Playable |
 | Gates of Zendocon | ✅ Playable |
-| Gauntlet: The Third Encounter | ✅ Playable |
 | Xenophobe | ✅ Playable |
+| Batman Returns | ✅ Playable |
+| Lemmings | ✅ Playable |
+| Toki | ✅ Playable |
+| Alien vs Predator (Prototype) | ✅ Playable |
+| Awesome Golf | ✅ Playable |
+| Double Dragon (Telegames) | ✅ Playable |
+| Paperboy | ✅ Playable |
+| RoadBlasters | ✅ Playable |
 | Simple homebrew titles | ✅ Playable |
 
 ### Atari Lynx — Has issues ⚠️
 
 | Game | Issue |
 |---|---|
+| Gauntlet: The Third Encounter | Heavy graphical bugs, mostly unplayable |
 | Games with heavy sprite overlap | Collision detection incomplete |
 | Games using ComLynx | Multiplayer not implemented |
 | Games with sprite tilt/stretch | Advanced sprite transforms missing |
+
+> **Note:** Only a portion of the Lynx library has been tested. If a game not listed here runs well or has issues, feel free to open an issue or pull request on GitHub.
 
 ### Atari Lynx — Not working ❌
 
