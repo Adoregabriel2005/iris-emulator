@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1050</width>
+    <height>666</height>
+   </rect>
+  </property>
+  <property name="acceptDrops">
+   <bool>true</bool>
+  </property>
+  <property name="windowTitle">
+   <string>Íris Emulator</string>
+  </property>
+  <property name="unifiedTitleAndToolBarOnMac">
+   <bool>true</bool>
+  </property>
+  <widget class="QStackedWidget" name="mainContainer"/>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1050</width>
+     <height>27</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuSystem">
+    <property name="title">
+     <string>&amp;System</string>
+    </property>
+    <widget class="QMenu" name="menuLoadState">
+     <property name="title">
+      <string>&amp;Load State</string>
+     </property>
+     <property name="icon">
+      <iconset theme="floppy-out-line"/>
+     </property>
+    </widget>
+    <widget class="QMenu" name="menuSaveState">
+     <property name="title">
+      <string>Sa&amp;ve State</string>
+     </property>
+     <property name="icon">
+      <iconset theme="floppy-in-line"/>
+     </property>
+    </widget>
+    <addaction name="actionStartFile"/>
+    <addaction name="separator"/>
+    <addaction name="actionPowerOff"/>
+    <addaction name="actionReset"/>
+    <addaction name="actionPause"/>
+    <addaction name="separator"/>
+    <addaction name="actionScreenshot"/>
+    <addaction name="separator"/>
+    <addaction name="menuLoadState"/>
+    <addaction name="menuSaveState"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Setti&amp;ngs</string>
+    </property>
+    <widget class="QMenu" name="menuTVStandard">
+     <property name="title">
+      <string>&amp;TV Standard</string>
+     </property>
+     <property name="icon">
+      <iconset theme="tv-2-line"/>
+     </property>
+     <addaction name="actionTVNTSC"/>
+     <addaction name="actionTVPAL"/>
+     <addaction name="actionTVSECAM"/>
+    </widget>
+    <addaction name="actionEmulationSettings"/>
+    <addaction name="actionAudioSettings"/>
+    <addaction name="actionControllerSettings"/>
+    <addaction name="separator"/>
+    <addaction name="menuTVStandard"/>
+    <addaction name="separator"/>
+    <addaction name="actionAddGameDirectory"/>
+    <addaction name="actionScanForNewGames"/>
+    <addaction name="actionRescanAllGames"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>&amp;View</string>
+    </property>
+    <widget class="QMenu" name="menuWindowSize">
+     <property name="title">
+      <string>&amp;Window Size</string>
+     </property>
+     <property name="icon">
+      <iconset theme="window-2-line"/>
+     </property>
+    </widget>
+    <addaction name="actionViewToolbar"/>
+    <addaction name="actionViewLockToolbar"/>
+    <addaction name="actionViewStatusBar"/>
+    <addaction name="separator"/>
+    <addaction name="actionViewGameList"/>
+    <addaction name="actionViewGameGrid"/>
+    <addaction name="actionViewSystemDisplay"/>
+    <addaction name="separator"/>
+    <addaction name="actionFullscreen"/>
+    <addaction name="menuWindowSize"/>
+    <addaction name="separator"/>
+    <addaction name="actionGridViewShowTitles"/>
+    <addaction name="actionGridViewZoomIn"/>
+    <addaction name="actionGridViewZoomOut"/>
+    <addaction name="actionGridViewRefreshCovers"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="actionAboutQt"/>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuSystem"/>
+   <addaction name="menuSettings"/>
+   <addaction name="menuView"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QToolBar" name="toolBar">
+   <property name="visible">
+    <bool>true</bool>
+   </property>
+   <property name="windowTitle">
+    <string>Toolbar</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>32</width>
+     <height>32</height>
+    </size>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonStyle::ToolButtonTextUnderIcon</enum>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionToolbarStartFile"/>
+   <addaction name="separator"/>
+   <addaction name="actionToolbarPowerOff"/>
+   <addaction name="actionToolbarReset"/>
+   <addaction name="actionToolbarPause"/>
+   <addaction name="separator"/>
+   <addaction name="actionToolbarScreenshot"/>
+   <addaction name="separator"/>
+   <addaction name="actionToolbarLoadState"/>
+   <addaction name="actionToolbarSaveState"/>
+   <addaction name="separator"/>
+   <addaction name="actionToolbarFullscreen"/>
+   <addaction name="separator"/>
+   <addaction name="actionToolbarSettings"/>
+   <addaction name="actionToolbarControllerSettings"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <!-- Actions -->
+  <action name="actionStartFile">
+   <property name="icon">
+    <iconset theme="file-line"/>
+   </property>
+   <property name="text">
+    <string>Start &amp;File...</string>
+   </property>
+  </action>
+  <action name="actionToolbarStartFile">
+   <property name="icon">
+    <iconset theme="file-line"/>
+   </property>
+   <property name="text">
+    <string comment="In Toolbar">Start File</string>
+   </property>
+  </action>
+  <action name="actionPowerOff">
+   <property name="icon">
+    <iconset theme="shut-down-line"/>
+   </property>
+   <property name="text">
+    <string>Shut &amp;Down</string>
+   </property>
+  </action>
+  <action name="actionToolbarPowerOff">
+   <property name="icon">
+    <iconset theme="shut-down-line"/>
+   </property>
+   <property name="text">
+    <string comment="In Toolbar">Shut Down</string>
+   </property>
+  </action>
+  <action name="actionReset">
+   <property name="icon">
+    <iconset theme="restart-line"/>
+   </property>
+   <property name="text">
+    <string>&amp;Reset</string>
+   </property>
+  </action>
+  <action name="actionToolbarReset">
+   <property name="icon">
+    <iconset theme="restart-line"/>
+   </property>
+   <property name="text">
+    <string comment="In Toolbar">Reset</string>
+   </property>
+  </action>
+  <action name="actionPause">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset theme="pause-line"/>
+   </property>
+   <property name="text">
+    <string>&amp;Pause</string>
+   </property>
+  </action>
+  <action name="actionToolbarPause">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset theme="pause-line"/>
+   </property>
+   <property name="text">
+    <string comment="In Toolbar">Pause</string>
+   </property>
+  </action>
+  <action name="actionScreenshot">
+   <property name="icon">
+    <iconset theme="screenshot-2-line"/>
+   </property>
+   <property name="text">
+    <string>&amp;Screenshot</string>
+   </property>
+  </action>
+  <action name="actionToolbarScreenshot">
+   <property name="icon">
+    <iconset theme="screenshot-2-line"/>
+   </property>
+   <property name="text">
+    <string comment="In Toolbar">Screenshot</string>
+   </property>
+  </action>
+  <action name="actionToolbarLoadState">
+   <property name="icon">
+    <iconset theme="floppy-out-line"/>
+   </property>
+   <property name="text">
+    <string comment="In Toolbar">Load State</string>
+   </property>
+  </action>
+  <action name="actionToolbarSaveState">
+   <property name="icon">
+    <iconset theme="floppy-in-line"/>
+   </property>
+   <property name="text">
+    <string comment="In Toolbar">Save State</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="icon">
+    <iconset theme="door-open-line"/>
+   </property>
+   <property name="text">
+    <string>E&amp;xit</string>
+   </property>
+  </action>
+  <action name="actionEmulationSettings">
+   <property name="icon">
+    <iconset theme="settings-3-line"/>
+   </property>
+   <property name="text">
+    <string>&amp;Emulation</string>
+   </property>
+  </action>
+  <action name="actionAudioSettings">
+   <property name="icon">
+    <iconset theme="volume-up-line"/>
+   </property>
+   <property name="text">
+    <string>&amp;Audio</string>
+   </property>
+  </action>
+  <action name="actionControllerSettings">
+   <property name="icon">
+    <iconset theme="controller-line"/>
+   </property>
+   <property name="text">
+    <string>&amp;Controllers</string>
+   </property>
+  </action>
+  <action name="actionToolbarControllerSettings">
+   <property name="icon">
+    <iconset theme="controller-line"/>
+   </property>
+   <property name="text">
+    <string comment="In Toolbar">Controllers</string>
+   </property>
+  </action>
+  <action name="actionToolbarSettings">
+   <property name="icon">
+    <iconset theme="settings-3-line"/>
+   </property>
+   <property name="text">
+    <string comment="In Toolbar">Settings</string>
+   </property>
+  </action>
+  <action name="actionScanForNewGames">
+   <property name="icon">
+    <iconset theme="file-search-line"/>
+   </property>
+   <property name="text">
+    <string>&amp;Scan For New Games</string>
+   </property>
+  </action>
+  <action name="actionRescanAllGames">
+   <property name="icon">
+    <iconset theme="refresh-line"/>
+   </property>
+   <property name="text">
+    <string>&amp;Rescan All Games</string>
+   </property>
+  </action>
+  <action name="actionAddGameDirectory">
+   <property name="icon">
+    <iconset theme="folder-add-line"/>
+   </property>
+   <property name="text">
+    <string>Add Game &amp;Directory...</string>
+   </property>
+  </action>
+  <action name="actionViewToolbar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Toolbar</string>
+   </property>
+  </action>
+  <action name="actionViewLockToolbar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Loc&amp;k Toolbar</string>
+   </property>
+  </action>
+  <action name="actionViewStatusBar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Status Bar</string>
+   </property>
+  </action>
+  <action name="actionViewGameList">
+   <property name="icon">
+    <iconset theme="list-check"/>
+   </property>
+   <property name="text">
+    <string>Game &amp;List</string>
+   </property>
+  </action>
+  <action name="actionViewGameGrid">
+   <property name="icon">
+    <iconset theme="function-line"/>
+   </property>
+   <property name="text">
+    <string>Game &amp;Grid</string>
+   </property>
+  </action>
+  <action name="actionViewSystemDisplay">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset theme="tv-2-line"/>
+   </property>
+   <property name="text">
+    <string>System &amp;Display</string>
+   </property>
+  </action>
+  <action name="actionFullscreen">
+   <property name="icon">
+    <iconset theme="fullscreen-line"/>
+   </property>
+   <property name="text">
+    <string>&amp;Fullscreen</string>
+   </property>
+  </action>
+  <action name="actionToolbarFullscreen">
+   <property name="icon">
+    <iconset theme="fullscreen-line"/>
+   </property>
+   <property name="text">
+    <string comment="In Toolbar">Fullscreen</string>
+   </property>
+  </action>
+  <action name="actionGridViewShowTitles">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;Titles</string>
+   </property>
+  </action>
+  <action name="actionGridViewZoomIn">
+   <property name="icon">
+    <iconset theme="zoom-in-line"/>
+   </property>
+   <property name="text">
+    <string>Zoom &amp;In</string>
+   </property>
+  </action>
+  <action name="actionGridViewZoomOut">
+   <property name="icon">
+    <iconset theme="zoom-out-line"/>
+   </property>
+   <property name="text">
+    <string>Zoom &amp;Out</string>
+   </property>
+  </action>
+  <action name="actionGridViewRefreshCovers">
+   <property name="icon">
+    <iconset theme="refresh-line"/>
+   </property>
+   <property name="text">
+    <string>&amp;Refresh Covers</string>
+   </property>
+  </action>
+  <action name="actionAboutQt">
+   <property name="text">
+    <string>About &amp;Qt...</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>&amp;About Íris Emulator...</string>
+   </property>
+  </action>
+  <action name="actionTVNTSC">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;NTSC</string>
+   </property>
+  </action>
+  <action name="actionTVPAL">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;PAL</string>
+   </property>
+  </action>
+  <action name="actionTVSECAM">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;SECAM</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

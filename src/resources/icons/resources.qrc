@@ -1,0 +1,71 @@
+<RCC>
+  <qresource prefix="/">
+    <file alias="iris_logo.svg">../iris_logo.svg</file>
+    <file alias="iris_icon.svg">../iris_icon.svg</file>
+    <file alias="iris_logo_512.png">../iris_logo_512.png</file>
+  </qresource>
+  <qresource prefix="/icons">
+    <file>white/index.theme</file>
+    <file>white/svg/file-line.svg</file>
+    <file>white/svg/shut-down-line.svg</file>
+    <file>white/svg/restart-line.svg</file>
+    <file>white/svg/pause-line.svg</file>
+    <file>white/svg/screenshot-2-line.svg</file>
+    <file>white/svg/floppy-out-line.svg</file>
+    <file>white/svg/floppy-in-line.svg</file>
+    <file>white/svg/door-open-line.svg</file>
+    <file>white/svg/settings-3-line.svg</file>
+    <file>white/svg/volume-up-line.svg</file>
+    <file>white/svg/controller-line.svg</file>
+    <file>white/svg/file-search-line.svg</file>
+    <file>white/svg/refresh-line.svg</file>
+    <file>white/svg/folder-add-line.svg</file>
+    <file>white/svg/list-check.svg</file>
+    <file>white/svg/function-line.svg</file>
+    <file>white/svg/tv-2-line.svg</file>
+    <file>white/svg/fullscreen-line.svg</file>
+    <file>white/svg/zoom-in-line.svg</file>
+    <file>white/svg/zoom-out-line.svg</file>
+    <file>white/svg/price-tag-3-line.svg</file>
+    <file>white/svg/window-2-line.svg</file>
+    <file>white/svg/console-atari2600.svg</file>
+    <file>white/svg/console-atarilynx.svg</file>
+    <file>white/svg/image-line.svg</file>
+    <file>white/svg/stop-circle-line.svg</file>
+    <file>white/svg/download-2-line.svg</file>
+    <file>white/svg/discord-line.svg</file>
+    <file>white/svg/bug-line.svg</file>
+    <file>white/svg/swap-left-right-line.svg</file>
+    <file>black/index.theme</file>
+    <file>black/svg/file-line.svg</file>
+    <file>black/svg/shut-down-line.svg</file>
+    <file>black/svg/restart-line.svg</file>
+    <file>black/svg/pause-line.svg</file>
+    <file>black/svg/screenshot-2-line.svg</file>
+    <file>black/svg/floppy-out-line.svg</file>
+    <file>black/svg/floppy-in-line.svg</file>
+    <file>black/svg/door-open-line.svg</file>
+    <file>black/svg/settings-3-line.svg</file>
+    <file>black/svg/volume-up-line.svg</file>
+    <file>black/svg/controller-line.svg</file>
+    <file>black/svg/file-search-line.svg</file>
+    <file>black/svg/refresh-line.svg</file>
+    <file>black/svg/folder-add-line.svg</file>
+    <file>black/svg/list-check.svg</file>
+    <file>black/svg/function-line.svg</file>
+    <file>black/svg/tv-2-line.svg</file>
+    <file>black/svg/fullscreen-line.svg</file>
+    <file>black/svg/zoom-in-line.svg</file>
+    <file>black/svg/zoom-out-line.svg</file>
+    <file>black/svg/price-tag-3-line.svg</file>
+    <file>black/svg/window-2-line.svg</file>
+    <file>black/svg/console-atari2600.svg</file>
+    <file>black/svg/console-atarilynx.svg</file>
+    <file>black/svg/image-line.svg</file>
+    <file>black/svg/stop-circle-line.svg</file>
+    <file>black/svg/download-2-line.svg</file>
+    <file>black/svg/discord-line.svg</file>
+    <file>black/svg/bug-line.svg</file>
+    <file>black/svg/swap-left-right-line.svg</file>
+  </qresource>
+</RCC>
