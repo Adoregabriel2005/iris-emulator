@@ -72,3 +72,17 @@ libretro-handy-master.zip
 # Gearlynx source (included as build/src, not tracked separately)
 handy-sdl-master/
 libretro-handy-master/
+
+# Reference code — not part of the project
+pcsx2-qt/
+
+# Backup and docs
+README.md.bak
+handy_specifications.pdf
+aqtinstall.log
+debug_out.txt
+lynx_trace.txt
+lynx_debug_frame.png
+
+# GitHub agents
+.github/agents/
