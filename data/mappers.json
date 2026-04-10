@@ -3,5 +3,15 @@
   "e0d47565df935c064bc4055636f37a0432ab3727": { "name": "Activision Decathlon [fixed] (NTSC)", "type": "F8SC" },
   "7a89163982d0b3c89ed87371334b6a10c56e1d2a": { "name": "Decathlon (PAL 16K)", "type": "F6" },
 
+  "282f94817401e3725c622b73a0c05685ce761783": { "name": "H.E.R.O. (NTSC)", "type": "F8SC" },
+  "04e9462254ae9db4804b3d331f2ad22c61901311": { "name": "H.E.R.O. (SECAM)", "type": "F8SC" },
+  "9d1f48fd30026f84f6c1c08fe69d423fa437f40f": { "name": "H.E.R.O. (Tron)", "type": "F8SC" },
+  "de0b7ee7226831a4c8f4d57badc025e1da42f1d4": { "name": "H.E.R.O. (JVP)", "type": "F8SC" },
+
+  "47619edb352f7f955f811cbb03a00746c8e099b1": { "name": "Beamrider (NTSC)", "type": "F8SC" },
+  "0ae5d0f01e63e053baba4bdaaed8a82e59334aaf": { "name": "Beamrider (PAL)", "type": "F8SC" },
+
+  "29547a5b632060fbbc935267b709811a77fff127": { "name": "Crackpots (HES PAL 8K)", "type": "F8SC" },
+
   "9a36214a9f4e7f3e5c7f4e7f3e5c7f4e7f3e5c7f": { "name": "Example banked entry", "type": "banked", "bank_size": 4096, "control_addrs": ["0x1FF8","0x1FF9"] }
 }
