@@ -137,6 +137,8 @@ The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)**
 | Yars' Revenge | Shield flicker more intense than hardware |
 | BurgerTime | E7 mapper simplified — some graphics glitch |
 | Masters of the Universe | Minor visual artifacts |
+| H.E.R.O | Loud, deafening sound and black screen. Avoid opening |
+
 
 ### Atari 2600 — Not working ❌
 
