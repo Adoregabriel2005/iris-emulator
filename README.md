@@ -16,6 +16,7 @@
   </a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11%2064--bit-lightgrey?style=flat-square"/>
   <img src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Discord-RPC-5865F2?style=flat-square&logo=discord&logoColor=white"/>
 </p>
 
 ---
@@ -29,6 +30,20 @@ The project is in **active development** and receives constant updates. New mapp
 > **ROMs and BIOS files are NOT included and cannot be provided.**
 > You must own the original hardware to legally use ROM files.
 > The Atari Lynx Boot ROM (`lynxboot.img`) must be obtained from your own Lynx hardware.
+
+---
+
+## Platform Support
+
+| Platform | Status |
+|---|---|
+| Windows 10 64-bit | ✅ Supported |
+| Windows 11 64-bit | ✅ Supported |
+| Linux | ⚠️ Not officially supported yet |
+| macOS | ❌ Not supported |
+
+> **Linux contributors welcome!**
+> The codebase uses Qt6, SDL2, and CMake — all cross-platform. I don't have Linux experience to port it myself, but if you do, pull requests are very welcome. The main things that would need attention are the build system paths, the icon theme loading, and the SDL audio device enumeration.
 
 ---
 
@@ -76,6 +91,7 @@ The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)**
 - Discord Rich Presence (game name, console, time playing, status)
 - Debug window (F12)
 - Settings with per-console video options
+- **Discord Rich Presence** — shows game name, console (Atari 2600 / Atari Lynx), time playing, and status (playing / paused / in menu)
 
 ---
 
@@ -227,6 +243,23 @@ Emulation is **single-threaded** — 1 core for emulation + 1 for SDL audio.
 | Reset / Start | Backspace | Start | Enter | Start |
 
 All bindings are remappable in Settings → Controls.
+
+---
+
+## Running (Windows)
+
+1. Download the latest release from the [Releases page](https://github.com/Adoregabriel2005/iris-emulator/releases)
+2. Extract the zip to any folder
+3. Run `irisemulator.exe`
+4. On first launch you will be asked to add a ROM folder
+5. Double-click any game to play
+
+**Requirements to run:**
+- Windows 10 or 11 64-bit
+- [Visual C++ Redistributable 2022 x64](https://aka.ms/vs/17/release/vc_redist.x64.exe) (if not already installed)
+- Discord desktop app (optional, for Rich Presence)
+
+> **Linux / macOS:** Not officially supported yet. The code is cross-platform (Qt6 + SDL2 + CMake) and Linux contributions are very welcome. See the Build from Source section.
 
 ---
 
