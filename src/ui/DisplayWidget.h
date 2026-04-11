@@ -54,6 +54,9 @@ private:
 
     QImage m_current_frame;
     QImage m_prev_frame;          // para ghosting do LCD
+    QImage m_scaled_frame;
+    QRect m_scaled_frame_rect;
+    quint64 m_frame_cache_key = 0;
     ScreenFilter m_filter = ScreenFilter::None;
     int m_scanline_intensity = 50;
     int m_lcd_ghosting = 40;      // 0-100

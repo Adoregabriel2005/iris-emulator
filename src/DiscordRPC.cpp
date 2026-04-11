@@ -9,9 +9,15 @@ DiscordRPC::DiscordRPC(QObject* parent)
     : QObject(parent)
 {
     m_pump_timer = new QTimer(this);
-    m_pump_timer->setInterval(500);
-    connect(m_pump_timer, &QTimer::timeout, this, []() {
+    m_pump_timer->setInterval(100);
+    connect(m_pump_timer, &QTimer::timeout, this, [this]() {
         Discord_RunCallbacks();
+        // Tentar reaplicar presence a cada 5s caso tenha desconectado
+        m_reconnect_counter++;
+        if (m_reconnect_counter >= 50) {
+            m_reconnect_counter = 0;
+            applyPresence();
+        }
     });
 }
 

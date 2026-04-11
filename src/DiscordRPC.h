@@ -39,5 +39,6 @@ private:
     QString     m_console;
     QString     m_cover_key;
     int64_t     m_start_time  = 0;
+    int         m_reconnect_counter = 0;
     QTimer*     m_pump_timer  = nullptr;
 };

@@ -136,7 +136,7 @@ void LynxSystem::step()
             SDL_QueueAudio(m_audio_device, m_sample_buffer.data(), sampleCount * sizeof(int16_t));
     }
 
-    m_frame = QImage(m_frame_buffer.data(), GLYNX_SCREEN_WIDTH, GLYNX_SCREEN_HEIGHT, QImage::Format_RGBA8888).copy();
+    m_frame = QImage(m_frame_buffer.data(), GLYNX_SCREEN_WIDTH, GLYNX_SCREEN_HEIGHT, QImage::Format_RGBA8888);
 }
 
 QImage LynxSystem::getFrame() const

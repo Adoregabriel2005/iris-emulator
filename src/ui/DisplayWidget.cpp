@@ -34,7 +34,11 @@ void DisplayWidget::updateFrame(const QImage& frame)
 {
     if (m_filter == ScreenFilter::LCDBlur && !m_current_frame.isNull())
         m_prev_frame = m_current_frame;
+
     m_current_frame = frame;
+    m_scaled_frame = QImage();
+    m_scaled_frame_rect = QRect();
+    m_frame_cache_key = 0;
     update();
 }
 
@@ -42,6 +46,9 @@ void DisplayWidget::clearFrame()
 {
     m_current_frame = QImage();
     m_prev_frame    = QImage();
+    m_scaled_frame  = QImage();
+    m_scaled_frame_rect = QRect();
+    m_frame_cache_key = 0;
     update();
 }
 
@@ -71,6 +78,9 @@ QRect DisplayWidget::calculateDisplayRect() const
 void DisplayWidget::setScreenFilter(ScreenFilter filter)
 {
     m_filter = filter;
+    m_scaled_frame = QImage();
+    m_scaled_frame_rect = QRect();
+    m_frame_cache_key = 0;
     update();
 }
 
@@ -100,47 +110,61 @@ void DisplayWidget::paintEvent(QPaintEvent* event)
 
     QRect dr = calculateDisplayRect();
 
+    QImage frameToDraw;
+    if (m_filter == ScreenFilter::LCDBlur) {
+        if (!m_prev_frame.isNull() && m_prev_frame.size() == m_current_frame.size()) {
+            frameToDraw = applyLCDBlur(m_current_frame);
+        } else {
+            frameToDraw = m_current_frame;
+        }
+    } else {
+        const quint64 cacheKey = m_current_frame.cacheKey();
+        if (m_scaled_frame_rect.size() != dr.size() || m_frame_cache_key != cacheKey) {
+            Qt::TransformationMode mode = Qt::FastTransformation;
+            if (m_filter == ScreenFilter::Smooth || m_filter == ScreenFilter::CRT)
+                mode = Qt::SmoothTransformation;
+            m_scaled_frame = m_current_frame.scaled(dr.size(), Qt::IgnoreAspectRatio, mode);
+            m_scaled_frame_rect = dr;
+            m_frame_cache_key = cacheKey;
+        }
+        frameToDraw = m_scaled_frame;
+    }
+
     switch (m_filter) {
     case ScreenFilter::None:
         painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
-        painter.drawImage(dr, m_current_frame);
+        painter.drawImage(dr, frameToDraw);
         break;
 
     case ScreenFilter::Smooth:
-        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-        painter.drawImage(dr, m_current_frame);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter.drawImage(dr, frameToDraw);
         break;
 
     case ScreenFilter::Scanlines:
         painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
-        painter.drawImage(dr, m_current_frame);
+        painter.drawImage(dr, frameToDraw);
         drawScanlines(painter, dr);
         break;
 
     case ScreenFilter::CRT:
-        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-        painter.drawImage(dr, m_current_frame);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter.drawImage(dr, frameToDraw);
         drawScanlines(painter, dr);
         drawCRT(painter, dr);
         break;
 
     case ScreenFilter::LCD:
         painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
-        painter.drawImage(dr, m_current_frame);
+        painter.drawImage(dr, frameToDraw);
         drawLCD(painter, dr);
         break;
 
-    case ScreenFilter::LCDBlur: {
-        // Blend frame atual com anterior para simular ghosting do LCD do Lynx
-        QImage blended = m_current_frame;
-        if (!m_prev_frame.isNull() && m_prev_frame.size() == m_current_frame.size()) {
-            blended = applyLCDBlur(m_current_frame);
-        }
-        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-        painter.drawImage(dr, blended);
+    case ScreenFilter::LCDBlur:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter.drawImage(dr, frameToDraw);
         drawLCD(painter, dr);
         break;
-    }
     }
 }
 
@@ -309,6 +333,8 @@ QImage DisplayWidget::applyLCDBlur(const QImage& src) const
 void DisplayWidget::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
+    m_scaled_frame = QImage();
+    m_scaled_frame_rect = QRect();
     emit sizeChanged(event->size());
     update();
 }

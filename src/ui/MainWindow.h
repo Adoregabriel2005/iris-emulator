@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QFileInfo>
 #include <QtCore/QStandardPaths>
 #include <QtWidgets/QLabel>
@@ -141,7 +142,7 @@ private:
     bool m_is_running = false;
     bool m_was_paused = false;
     int m_fps_frame_count = 0;
-    qint64 m_fps_last_time = 0;
+    QElapsedTimer m_fps_timer;
     QString m_current_rom_path;
     QString m_current_game_title;
 };
