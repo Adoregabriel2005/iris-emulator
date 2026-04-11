@@ -147,42 +147,26 @@ void EmulatorCore::step()
     if (!m_running || !cpu) return;
     int cycles = 0;
     while (cycles < cyclesPerFrame) {
-        // If TIA asserted WSYNC, burn CPU cycles until end of scanline
         if (tia && tia->wsyncHalt()) {
-            // Tick individual color clocks until WSYNC clears (precise alignment)
             int wsyncClocks = 0;
-            while (tia->wsyncHalt()) {
+            while (tia->wsyncHalt() && wsyncClocks < 228) {
                 tia->tickSingleClock();
                 wsyncClocks++;
-                // Tick RIOT every 3 color clocks (= 1 CPU cycle) during WSYNC
-                if (wsyncClocks % 3 == 0 && riot) {
+                if (wsyncClocks % 3 == 0 && riot)
                     riot->tick(1);
-                }
-                if (wsyncClocks > 228 * 3) break; // safety
             }
-            // Count CPU cycles consumed (3 color clocks per CPU cycle)
-            int cpuCycles = (wsyncClocks + 2) / 3;
-            // Tick any remaining RIOT cycles for fractional alignment
-            int riotAlreadyTicked = wsyncClocks / 3;
-            int riotRemain = cpuCycles - riotAlreadyTicked;
-            if (riot && riotRemain > 0) riot->tick(riotRemain);
-            cycles += cpuCycles;
+            if (tia->wsyncHalt()) tia->clearWsync();
+            cycles += (wsyncClocks + 2) / 3;
             continue;
         }
         m_tiaClocksAdvanced = 0;
         int c = cpu->step();
         cycles += c;
-        // TIA is partially advanced via cycle callback during cpu->step().
-        // Tick the remaining color clocks.
-        int totalTIAClocks = c * 3;
-        int remaining = totalTIAClocks - m_tiaClocksAdvanced;
-        if (tia && remaining > 0) {
-            for (int i = 0; i < remaining; ++i)
-                tia->tickSingleClock();
-        }
+        int remaining = c * 3 - m_tiaClocksAdvanced;
+        for (int i = 0; i < remaining; ++i)
+            tia->tickSingleClock();
         if (riot) riot->tick(c);
     }
-    // TIA::tick will have updated internal frame when a full frame completed
     if (tia) frameBuffer = tia->getFrame();
 }
 

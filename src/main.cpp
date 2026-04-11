@@ -1,6 +1,4 @@
 #include <QApplication>
-#include <QFile>
-#include <QTextStream>
 
 // Required by Gearlynx log.h
 bool g_mcp_stdio_mode = false;
@@ -14,13 +12,6 @@ bool g_mcp_stdio_mode = false;
 
 int main(int argc, char *argv[])
 {
-    // Redirecionar qDebug para arquivo de log
-    qInstallMessageHandler([](QtMsgType type, const QMessageLogContext&, const QString& msg) {
-        static QFile logFile(QCoreApplication::applicationDirPath() + "/iris_debug.log");
-        if (!logFile.isOpen()) logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
-        QTextStream(& logFile) << msg << "\n";
-    });
-
     QApplication app(argc, argv);
     app.setApplicationName("Íris Emulator");
     app.setOrganizationName("IrisEmulator");
