@@ -70,6 +70,10 @@ qt_add_executable(irisemulator
     src/mapper/MapperE0.h
     src/mapper/MapperE7.h
     src/mapper/MapperSC.h
+    src/mapper/Mapper3F.h
+    src/mapper/Mapper3E.h
+    src/mapper/MapperFA.h
+    src/mapper/MapperFE.h
     src/lynx/LynxSystem.cpp
     src/lynx/LynxSystem.h
     src/IEmulatorCore.h
@@ -94,6 +98,17 @@ target_include_directories(irisemulator PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 target_link_libraries(irisemulator PRIVATE Qt6::Widgets Qt6::Svg Qt6::Network SDL2::SDL2 ${DISCORD_RPC_LIB})
+
+get_filename_component(DISCORD_RPC_LIB_DIR ${DISCORD_RPC_LIB} DIRECTORY)
+get_filename_component(VCPKG_INSTALLED_DIR ${DISCORD_RPC_LIB_DIR} DIRECTORY)
+set(DISCORD_RPC_DLL "${VCPKG_INSTALLED_DIR}/bin/discord-rpc.dll")
+if(EXISTS ${DISCORD_RPC_DLL})
+    add_custom_command(TARGET irisemulator POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${DISCORD_RPC_DLL}"
+            "$<TARGET_FILE_DIR:irisemulator>"
+    )
+endif()
 
 qt_add_executable(test_savestate
     tools/test_savestate.cpp

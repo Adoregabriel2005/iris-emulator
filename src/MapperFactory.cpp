@@ -7,6 +7,10 @@
 #include "mapper/MapperE0.h"
 #include "mapper/MapperE7.h"
 #include "mapper/MapperSC.h"
+#include "mapper/Mapper3F.h"
+#include "mapper/Mapper3E.h"
+#include "mapper/MapperFA.h"
+#include "mapper/MapperFE.h"
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -40,6 +44,10 @@ std::unique_ptr<Mapper> MapperFactory::createMapperForROM(const QByteArray *rom,
                 if (type == "F4SC") return std::make_unique<MapperF4SC>(rom);
                 if (type == "E0")   return std::make_unique<MapperE0>(rom);
                 if (type == "E7")   return std::make_unique<MapperE7>(rom);
+                if (type == "3F")   return std::make_unique<Mapper3F>(rom);
+                if (type == "3E")   return std::make_unique<Mapper3E>(rom);
+                if (type == "FA")   return std::make_unique<MapperFA>(rom);
+                if (type == "FE")   return std::make_unique<MapperFE>(rom);
                 if (type == "none") return std::make_unique<MapperNone>(rom);
                 if (type == "banked") {
                     int bankSize = ent.value("bank_size").toInt(0x1000);
@@ -95,25 +103,39 @@ std::unique_ptr<Mapper> MapperFactory::createMapperForROM(const QByteArray *rom,
         if (hasSC) return std::make_unique<MapperF6SC>(rom);
         return std::make_unique<MapperF6>(rom);
     }
-    if (size == 0x2000) { // 8KB -> F8 (2 banks) or E0 (Parker Brothers) or F8SC
-        // Detect E0: check for accesses to $1FE0-$1FF7 hotspots in ROM data
+    if (size == 0x2000) { // 8KB -> F8, E0, FE or F8SC
+        // Detect E0: hotspots $1FE0-$1FF7
         if (rom) {
             int e0Count = 0;
             const char* d = rom->constData();
             for (int i = 0; i < size - 2; i++) {
-                // Look for addresses in the $xFE0-$xFF7 range (high byte could vary)
                 uint8_t lo = static_cast<uint8_t>(d[i]);
                 uint8_t hi = static_cast<uint8_t>(d[i+1]);
-                if ((hi & 0x1F) == 0x1F && lo >= 0xE0 && lo <= 0xF7) {
+                if ((hi & 0x1F) == 0x1F && lo >= 0xE0 && lo <= 0xF7)
                     e0Count++;
-                }
             }
-            if (e0Count >= 4) {
+            if (e0Count >= 4)
                 return std::make_unique<MapperE0>(rom);
-            }
         }
         if (hasSC) return std::make_unique<MapperF8SC>(rom);
         return std::make_unique<MapperF8>(rom);
+    }
+    // 2KB banks (Tigervision 3F): multiples of 2KB up to 512KB
+    if (size > 0x2000 && (size % 0x800) == 0 && size <= 0x80000) {
+        // Check for 3F signature: writes to $003F
+        if (rom) {
+            int tfCount = 0;
+            const char* d = rom->constData();
+            for (int i = 0; i < size - 2; i++) {
+                uint8_t op = static_cast<uint8_t>(d[i]);
+                uint8_t lo = static_cast<uint8_t>(d[i+1]);
+                uint8_t hi = static_cast<uint8_t>(d[i+2]);
+                if ((op == 0x8D || op == 0x85) && lo == 0x3F && (op == 0x85 || hi == 0x00))
+                    tfCount++;
+            }
+            if (tfCount >= 2)
+                return std::make_unique<Mapper3F>(rom);
+        }
     }
 
     // default: use 4KB banks with some common control addresses as heuristic
