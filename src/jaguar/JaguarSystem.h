@@ -49,9 +49,12 @@ private:
     static constexpr int JAG_TEX_WIDTH  = 1024;  // power-of-2 pitch required by VJ
     static constexpr int JAG_TEX_HEIGHT = 512;
     static constexpr int JAG_WIDTH      = 326;   // default visible width
-    static constexpr int JAG_HEIGHT     = 240;   // default visible height (NTSC)
+static constexpr int JAG_HEIGHT     = 240;   // default visible height (NTSC)
     std::vector<uint32_t> m_framebuffer;
     QImage m_frame;
+
+    // VJ globals (tom.h/jaguar.h)
+    // No local state needed - use extern tomWidth/tomHeight/screenBuffer
 
     bool m_audio_enabled = true;
     int  m_audio_volume  = 80;

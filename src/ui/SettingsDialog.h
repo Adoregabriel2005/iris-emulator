@@ -79,6 +79,37 @@ private:
     void onCaptureTimerTick();
 };
 
+// ─── Jaguar controller widget ────────────────────────────────────────────────
+class JaguarJoystickWidget : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit JaguarJoystickWidget(SDLInput* input, QWidget* parent = nullptr);
+
+Q_SIGNALS:
+    void bindingChanged();
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
+
+private:
+    struct HotZone { QRectF rect; int action; QString label; };
+    QVector<HotZone> m_zones;
+    SDLInput* m_input;
+    int  m_capture_action    = -1;
+    QTimer* m_capture_timer  = nullptr;
+    int  m_capture_countdown = 0;
+
+    void buildZones();
+    void startCapture(int action);
+    void stopCapture();
+    void onCaptureTimerTick();
+};
+
 class SettingsDialog : public QDialog
 {
     Q_OBJECT
@@ -100,6 +131,9 @@ private:
     QWidget* createAudioPage();
     QWidget* createControllerPage();
     QWidget* createLynxControllerPage();
+    QWidget* createJaguarControllerPage();
+    QWidget* createJaguarPage();
+    QWidget* createVSTPage();
     QWidget* createDirectoriesPage();
     QWidget* createInterfacePage();
 
@@ -145,6 +179,9 @@ private:
     LynxJoystickWidget* m_lynx_joystick_widget = nullptr;
     class QLineEdit* m_lynx_bios_path_edit = nullptr;
     QPushButton* m_lynx_bios_browse_btn = nullptr;
+
+    // Jaguar controller page
+    class JaguarJoystickWidget* m_jaguar_joystick_widget = nullptr;
 
     // For reverting live preview on cancel
     QString m_original_theme;

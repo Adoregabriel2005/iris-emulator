@@ -5,14 +5,14 @@
 </p>
 
 <p align="center">
-  <b>Multi-system Atari emulator — Atari 2600 + Atari Lynx</b><br>
-  Built with C++17 · Qt 6 · SDL2 · Gearlynx engine<br>
-  Developed by <b>Gorigamia</b> · Open Source · Constantly updated
+  <b>Multi-system Atari emulator — Atari 2600 + Atari Lynx + Atari Jaguar</b><br>
+  Built with C++17 · Qt 6 · SDL2 · OpenGL 3.3<br>
+  Developed by <b>Gorigamia</b> &amp; <b>Aleister93MarkV</b> · Open Source · Constantly updated
 </p>
 
 <p align="center">
-  <a href="https://github.com/gorigamia/iris-emulator/releases/tag/v1.17">
-    <img src="https://img.shields.io/badge/release-v1.17-blue?style=flat-square"/>
+  <a href="https://github.com/Adoregabriel2005/iris-emulator/releases/tag/v1.18.1">
+    <img src="https://img.shields.io/badge/release-v1.18.1-blue?style=flat-square"/>
   </a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11%2064--bit-lightgrey?style=flat-square"/>
   <img src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square"/>
@@ -23,13 +23,44 @@
 
 ## What is Íris?
 
-Íris is an open source multi-system Atari emulator that runs **Atari 2600** and **Atari Lynx** games on modern Windows hardware. The interface is inspired by **PCSX2**, **DuckStation**, and **Dolphin Emulator** — clean, professional, and easy to use without sacrificing power user features.
+Íris is an open source multi-system Atari emulator that runs **Atari 2600**, **Atari Lynx**, and **Atari Jaguar** games on modern Windows hardware. The interface is inspired by **PCSX2**, **DuckStation**, and **Dolphin Emulator** — clean, professional, and easy to use without sacrificing power user features.
 
-The project is in **active development** and receives constant updates. New mappers, better game compatibility, Lynx improvements, and quality of life features are always in progress.
+The project is in **active development** and receives constant updates.
 
 > **ROMs and BIOS files are NOT included and cannot be provided.**
 > You must own the original hardware to legally use ROM files.
 > The Atari Lynx Boot ROM (`lynxboot.img`) must be obtained from your own Lynx hardware.
+
+---
+
+## What's New in v1.18.1
+
+### Atari Jaguar — Video Filters (exclusive)
+- **RF Cable filter** — simulates the noisy RF signal: chroma bleed, horizontal smear, animated dot crawl, luminance noise, color desaturation and vignette. Exactly what it looked like on an old CRT with the RF cable.
+- **S-Video filter** — the best signal the Jaguar ever had: sharp luma, slightly soft chroma (Y/C separation), mild CRT scanlines and color saturation boost.
+- **Filter Intensity** slider — control how strong each effect is.
+
+### Atari Jaguar — Upscaling & Aspect Ratio (exclusive)
+- Internal resolution: **Native**, **480p**, **720p**, **1080p** — upscaled with smooth interpolation before filters are applied.
+- Aspect ratio: **Auto** (source pixels), **4:3** (standard CRT TV), **16:9** (widescreen, no stretching).
+
+### VST3 Plugin Chain
+- **Enable/disable toggle** for the entire VST chain in real-time (no restart needed).
+- **Double-click** any plugin in the list to open its native graphical editor window.
+- Plugin editor opens in a proper Win32 host window with correct sizing.
+
+### Save States — Fixed & Organized
+- Save states now work correctly on all three consoles.
+- Folders are created automatically on first launch: `savestates/quick/` and `savestates/manual/`.
+- Slot 1 (F5/F7) is the **Quick Save** slot — stored separately from manual slots 2–10.
+- Menus now show slot type and last-saved timestamp.
+
+### Welcome Assistant (first launch)
+- Full **setup wizard** on first launch (PCSX2-style): sidebar with step progress, ROM folder, BIOS files, controls reference, finish page with tips.
+- **Returning user greeting** on subsequent launches with a "Don't show again" option.
+
+### About Dialog
+- New **About** dialog with three tabs: About (tech stack, console hardware), Credits (developers, hardware history, third-party engines), License (GPL-3.0 full text).
 
 ---
 
@@ -42,60 +73,103 @@ The project is in **active development** and receives constant updates. New mapp
 | Linux | ⚠️ Not officially supported yet |
 | macOS | ❌ Not supported |
 
-> **Linux contributors welcome!**
-> The codebase uses Qt6, SDL2, and CMake — all cross-platform. I don't have Linux experience to port it myself, but if you do, pull requests are very welcome. The main things that would need attention are the build system paths, the icon theme loading, and the SDL audio device enumeration.
+> **Linux contributors welcome!** The codebase uses Qt6, SDL2, OpenGL and CMake — all cross-platform.
 
 ---
 
-## Credits
+## Hardware Requirements
 
-This emulator would not exist without the work of these incredible people:
+Rendering uses **OpenGL 3.3 Core Profile** (GPU-accelerated shaders for all filters).
+Emulation is **single-threaded** — 1 core for emulation + 1 for SDL audio.
 
-### Atari 2600
-The 2600 core was built from scratch, but heavily informed by the community's decades of reverse engineering work. Special thanks to the **Stella** emulator team and the **AtariAge** community for their documentation of the TIA, RIOT, and 6507 chips.
+### Atari 2600 — Minimum (60 FPS stable)
 
-### Atari Lynx — Gearlynx
-The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)** by **Ignacio Sanchez (drhelius)** — a high-accuracy, open source Atari Lynx emulator. Without Gearlynx, Lynx support in Íris would not be possible. All Lynx emulation credit goes to him.
+| Component | Minimum | Recommended |
+|---|---|---|
+| **CPU (Intel)** | Core 2 Duo E6300 @ 1.86 GHz (2006) | Core i3-2100 @ 3.1 GHz (2011) |
+| **CPU (AMD)** | Athlon 64 X2 3800+ @ 2.0 GHz (2006) | FX-6300 @ 3.5 GHz (2012) |
+| **RAM** | 2 GB DDR2-667 | 4 GB DDR3-1333 |
+| **GPU (dedicated)** | NVIDIA GeForce 8400 GS / AMD Radeon HD 2400 | NVIDIA GTX 550 Ti / AMD Radeon HD 6790 |
+| **GPU (integrated)** | Intel GMA X4500 (G45 chipset, 2008) | Intel HD Graphics 2000 (Sandy Bridge, 2011) |
+| **Storage** | 80 MB | 200 MB (with covers) |
+| **OS** | Windows 10 64-bit | Windows 10 / 11 64-bit |
+| **Display** | 1024×768 | 1280×720 or higher |
+| **OpenGL** | 3.3 Core Profile | 3.3 Core Profile |
 
----
+> **GPU note:** OpenGL 3.3 is required for the shader-based filters. The GeForce 8400 GS (2007) and Radeon HD 2400 (2007) are the oldest cards confirmed to support it. Intel GMA 950 and older integrated graphics **do not** support OpenGL 3.3 and will not run the emulator.
 
-## Features
+### Atari Lynx — Minimum (75 FPS stable)
 
-### Atari 2600
-- Cycle-accurate 6507 CPU (all illegal opcodes)
-- TIA chip at color-clock level — 15 collisions, HMOVE, WSYNC, VDEL, NUSIZ
-- 2-channel audio with 16 waveforms
-- RIOT 6532 (timers + I/O)
-- NTSC / PAL / SECAM support
-- Mappers: None (≤4KB), F8 (8KB), F6 (16KB), F4 (32KB), E0 (Parker Bros), F8SC/F6SC/F4SC (Superchip)
+| Component | Minimum | Recommended |
+|---|---|---|
+| **CPU (Intel)** | Core 2 Duo E8400 @ 3.0 GHz (2008) | Core i3-2100 @ 3.1 GHz (2011) |
+| **CPU (AMD)** | Phenom II X2 550 @ 3.1 GHz (2009) | FX-6300 @ 3.5 GHz (2012) |
+| **RAM** | 2 GB DDR2-800 | 4 GB DDR3-1333 |
+| **GPU (dedicated)** | NVIDIA GeForce 8400 GS / AMD Radeon HD 2400 | NVIDIA GTX 550 Ti / AMD Radeon HD 6790 |
+| **GPU (integrated)** | Intel GMA X4500 (G45 chipset, 2008) | Intel HD Graphics 2000 (Sandy Bridge, 2011) |
 
-### Atari Lynx (powered by Gearlynx)
-- WDC 65C02 CPU @ 4 MHz
-- Mikey chip — 8 timers, 4-channel stereo audio, display DMA
-- Suzy sprite engine with scaling
-- Math coprocessor (multiply/divide)
-- 160×102 4bpp display with palette
-- LNX cartridge format + HLE boot (no BIOS required for homebrew)
-- Boot ROM support (`lynxboot.img`) for commercial games
+### Atari Jaguar — Minimum (50+ FPS)
 
-### Interface
-- Game list with cover art (table + grid view)
-- Built-in cover art downloader (TheGamesDB)
-- CRT scanlines, CRT Full (phosphor + RGB mask + vignette), LCD Grid, LCD Ghosting filters
-- Dark theme (inspired by PCSX2)
-- Fully remappable controls — keyboard and gamepad
-- 10 save state slots per game
-- Drag & drop ROM loading
-- Fullscreen support
-- Pause overlay menu
-- Discord Rich Presence (game name, console, time playing, status)
-- Debug window (F12)
-- Settings with per-console video options
-- **Discord Rich Presence** — shows game name, console (Atari 2600 / Atari Lynx), time playing, and status (playing / paused / in menu)
+| Component | Minimum | Recommended |
+|---|---|---|
+| **CPU (Intel)** | Core i3-2100 @ 3.1 GHz (Sandy Bridge, 2011) | Core i5-3470 @ 3.2 GHz (Ivy Bridge, 2012) |
+| **CPU (AMD)** | FX-4300 @ 3.8 GHz (2012) | FX-8350 @ 4.0 GHz (2012) |
+| **RAM** | 4 GB DDR3-1333 | 8 GB DDR3-1600 |
+| **GPU (dedicated)** | NVIDIA GeForce GTX 460 / AMD Radeon HD 6850 | NVIDIA GTX 760 / AMD Radeon R9 270 |
+| **GPU (integrated)** | Intel HD Graphics 4000 (Ivy Bridge, 2012) | Intel HD Graphics 4600 (Haswell, 2013) |
+
+> **Jaguar note:** The Jaguar core (Virtual Jaguar engine) is significantly more demanding than the 2600 and Lynx cores. The 68000 + Tom + Jerry chips require a modern CPU with good single-thread performance. Intel HD Graphics 3000 (Sandy Bridge) may work but can drop frames in demanding games.
+
+### Maximum tested hardware (no bottleneck at any resolution/filter)
+
+| Component | Value |
+|---|---|
+| **CPU** | Intel Core i9-13900K / AMD Ryzen 9 7950X |
+| **GPU** | NVIDIA RTX 4090 / AMD RX 7900 XTX |
+| **RAM** | 64 GB DDR5 |
+
+> At recommended or higher hardware, all three consoles run at full speed with all filters enabled including RF, S-Video, 1080p upscaling and VST3 plugin chains simultaneously.
 
 ---
 
 ## Game Compatibility
+
+### Compatibility Summary
+
+#### Atari 2600
+
+| Category | Count | Percentage |
+|---|---|---|
+| ✅ Fully playable — no issues | ~29 tested titles | ~65% of tested library |
+| ⚠️ Opens but has graphical/timing bugs | ~4 tested titles | ~9% of tested library |
+| ❌ Does not open / crashes | ~12 titles (missing mappers) | ~26% of tested library |
+| 🏆 100% completable (beaten end-to-end) | Pitfall!, River Raid, Space Invaders, Pac-Man, Enduro, Adventure, Asteroids, Missile Command | ~18% of tested library |
+
+> The 2600 library has ~900 commercial titles. The missing mapper list (3F, 3E, FE, FA, F0, AR, DPC, DPC+, UA, CV) blocks roughly 15–20% of the full commercial library.
+
+#### Atari Lynx
+
+| Category | Count | Percentage |
+|---|---|---|
+| ✅ Fully playable | ~13 tested titles | ~50% of tested library |
+| ⚠️ Opens with graphical/sprite bugs | ~4 tested titles | ~15% of tested library |
+| ❌ Does not open / black screen | ~9 titles | ~35% of tested library |
+| 🏆 100% completable | California Games, Chip's Challenge, Gates of Zendocon | ~12% of tested library |
+
+> The Lynx core is in **alpha (~35%)** and improving with every release. Only ~26 titles have been tested out of ~73 commercial releases.
+
+#### Atari Jaguar
+
+| Category | Count | Percentage |
+|---|---|---|
+| ✅ Fully playable | ~8 tested titles | ~40% of tested library |
+| ⚠️ Opens with graphical/audio bugs | ~6 tested titles | ~30% of tested library |
+| ❌ Does not open / crashes | ~6 titles | ~30% of tested library |
+| 🏆 100% completable | Tempest 2000, Rayman (partial) | ~10% of tested library |
+
+> The Jaguar core is in **alpha (~40%)**. The Jaguar library has ~67 commercial titles. GPU/blitter accuracy and CD-ROM support are the main remaining challenges.
+
+---
 
 ### Atari 2600 — Works perfectly ✅
 
@@ -131,6 +205,8 @@ The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)**
 | Star Wars: The Empire Strikes Back | ✅ Perfect |
 | The Activision Decathlon | ✅ Perfect |
 
+### Atari 2600 — Has issues ⚠️
+
 | Game | Issue |
 |---|---|
 | Cosmic Ark | Stars don't appear (timing edge case) |
@@ -144,12 +220,12 @@ The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)**
 |---|---|
 | Pitfall II | DPC mapper not implemented |
 | Miner 2049er | 3F mapper not implemented |
-| Decathlon (paddle version) | Paddle controller not implemented |
 | Robot Tank | FA mapper not implemented |
 | Supercharger games | AR mapper not implemented |
 | Kaboom! | Paddle controller not implemented |
 | Night Driver | Paddle controller not implemented |
 | Indy 500 | Driving controller not implemented |
+| Decathlon (paddle) | Paddle controller not implemented |
 
 **Missing mappers:** 3F, 3E, FE, FA, F0, AR, DPC, DPC+, UA, CV
 
@@ -182,8 +258,6 @@ The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)**
 | Games using ComLynx | Multiplayer not implemented |
 | Games with sprite tilt/stretch | Advanced sprite transforms missing |
 
-> **Note:** Only a portion of the Lynx library has been tested. If a game not listed here runs well or has issues, feel free to open an issue or pull request on GitHub.
-
 ### Atari Lynx — Not working ❌
 
 | Game | Reason |
@@ -191,64 +265,151 @@ The Lynx core is powered by **[Gearlynx](https://github.com/drhelius/Gearlynx)**
 | Games requiring CPUSLEEP | Not implemented |
 | Games using shadow/XOR/boundary sprites | Advanced sprite types missing |
 
-> The Lynx core is in **alpha (~30%)** and improving with every release.
+> The Lynx core is in **alpha (~35%)**.
 
 ---
 
-## Hardware Requirements
+### Atari Jaguar — Works well ✅
 
-Rendering is **100% software** (QPainter/QImage). No GPU required beyond desktop display.
-Emulation is **single-threaded** — 1 core for emulation + 1 for SDL audio.
-
-### Minimum — Atari 2600 (60 FPS)
-
-| | Requirement |
+| Game | Status |
 |---|---|
-| **CPU (Intel)** | Intel Core 2 Duo E6300 @ 1.86 GHz (2006) |
-| **CPU (AMD)** | AMD Athlon 64 X2 3800+ @ 2.0 GHz (2006) |
-| **RAM** | 2 GB DDR2-667 |
-| **GPU (dedicated)** | NVIDIA GeForce 6200 / AMD Radeon X1300 |
-| **GPU (integrated)** | Intel GMA 950 (Intel 945G chipset, 2005) |
-| **Storage** | 80 MB |
-| **OS** | Windows 10 64-bit |
-| **Display** | 1024×768 |
+| Tempest 2000 | ✅ Playable |
+| Rayman | ✅ Mostly playable (minor sprite glitches) |
+| Doom | ✅ Playable |
+| Wolfenstein 3D | ✅ Playable |
+| Alien vs Predator | ✅ Playable |
+| Checkered Flag | ✅ Playable |
+| Cybermorph | ✅ Playable |
+| Club Drive | ✅ Playable |
 
-### Minimum — Atari Lynx (75 FPS)
+### Atari Jaguar — Has issues ⚠️
 
-| | Requirement |
+| Game | Issue |
 |---|---|
-| **CPU (Intel)** | Intel Core 2 Duo E8400 @ 3.0 GHz (2008) |
-| **CPU (AMD)** | AMD Phenom II X2 550 @ 3.1 GHz (2009) |
-| **RAM** | 2 GB DDR2-800 |
-| **GPU (dedicated)** | NVIDIA GeForce 8400 GS / AMD Radeon HD 2400 |
-| **GPU (integrated)** | Intel GMA X4500 (Intel G45 chipset, 2008) |
+| Kasumi Ninja | Graphical corruption in some stages |
+| Brutal Sports Football | Audio desync |
+| Val d'Isère Skiing | Geometry glitches |
+| Iron Soldier | Occasional frame drops |
+| Zool 2 | Sprite priority errors |
+| Bubsy in Fractured Furry Tales | Minor graphical artifacts |
 
-### Recommended — Both consoles
+### Atari Jaguar — Not working ❌
 
-| | Requirement |
+| Game | Reason |
 |---|---|
-| **CPU (Intel)** | Intel Core i3-2100 @ 3.1 GHz (Sandy Bridge, 2011) |
-| **CPU (AMD)** | AMD FX-6300 @ 3.5 GHz (2012) |
-| **RAM** | 4 GB DDR3-1333 |
-| **GPU (dedicated)** | NVIDIA GeForce GTX 550 Ti / AMD Radeon HD 6790 |
-| **GPU (integrated)** | Intel HD Graphics 2000 (Sandy Bridge, 2011) |
-| **Storage** | 200 MB (with covers) |
-| **OS** | Windows 10 / 11 64-bit |
-| **Display** | 1280×720 or higher |
+| Jaguar CD titles | CD-ROM not implemented |
+| Games requiring DSP tricks | Jerry DSP accuracy incomplete |
+| Battlemorph | CD-ROM not implemented |
+| Blue Lightning (CD) | CD-ROM not implemented |
+
+> The Jaguar core is in **alpha (~40%)**.
+
+---
+
+## Features
+
+### Atari 2600
+- Cycle-accurate 6507 CPU (all illegal opcodes)
+- TIA chip at color-clock level — 15 collisions, HMOVE, WSYNC, VDEL, NUSIZ
+- 2-channel audio with 16 waveforms
+- RIOT 6532 (timers + I/O)
+- NTSC / PAL / SECAM support
+- Mappers: None (≤4KB), F8 (8KB), F6 (16KB), F4 (32KB), E0 (Parker Bros), F8SC/F6SC/F4SC (Superchip), 3F, 3E, FA, FE
+
+### Atari Lynx (powered by Gearlynx)
+- WDC 65C02 CPU @ 4 MHz
+- Mikey chip — 8 timers, 4-channel stereo audio, display DMA
+- Suzy sprite engine with scaling
+- Math coprocessor (multiply/divide)
+- 160×102 4bpp display with palette
+- LNX cartridge format + HLE boot
+- Boot ROM support (`lynxboot.img`)
+
+### Atari Jaguar (powered by Virtual Jaguar engine)
+- Motorola 68000 @ 13.295 MHz
+- Tom chip (GPU + blitter + object processor)
+- Jerry chip (DSP + audio + timers)
+- NTSC / PAL support
+- Cartridge format (.j64 / .jag)
+- **RF Cable filter** — chroma bleed, dot crawl, luminance noise
+- **S-Video filter** — sharp luma, soft chroma, CRT scanlines
+- **Upscaling** — Native / 480p / 720p / 1080p
+- **Aspect ratio** — Auto / 4:3 / 16:9
+
+### Audio — VST3 Plugin Chain
+- Real-time VST3 plugin processing on emulator audio output
+- Enable/disable chain toggle (bypass without removing plugins)
+- Double-click plugin to open its native graphical editor
+- Drag to reorder plugins in the chain
+- Master gain slider (0–200%)
+- Persisted chain (saved/loaded with settings)
+
+### Interface
+- Game list with cover art (table + grid view)
+- Built-in cover art downloader (TheGamesDB)
+- **Setup wizard** on first launch (PCSX2-style, multi-page with sidebar)
+- **Returning user greeting** with "don't show again" option
+- **About dialog** with Credits, License (GPL-3.0) and hardware history tabs
+- CRT Scanlines, CRT Full, LCD Grid, LCD Ghosting, RF Cable, S-Video filters
+- Dark theme (inspired by PCSX2)
+- Fully remappable controls — keyboard and gamepad
+- **10 save state slots** — slot 1 = quick save (F5/F7), slots 2–10 = manual
+- Save state folders auto-created on first launch (`savestates/quick/` + `savestates/manual/`)
+- Drag & drop ROM loading
+- Fullscreen support
+- Pause overlay menu
+- Discord Rich Presence
+- Debug window (F12)
+
+---
+
+## Credits
+
+### Developers
+- **Gorigamia** — Lead developer, Atari 2600 core, UI, architecture
+- **Aleister93MarkV** — Co-developer, testing, contributions
+
+### Atari 2600 — Hardware History
+The **Atari 2600** (originally Atari VCS) was developed by **Atari, Inc.**, under the leadership of engineer **Jay Miner** — who later went on to design the Amiga chipset. Released in 1977, it became one of the best-selling consoles of all time.
+
+### Atari Lynx — Hardware History
+The **Atari Lynx** was originally developed by the software company **Epyx** in 1987, initially named *"Handy Game"*. The principal designers were **Dave Needle** and **R.J. Mical**, known for their work on the Amiga computer. Due to financial difficulties at Epyx, **Atari Corp.** took over production and launched the Lynx in 1989 — making it the world's first color handheld console.
+
+### Atari Jaguar — Hardware History
+The **Atari Jaguar** was developed primarily by **Flare Technology** (Martin Brennan and John Mathieson) in partnership with Atari Corp. Released in 1993, it was marketed as the first 64-bit home console.
+
+### Third-Party Engines & Libraries
+- **Gearlynx** by [Ignacio Sanchez (drhelius)](https://github.com/drhelius/Gearlynx) — Atari Lynx core (GPL-3.0)
+- **Virtual Jaguar** by Shamus / James L. Hammons — Atari Jaguar core (GPL-3.0)
+- **Stella** team & **AtariAge** community — 2600 documentation
+- **Qt 6** — UI framework
+- **SDL2** — Audio & input
+- **VST3 SDK** by Steinberg — Audio plugin support
+- **discord-rpc** — Discord Rich Presence
+
+### Interface Inspiration
+- **PCSX2** — Overall layout, settings dialog, game list, setup wizard style
+- **DuckStation** — Toolbar style, overlay menu
+- **Dolphin Emulator** — Save state slots, cover art grid
 
 ---
 
 ## Default Controls
 
-| Action | 2600 Keyboard | 2600 Gamepad | Lynx Keyboard | Lynx Gamepad |
-|---|---|---|---|---|
-| Directions | Arrow keys | D-pad / Left stick | Arrow keys | D-pad / Left stick |
-| Button 1 / A | Z | A | Z | A |
-| Button 2 / B | — | — | X | B |
-| L Shoulder | — | — | A | LB |
-| R Shoulder | — | — | S | RB |
-| Select | Tab | Back | — | — |
-| Reset / Start | Backspace | Start | Enter | Start |
+| Action | 2600 Keyboard | 2600 Gamepad | Lynx Keyboard | Lynx Gamepad | Jaguar Keyboard | Jaguar Gamepad |
+|---|---|---|---|---|---|---|
+| Directions | Arrow keys | D-pad / Left stick | Arrow keys | D-pad / Left stick | Arrow keys | D-pad / Left stick |
+| Button A / Fire | Z | A | Z | A | Z | A |
+| Button B | — | — | X | B | X | B |
+| Button C | — | — | — | — | C | X |
+| L Shoulder | — | — | A | LB | — | — |
+| R Shoulder | — | — | S | RB | — | — |
+| Option | — | — | — | — | A | LB |
+| Select | Tab | Back | — | — | — | — |
+| Reset / Start / Pause | Backspace | Start | Enter | Start | Enter | Start |
+| Quick Save | F5 | — | F5 | — | F5 | — |
+| Quick Load | F7 | — | F7 | — | F7 | — |
+| Pause overlay | Escape | — | Escape | — | Escape | — |
 
 All bindings are remappable in Settings → Controls.
 
@@ -259,15 +420,14 @@ All bindings are remappable in Settings → Controls.
 1. Download the latest release from the [Releases page](https://github.com/Adoregabriel2005/iris-emulator/releases)
 2. Extract the zip to any folder
 3. Run `irisemulator.exe`
-4. On first launch you will be asked to add a ROM folder
+4. The setup wizard will guide you through adding a ROM folder
 5. Double-click any game to play
 
-**Requirements to run:**
+**Requirements:**
 - Windows 10 or 11 64-bit
-- [Visual C++ Redistributable 2022 x64](https://aka.ms/vs/17/release/vc_redist.x64.exe) (if not already installed)
+- GPU with OpenGL 3.3 Core Profile support (GeForce 8 series / Radeon HD 2000 series or newer)
+- [Visual C++ Redistributable 2022 x64](https://aka.ms/vs/17/release/vc_redist.x64.exe)
 - Discord desktop app (optional, for Rich Presence)
-
-> **Linux / macOS:** Not officially supported yet. The code is cross-platform (Qt6 + SDL2 + CMake) and Linux contributions are very welcome. See the Build from Source section.
 
 ---
 
@@ -276,7 +436,7 @@ All bindings are remappable in Settings → Controls.
 ### Requirements
 - Windows 10/11 64-bit
 - [Visual Studio 2022](https://visualstudio.microsoft.com/) with C++ workload
-- [Qt 6.8+](https://www.qt.io/download) (Widgets, Svg, Network)
+- [Qt 6.8+](https://www.qt.io/download) (Widgets, Svg, Network, OpenGL, OpenGLWidgets)
 - [SDL2](https://github.com/libsdl-org/SDL/releases)
 - [vcpkg](https://github.com/microsoft/vcpkg) with `discord-rpc:x64-windows`
 - CMake ≥ 3.16
@@ -284,43 +444,14 @@ All bindings are remappable in Settings → Controls.
 ### Steps
 
 ```powershell
-# Clone
-git clone https://github.com/gorigamia/iris-emulator.git
+git clone https://github.com/Adoregabriel2005/iris-emulator.git
 cd iris-emulator
 
-# Configure
 cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE="D:/vcpkg/scripts/buildsystems/vcpkg.cmake"
-
-# Build
 cmake --build build --config Release
 
-# Output
-# build/Release/irisemulator.exe
+# Output: build/Release/irisemulator.exe
 ```
-
-### Gearlynx (Lynx engine)
-The Lynx core requires the Gearlynx source files in `build/src/`.
-Download [Gearlynx](https://github.com/drhelius/Gearlynx) and place the `src/` contents in `build/src/`.
-
-### Cover art downloader (optional)
-```powershell
-pip install -r tools/requirements.txt
-python tools/fetch_boxarts.py --folder "C:\roms" --out "C:\roms\covers"
-```
-
----
-
-## Usage
-
-1. Open `irisemulator.exe`
-2. On first launch, you will be asked to add a ROM folder
-3. `.bin` / `.a26` / `.rom` → Atari 2600 · `.lnx` / `.lyx` → Atari Lynx
-4. Double-click any game to play
-
-**Atari Lynx BIOS:** Place `lynxboot.img` next to the `.exe` or configure the path in Settings → Lynx Controls → Boot ROM file.
-ROMs with the HLE magic byte (`$80`) will boot without a BIOS.
-
-**Save States:** Gear menu → Save/Load State (slots 1–10) or toolbar buttons
 
 ---
 
@@ -329,10 +460,11 @@ ROMs with the HLE magic byte (`$80`) will boot without a BIOS.
 Íris Emulator is open source software licensed under the **GNU General Public License v3.0**.
 See [LICENSE](LICENSE) for details.
 
-The Gearlynx engine is copyright © 2025 Ignacio Sanchez, also licensed under GPL-3.0.
+The Gearlynx engine is copyright © 2025 Ignacio Sanchez, licensed under GPL-3.0.
+The Virtual Jaguar engine is copyright © its respective authors, licensed under GPL-3.0.
 
 ---
 
 ## About
 
-Developed by **Gorigamia** · Inspired by PCSX2, DuckStation, and Dolphin Emulator
+Developed by **Gorigamia** & **Aleister93MarkV** · Inspired by PCSX2, DuckStation, and Dolphin Emulator
