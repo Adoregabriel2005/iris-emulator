@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <b>Multi-system Atari emulator — Atari 2600 + Atari Lynx</b><br>
+  <b>Multi-system Atari emulator — Atari 2600 + Atari Lynx + Jaguar</b><br>
   Built with C++17 · Qt 6 · SDL2 · Gearlynx engine<br>
   Developed by <b>Gorigamia</b> · Open Source · Constantly updated
 </p>
