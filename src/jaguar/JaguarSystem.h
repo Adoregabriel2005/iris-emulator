@@ -53,6 +53,9 @@ private:
     std::vector<uint32_t> m_framebuffer;
     QImage m_frame;
 
+    // VJ globals (tom.h/jaguar.h)
+    // No local state needed - use extern tomWidth/tomHeight/screenBuffer
+
     bool m_audio_enabled = true;
     int  m_audio_volume  = 80;
 
