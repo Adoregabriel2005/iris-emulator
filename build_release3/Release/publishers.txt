@@ -1,0 +1,315 @@
+# Iris Emulator — Publisher Database
+# Format: Game Title (lowercase, no parentheses) = Publisher
+# Used as fallback when No-Intro filename doesn't contain publisher info.
+# Lines starting with # are comments.
+
+# ─── Atari 2600 ───────────────────────────────────────────────────────────────
+
+# Atari
+adventure=Atari
+asteroids=Atari
+basketball=Atari
+battlezone=Atari
+berzerk=Atari
+blackjack=Atari
+bowling=Atari
+breakout=Atari
+casino=Atari
+centipede=Atari
+circus atari=Atari
+combat=Atari
+crystal castles=Atari
+defender=Atari
+dig dug=Atari
+dodge 'em=Atari
+flag capture=Atari
+football=Atari
+freeway=Atari
+galaxian=Atari
+golf=Atari
+gravitar=Atari
+haunted house=Atari
+home run=Atari
+human cannonball=Atari
+indy 500=Atari
+jungle hunt=Atari
+kangaroo=Atari
+maze craze=Atari
+midnight magic=Atari
+miniature golf=Atari
+missile command=Atari
+night driver=Atari
+othello=Atari
+outlaw=Atari
+pac-man=Atari
+polo=Atari
+pong=Atari
+radar lock=Atari
+real sports baseball=Atari
+real sports basketball=Atari
+real sports football=Atari
+real sports soccer=Atari
+real sports tennis=Atari
+real sports volleyball=Atari
+slot machine=Atari
+soccer=Atari
+space invaders=Atari
+space war=Atari
+sprint master=Atari
+star raiders=Atari
+star ship=Atari
+steeplechase=Atari
+stellar track=Atari
+street racer=Atari
+submarine commander=Atari
+super baseball=Atari
+super breakout=Atari
+super football=Atari
+surround=Atari
+swordquest earthworld=Atari
+swordquest fireworld=Atari
+swordquest waterworld=Atari
+target fun=Atari
+tempest=Atari
+tennis=Atari
+video checkers=Atari
+video chess=Atari
+video olympics=Atari
+video pinball=Atari
+warlords=Atari
+yars' revenge=Atari
+
+# Activision
+barnstorming=Activision
+beamrider=Activision
+boxing=Activision
+bridge=Activision
+chopper command=Activision
+cosmic commuter=Activision
+crackpots=Activision
+decathlon=Activision
+dolphin=Activision
+dragster=Activision
+enduro=Activision
+fishing derby=Activision
+freeway=Activision
+frostbite=Activision
+grand prix=Activision
+hero=Activision
+ice hockey=Activision
+kaboom!=Activision
+keystone kapers=Activision
+laser blast=Activision
+megamania=Activision
+pitfall!=Activision
+pitfall ii=Activision
+plaque attack=Activision
+pressure cooker=Activision
+private eye=Activision
+river raid=Activision
+river raid ii=Activision
+robot tank=Activision
+seaquest=Activision
+skiing=Activision
+sky jinks=Activision
+space shuttle=Activision
+stampede=Activision
+starmaster=Activision
+tennis=Activision
+the activision decathlon=Activision
+title match pro wrestling=Activision
+toy shop trouble=Activision
+
+# Imagic
+atlantis=Imagic
+cosmic ark=Imagic
+demon attack=Imagic
+dragonfire=Imagic
+fire fighter=Imagic
+moonsweeper=Imagic
+riddle of the sphinx=Imagic
+shootin' gallery=Imagic
+solar storm=Imagic
+star voyager=Imagic
+trick shot=Imagic
+wing war=Imagic
+
+# Parker Brothers
+amidar=Parker Brothers
+frogger=Parker Brothers
+gyruss=Parker Brothers
+mr. do!'s castle=Parker Brothers
+popeye=Parker Brothers
+q*bert=Parker Brothers
+spider-man=Parker Brothers
+star wars the arcade game=Parker Brothers
+star wars the empire strikes back=Parker Brothers
+super cobra=Parker Brothers
+tutankham=Parker Brothers
+
+# Coleco
+donkey kong=Coleco
+donkey kong jr.=Coleco
+lady bug=Coleco
+mouse trap=Coleco
+venture=Coleco
+zaxxon=Coleco
+
+# Mattel
+bump 'n' jump=Mattel
+burgertime=Mattel
+masters of the universe=Mattel
+night stalker=Mattel
+tron deadly discs=Mattel
+
+# CBS Electronics
+mountain king=CBS Electronics
+omega race=CBS Electronics
+tunnel runner=CBS Electronics
+
+# Tigervision
+miner 2049er=Tigervision
+polaris=Tigervision
+
+# Sega
+congo bongo=Sega
+zaxxon=Sega
+
+# 20th Century Fox
+alien=20th Century Fox
+m*a*s*h=20th Century Fox
+megaforce=20th Century Fox
+porky's=20th Century Fox
+turmoil=20th Century Fox
+
+# Spectravision / Spectravideo
+cross force=Spectravision
+planet patrol=Spectravision
+tapeworm=Spectravision
+
+# Xonox
+chuck norris superkicks=Xonox
+ghost manor=Xonox
+motocross racer=Xonox
+tomarc the barbarian=Xonox
+
+# Mythicon
+fire fly=Mythicon
+sorcerer=Mythicon
+star fox=Mythicon
+
+# Zimag
+eggomania=Zimag
+i want my mommy=Zimag
+
+# Telesys
+fast food=Telesys
+ram it=Telesys
+
+# Epyx
+summer games=Epyx
+winter games=Epyx
+
+# Homebrew / Modern
+adventure ii=AtariAge
+stay frosty=AtariAge
+stay frosty 2=AtariAge
+halo 2600=AtariAge
+medieval mayhem=AtariAge
+thrust+=AtariAge
+juno first=AtariAge
+
+# ─── Atari Lynx ───────────────────────────────────────────────────────────────
+
+# Atari
+california games=Atari
+chip's challenge=Atari
+electrocop=Atari
+gates of zendocon=Atari
+klax=Atari
+ms. pac-man=Atari
+paperboy=Atari
+roadblasters=Atari
+rygar=Atari
+slime world=Atari
+warbirds=Atari
+xenophobe=Atari
+xybots=Atari
+
+# Epyx
+blue lightning=Epyx
+
+# Telegames
+double dragon=Telegames
+
+# Atari / Various
+awesome golf=Atari
+batman returns=Atari
+checkered flag=Atari
+hockey=Atari
+lemmings=Atari
+ninja gaiden=Atari
+pinball jam=Atari
+rampage=Atari
+scrapyard dog=Atari
+super skweek=Atari
+toki=Atari
+tournament cyberball=Atari
+viking child=Atari
+zarlor mercenary=Atari
+
+# ─── Atari Jaguar ─────────────────────────────────────────────────────────────
+
+# Atari Corporation
+alien vs predator=Atari Corporation
+atari karts=Atari Corporation
+bubsy in fractured furry tales=Atari Corporation
+checkered flag=Atari Corporation
+club drive=Atari Corporation
+crescent galaxy=Atari Corporation
+cybermorph=Atari Corporation
+doom=Atari Corporation
+evolution dino dudes=Atari Corporation
+iron soldier=Atari Corporation
+kasumi ninja=Atari Corporation
+rayman=Atari Corporation
+tempest 2000=Atari Corporation
+theme park=Atari Corporation
+towers ii=Atari Corporation
+ultra vortek=Atari Corporation
+val d'isere skiing=Atari Corporation
+wolfenstein 3d=Atari Corporation
+zool 2=Atari Corporation
+
+# Telegames
+double dragon v=Telegames
+pinball fantasies=Telegames
+ruiner pinball=Telegames
+
+# Interplay
+brutal sports football=Interplay
+white men can't jump=Interplay
+
+# Ocean
+cannon fodder=Ocean
+syndicate=Ocean
+
+# Rebellion
+alien vs predator=Rebellion
+
+# id Software
+doom=id Software
+wolfenstein 3d=id Software
+
+# Ubisoft
+rayman=Ubisoft
+
+# 3DO
+iron soldier ii=3DO
+
+# Songbird Productions (homebrew/aftermarket)
+battlesphere=Songbird Productions
+battlesphere gold=Songbird Productions
+defender 2000=Songbird Productions
+skyhammer=Songbird Productions
+worms=Songbird Productions

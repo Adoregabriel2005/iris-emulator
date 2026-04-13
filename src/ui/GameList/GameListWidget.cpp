@@ -107,17 +107,19 @@ void GameListWidget::initialize()
     m_ui.stack->addWidget(m_list_view);
 
     // Default column widths for table
-    m_table_view->setColumnWidth(GameListModel::Column_Console, 30);
-    m_table_view->setColumnWidth(GameListModel::Column_Cover, 60);
-    m_table_view->setColumnWidth(GameListModel::Column_Title, 400);
-    m_table_view->setColumnWidth(GameListModel::Column_Size, 80);
-    m_table_view->setColumnWidth(GameListModel::Column_Mapper, 80);
+    m_table_view->setColumnWidth(GameListModel::Column_Console,   30);
+    m_table_view->setColumnWidth(GameListModel::Column_Cover,      60);
+    m_table_view->setColumnWidth(GameListModel::Column_Title,     300);
+    m_table_view->setColumnWidth(GameListModel::Column_Publisher, 160);
+    m_table_view->setColumnWidth(GameListModel::Column_Region,     90);
+    m_table_view->setColumnWidth(GameListModel::Column_Size,       80);
+    m_table_view->setColumnWidth(GameListModel::Column_Mapper,     80);
     m_table_view->sortByColumn(GameListModel::Column_Title, Qt::AscendingOrder);
 
-    // Hide technical columns by default (user can re-enable via header context menu)
+    // Hide technical columns by default
     m_table_view->setColumnHidden(GameListModel::Column_FileName, true);
-    m_table_view->setColumnHidden(GameListModel::Column_Size, true);
-    m_table_view->setColumnHidden(GameListModel::Column_Mapper, true);
+    m_table_view->setColumnHidden(GameListModel::Column_Size,     true);
+    m_table_view->setColumnHidden(GameListModel::Column_Mapper,   true);
 
     // Allow toggling columns via header right-click
     m_table_view->horizontalHeader()->setContextMenuPolicy(Qt::CustomContextMenu);

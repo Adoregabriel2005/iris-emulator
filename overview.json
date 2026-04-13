@@ -1,0 +1,2089 @@
+{
+  "rootFolder": "d:\\PROJETOS\\ATARI2600",
+  "analyzedAt": "2026-04-11T20:58:34.815Z",
+  "rootStructure": [
+    {
+      "name": ".github",
+      "type": "dir"
+    },
+    {
+      "name": ".gitignore",
+      "type": "file",
+      "size": 1144,
+      "lines": 90
+    },
+    {
+      "name": "aqtinstall.log",
+      "type": "file",
+      "size": 28124,
+      "lines": 203
+    },
+    {
+      "name": "BIOS",
+      "type": "dir"
+    },
+    {
+      "name": "build",
+      "type": "dir"
+    },
+    {
+      "name": "build_release2",
+      "type": "dir"
+    },
+    {
+      "name": "build_release3",
+      "type": "dir"
+    },
+    {
+      "name": "CMakeLists.txt",
+      "type": "file",
+      "size": 6582,
+      "lines": 169
+    },
+    {
+      "name": "data",
+      "type": "dir"
+    },
+    {
+      "name": "debug_out.txt",
+      "type": "file",
+      "size": 308,
+      "lines": 6
+    },
+    {
+      "name": "Gearlynx-main.zip",
+      "type": "file",
+      "size": 149959000,
+      "lines": 588051
+    },
+    {
+      "name": "handy-sdl-master",
+      "type": "dir"
+    },
+    {
+      "name": "handy-sdl-master.zip",
+      "type": "file",
+      "size": 567288,
+      "lines": 2258
+    },
+    {
+      "name": "handy_specifications.pdf",
+      "type": "file",
+      "size": 2607982,
+      "lines": 11580
+    },
+    {
+      "name": "IrisEmulator-v1.17-Windows-x64.zip",
+      "type": "file",
+      "size": 22076643,
+      "lines": 78522
+    },
+    {
+      "name": "iris_emulator.rc",
+      "type": "file",
+      "size": 49,
+      "lines": 2
+    },
+    {
+      "name": "JAGUARCOREREFERENCE",
+      "type": "dir"
+    },
+    {
+      "name": "JAGUARCOREREFERENCE.zip",
+      "type": "file",
+      "size": 2754724,
+      "lines": 10357
+    },
+    {
+      "name": "libretro-handy-master",
+      "type": "dir"
+    },
+    {
+      "name": "libretro-handy-master.zip",
+      "type": "file",
+      "size": 293610,
+      "lines": 1319
+    },
+    {
+      "name": "LICENSE",
+      "type": "file",
+      "size": 693,
+      "lines": 18
+    },
+    {
+      "name": "lynx_debug_frame.png",
+      "type": "file",
+      "size": 148,
+      "lines": 3
+    },
+    {
+      "name": "lynx_trace.txt",
+      "type": "file",
+      "size": 117591222,
+      "lines": 5487147
+    },
+    {
+      "name": "pcsx2-qt",
+      "type": "dir"
+    },
+    {
+      "name": "README.md",
+      "type": "file",
+      "size": 11655,
+      "lines": 339
+    },
+    {
+      "name": "README.md.bak",
+      "type": "file",
+      "size": 14564,
+      "lines": 247
+    },
+    {
+      "name": "ROMS",
+      "type": "dir"
+    },
+    {
+      "name": "src",
+      "type": "dir"
+    },
+    {
+      "name": "tools",
+      "type": "dir"
+    }
+  ],
+  "rootFileSnippets": {
+    "aqtinstall.log": [
+      "2026-04-07 23:11:08,403 - aqt.helper - DEBUG - helper 53796 Attempt to download checksum at https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/Updates.xml.sha256",
+      "2026-04-07 23:11:19,717 - aqt.main - INFO - installer 34000 aqtinstall(aqt) v3.3.0 on Python 3.12.0 [CPython MSC v.1935 64 bit (AMD64)]",
+      "2026-04-07 23:11:19,718 - aqt.helper - DEBUG - helper 34000 Attempt to download checksum at https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/Updates.xml.sha256",
+      "2026-04-07 23:11:22,944 - aqt.helper - DEBUG - helper 34000 Attempt to download checksum at https://download.qt.io/online/qtsdkrepository/windows_x86/extensions/qtwebengine/683/msvc2022_64/Updates.xml.sha256",
+      "2026-04-07 23:11:25,921 - aqt.archives - INFO - archives 34000 Found extension qtwebengine",
+      "2026-04-07 23:11:25,921 - aqt.helper - DEBUG - helper 34000 Attempt to download checksum at https://download.qt.io/online/qtsdkrepository/windows_x86/extensions/qtpdf/683/msvc2022_64/Updates.xml.sha256",
+      "2026-04-07 23:11:28,881 - aqt.archives - INFO - archives 34000 Found extension qtpdf",
+      "2026-04-07 23:11:30,213 - aqt.helper - DEBUG - helper 21828 Attempt to download checksum at https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.win64_msvc2022_64/6.8.3-0-202503201308qtbase-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z.sha256",
+      "2026-04-07 23:11:30,226 - aqt.helper - DEBUG - helper 78252 Attempt to download checksum at https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.win64_msvc2022_64/6.8.3-0-202503201308qtsvg-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z.sha256",
+      "2026-04-07 23:11:30,238 - aqt.helper - DEBUG - helper 69376 Attempt to download checksum at https://download.qt.io/online/qtsdkrepository/windows_x86/desktop/qt6_683/qt6_683/qt.qt6.683.win64_msvc2022_64/6.8.3-0-202503201308qtdeclarative-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-X86_64.7z.sha256"
+    ],
+    "CMakeLists.txt": [
+      "cmake_minimum_required(VERSION 3.16)",
+      "project(IrisEmulator VERSION 0.1 LANGUAGES CXX C)",
+      "",
+      "set(CMAKE_CXX_STANDARD 17)",
+      "set(CMAKE_CXX_STANDARD_REQUIRED ON)",
+      "set(CMAKE_AUTOMOC ON)",
+      "set(CMAKE_AUTORCC ON)",
+      "set(CMAKE_AUTOUIC ON)",
+      "",
+      "file(GLOB GEARLYNX_SRC \"${CMAKE_SOURCE_DIR}/build/src/*.cpp\")"
+    ],
+    "debug_out.txt": [
+      "SDL detected 1 joystick(s)",
+      "Generic joystick connected: USB Joystick buttons: 12 axes: 4",
+      "LynxCart: loaded \"calgames.lyx\" bank0: 131072 bank1: 0 shift0: 9 mask0: 1ff rotation: 0",
+      "Lynx boot ROM loaded from \"D:/PROJETOS/ATARI2600/ROMS/Lynx/Atari Lynx/../LinxBoot.lnx\"",
+      "Lynx native boot ROM execution starting",
+      ""
+    ],
+    "Gearlynx-main.zip": [
+      "PK\u0003\u0004",
+      "\u0000\u0000\u0000\u0000\u0000\u001c3�\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u000e\u0000\t\u0000Gearlynx-main/UT\u0005\u0000\u0001���iPK\u0003\u0004",
+      "\u0000\u0000\u0000\u0000\u0000\u001c3�\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001c\u0000\t\u0000Gearlynx-main/.devcontainer/UT\u0005\u0000\u0001���iPK\u0003\u0004",
+      "\u0000\u0000\u0000\b\u0000\u001c3�\\�D�\u001b�\u0002\u0000\u0000?\u0006\u0000\u0000&\u0000\t\u0000Gearlynx-main/.devcontainer/DockerfileUT\u0005\u0000\u0001���iuT]o�0\u0014}ϯ���\u001f�L�ڇ�\u0012\u000f��\u000e\u0011B\u0005��U�I\fqq��v\u0018T��\u0005\u0003Y^�s������펆\u0003P%\u0015S��������\u0004�\u0013\b��C��4&q\u0017~s\u001d�\u0013�1�\u0010� A�� �\b̀�Jg4�\u0000*\u0015�c\u0005�2C",
+      "�_\u000e������\u0005�0���\u0007��v4펆Q\u001cD~�qF��\u0002��,�.��\u001b�B͓\"�b�Ȍ��O�J%�\u0005�DY���\u0005���P�\u0016���\bW썔\u0016>D�Uf�Mq �\u00123E�A6Yb{P��\u0016��@�$Y5�0��#\u0012�T\r+\u0010�D\r�\u000b\"y�0#+,kxR�ɺ��$�E�٩�\u0007��ٲS!é��F\u0010�)9O�Hڄ\u0005��T����������fj,�\u0002�X�nֱ\u001f�L��C��r�aP�\\�R�y\u001e*IC�Y^%\r]\u000fO��KO�\"3",
+      "��{:T�\u0014#�5o�U���\u0015�\u0000\u0017\r��S�",
+      "|q�73M�R��}�Y�*\u0007M���?���=���ݥ`�\u001f\u001a�Ā��Ҁ��ö������\u001ex��\r�Π�\u000f��h\u001c��p�8",
+      "���WI�5�p\u001a\u0007�x�\u001av��8xn\u000f\u001e�`K\u001d����'.���%+\u0005O��Ә��\u001c�[(",
+      "]�Y�!?�%\u0012�,�G)��Jz�O'\u0014�\u0014\u0017���͐��T�9�93\u0004}<C\u0015Uz��7�\u0003�cJ7�r�=\b�Ma��0ψ[\u0007��\u0007����\u0017��^�j�m\u0006\\�[0�\u0002d<]`�\u000f\t�_�y\u001a��A\u0000~\u0002w��Vr����\u0012���a�\u0001O�@���zL�\u0000�8Ù�'\u001e�x\u001c��x��ɉ�\u0014QO�H`ogITC�%R�;���\f|���\u0018�f9a3#�MB�\u0000PK\u0003\u0004",
+      "\u0000\u0000\u0000\b\u0000\u001c3�\\mF*��\u0001\u0000\u0000�\u0004\u0000\u0000-\u0000\t\u0000Gearlynx-main/.devcontainer/devcontainer.jsonUT\u0005\u0000\u0001���i�S;o�0\u0010��+\b��%�\u001d��[�\u0000i�\u0002\u0005�4C��\"O\u0016k�ǒG;m��^R�%��˓��x��N/+Ʋ*(-�\r{���I\u0014;p��\u0010ﳢ����\u0019%�\u0010<S\u000f���.U�\u001a8\u0005\u0007��g�m�+\u0014�\u0012��\u0019W\u0006�/��R`ۢ�\u0003)�7��b�\u0007gx�K\u0011(�[.\u0016:\u0012�A%\u000b\u0019\u000f�-'%��w���ܭ�Sa��\u0011�\\+�ͫ��[M��\u001d����Q2�����맾b��\r�SU��D�\u00049�G�"
+    ],
+    "handy-sdl-master.zip": [
+      "PK\u0003\u0004",
+      "\u0000\u0000\u0000\u0000\u0000���I\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0011\u0000\t\u0000handy-sdl-master/UT\u0005\u0000\u0001��TXPK\u0003\u0004",
+      "\u0000\u0000\u0000\b\u0000���I�����\u0002\u0000\u0000�\u0005\u0000\u0000\u0018\u0000\t\u0000handy-sdl-master/INSTALLUT\u0005\u0000\u0001��TX�T�n\u001a1\u0010}�WL��Jas(}J\u0002IW��\u0006����ʰ\u0003k�ko}�ү�!���\u001a\u001e�f<{�3c�Z����R\u0017�a�G���n��S`�b�����\u0013�\u0002k\t!\u001f��n�{7\u001a�ŋӑ���\u001bU1���M �\\��iɓ9�iJ�r��K�ZiU�ZX�\u0019�嚵w45v\u000b��,�9\u0013�][�V�A���,[\u0011�J5+�\"�t�d����\u001f����jsp�hа��Q��VZ�\u000e)\u0017��X\u000f��!�����zJ��!�X�a� �\u001e�S��&���{�|��\f�Y|�\u0004Q-״4v\u001eՎ�OBcn�Գ��fR�kGJ'u}9�)�˄\u00184^\u0019-�j�7Oҥ\u0007Y�����x�\u001f�iY�IIʑ\\HU�1�7\u001b�\\{��}F�i\"��G�I\u0015���;\b�l�r��yUU0�Y[\u0018\u00073�E\\\u000f���^~w�|�B�\u0019�`��Ä©_J�>��a�\u0005��=y���5���4���*��\u0011J�h�֨\u0002`\u0013o,|����(8�Yv.��ە�*/n@p\u00113%c���v���ƨ�L��n\u001a�X�����\\�5��\u0002t��pު\u0006&\u0002��+�o\u0019��{ܗ�,�S��CSZ�uF��\u0002�Ь�3�-5җi��3{���\u001eb\u0000\t\u0005\u0017��̬�\u0014\u0011H/�t\u0012<;��Τd\u00049�Z0&\u0010\u001aZ*���&8u5�c����\u0006 �]R�\r}��\u0018Pa4� q�f\t��n�p\u001d*�anp���\u0003\u0019\r9�\u0016&�\u0006\u0017)�\u0007��p�����]�6H���N�KI̮V�\u0001�\u001bļ`�O\u001e��D{K���\u0011\u001a�I���x\u0015�]R�7\u0012��U�g� 2گ�6/�\"�^�\\)+9Ut9��;�3�\u0019�HW�����\u001f�oPK\u0003\u0004",
+      "\u0000\u0000\u0000\b\u0000���IXp�m�\u0004\u0000\u0000�\f\u0000\u0000\u0019\u0000\t\u0000handy-sdl-master/MakefileUT\u0005\u0000\u0001��TX�VmO\u001bG\u0010���\u0015\u0013C\u0014L��\u0004�J��\u0014b�Cj��\u001dA�Jh}�g/ޗ���������FPҨ ờ��yn޷�\u0016|�\"\u0017<�S6幐\u001crc�\u000b�ټ9���o�g#$���\u0016�T)�7�l���\u001c�2�\u001d�\u0012����.҇\u0013�����0�\u0001ߥH�vh��\u0019��'\u001c��\u001e��\u0000M1=\u0007ԉ�\u0019�N\u0018���� ��\" �M���\b,�\t�\u0012��6�\u0018���\u000f�\u000e�N�\u0011�����C�#\u0007�<�+HʸN��`T�H��C:��\u0014A��$(:\u0016�\u0012Y\u0006En&\"���;�\u0015��7HN�*�\u0014z\u001c��ES��\t�(�)����\u0019�'��\u0011r>\u0018��?j)TC����P�ީ��:�\u0003�^#G�G�o��'�\u0000-H�-'��.,�Zp!�>�Ié��\u000bB�m�g�Ӕ�:\u000f\b\\:���\f����\u0007��qe�\u0005�ȏ\u0006Z�DḤ���--StfJ\u0017ƞfnūMSx�G�G��\u001b#�\t\u0013�Y:�\u001c�s�~�\u0018���� �/~������p�I��+��'=\u001f2�`���a�9�\u000eC_x��\u001d� ��K�\u0003�1\u000bX\u0006&�}J�!3��7\u001e����\r�\u0011\"�\u0012��`\u0002�\u001ei\u001f�\u000e��\b�v:'g�o�@OO;@/��@���M\u001b�n��[�sx68���h\u0007+�8l\u0001���y��G��(�in��ha�\u000e�B��~e�;�wm4�\t�K&i�u����\u0018�˴���\u0014��\u0015º\u001fN�Լe����'l�N�5�(��݄�B���4\u0018̿H��L�(�K��`:XR�1�ډ��#V��REf���r%�~\u001b�Bz�s<`+�^����㲽S9����O6�^g�3�\"l#9v����H��\u001f�_\u0015r�J���\t���g�۷�r\u0007d)�<&r�Ƽ����l���䧵�=\u0017�\u0015�{p�g�n��\u001e��\"rr֎r'I��t�l�¦?�HX�\\��o?\r70�53�n���Ĭ��+Ŋu��",
+      "�v�T[?���+݆l5\u0019�\b�Zc\u00036��\u001a��wb�f\u0005�",
+      "��ߐ[���\u0010�G\u0019Q9��Q�ز\u0002G�{��\f��5θ\u0014k��ht\u0013!X�\u0007�\u0004�٪�6�wV��Aj�x:1P��݅�1�0ԧ8��b0�\u001c=�=I\u0012�Y$�0D�|U'$��郥",
+      "�+-�@\r�4\f�0F�ؘ̎��:�Z\u0005��\u0001��C��Wl���\u0015!x#�R�L�x=P��\u0013s\u0000![���\u0016��'�W�}��",
+      "\u0000�n�\u0011",
+      "xQ��=�d\u0003h�B@\rlz��>9_�\u0004��^��E�`���E ߫~\u0011�a��\u001f>��O�k���=@�д\u001eT���` �\u0010\u000eJo�\u001c��.��:�Ƣ\u00017*\u0003K=���\u0015\u0017��V\u0014@i|Ҡhv�Q4[���\u0005��!\u001d��~��8\u0012V���\u001d��\u0001��\u0016��,�����q�H�6���s��z��[l,a�\u000f�9\\��\u0007r�\\ع�\u001cW�\u0019\u000f{Ԉs$[\u001e�ι'�",
+      "��2�z��IF�?PK\u0003\u0004"
+    ],
+    "handy_specifications.pdf": [
+      "%PDF-1.7",
+      "%����",
+      "4 0 obj",
+      "<< /Length 5 0 R",
+      "/Filter /FlateDecode",
+      ">>",
+      "stream",
+      "x�3T0\u0000B]C ani����U�\u0015�P�\u0005\u0012534�362\u0001K\u0014�*�+�\u0001%\r�L,\f\f\fL��@\u001c0\u0003�O?�@!�XA��\\�%�+\u0010\b\u0001Y�\u0013\u0007",
+      "endstream",
+      "endobj"
+    ],
+    "IrisEmulator-v1.17-Windows-x64.zip": [
+      "PK\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000[b�\\>�Kq\u000b\u0002\u0000\u0000h\u0004\u0000\u0000\u0011\u0000\u0000\u0000data\\mappers.json��]K�A\u0010���\u0015/�\u0005\t�;�����iDj?�HoDd�chP\u0013IBъ���*\u0005#\t�n8,ϙ�9��u�7�\u001d�c\u0013,�\"��\u0012�7\u0019\rpdT�\u0011|�?v�]?�ۡ�\u000f�z�{��-���e��U��ϧ�\u000f�Aׯ\u001f\u001d���\u000e\u0006�",
+      "��cW4����2�s���\u0005\b�$����х��k�|��K��1\u0006[ a\u000e����\u001bDJ,\u0006��j��M�W�9=��\u0019>�4�g����j�`<���s����Q ���r�l|�M��h2:\u001b�\u0018mm�_�@5R�9�\u001aK�\u0000�� \u001a�R��l\"\u00184f\u0017z:\u0019\u001f~����(\u0005-\b`Y\u0003)g�!h�XȢ",
+      "�W\u0002��>_.�;ХB�zk9�\u0011�A�8��d��\r[Ȫ)�\u000b����6�6˶��Ϊ��\u0006crJ��\r�8�",
+      "1�7\u0013�T�v9+u�NT@�+�m��\u0015\u001c&IB�\u001dC��\u0004[]l�\u0011ѝ�\u0016����DG^\\b���)�v\u0001�}�\u0010�/�{U5o�?^J��[�W���d�\ra\f'�M� [C\u0012��W�.��զ��^n�nj�d~]KW����k�\u0017}P��j5�3�\u0004���\u0017����JJY��|�ý9jK;x)b�=�=��\u0005PK\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000wZqZ��@H�\u0000\u0000��\u0001\u0000\u001c\u0000\u0000\u0000generic\\qtuiotouchplugin.dllܽ\u000b|\u0014E�0ޓI�@��(#AQ��(�A\fDd�N'3I7��\b�w\u0000�`T\"�HP�H�݌�h��+�U\u0017_Ȯ���1!�\u0007\b\u0004T\f�#*���\u001a@!(��sNu�#\t�w��w�??&]]]}�T�S�Σ��3��3r\u001c\u0017\u000f?U席\u001c���~����q���ڟ{����l5Ȼ3�x����˖,�s����̛ܲ�`Q�r�-�KoIuM��z�\u001b\u0016��ׯ�U�q��|�x�}��e[\u0006?�\u0000�OM�wc\u0011]�޸����[�z��Ep�r˽\u001bo��\u001f�{7Χw�}&H�wo\\H��6.�k�3K�y�3�>@���.,�����9����\u0016�hY��up��&��\u001f�}\u00057�������L�r\u0003���8.Q{G�r�\rԩ���\u0000��\u0004�%����%�F\u001a�r��µ�*4p5\tp-5pc��u���N��\u0006\u0003g�*6�o�J{�M�\u0000\u0003g���3pNC�\u0013\u0003gO8;MGx\u0017�y��ї\u001aB����2����7������\f&7�:,�\u0013��`Ÿ�}�q�O�,C�r�\u0011�� ��\u0014\u0019\u000b�9��9G��y�w�\rK��\u0006�{nj�r�#��X�\u0010��wЇD�i=�[��eP\u0010�\u0012�����V.�l����?��+�\u0018��y'\f��c\u001cW��(t�X��V�\u0016���qoE�\u0013\u0003\t\u000f��:��9\u0005 ����\u0019�Ee�jy�8�\f$�;\t\u0017�\u0011��Ϊ�y_�\u0013��Xؙ\"�����+|%��(����4\u001d�P�\u0017�S��\u0001\u0015��3x����)*{C�Z�:ۚ.*\rX��",
+      "�tIi�F�\u0000)\u0019*\u000f�j�|���\u0014��\u0015�?՚*�]�TwF���UR�\u0016�wBB���\r�U\u0005}\u0017���1��=��mQi���g����q\u0000\u000e�u:��I�Xe缽�y�}C���p� �,�̀���\u0013����\u0019�:9�P\u0001e%�֓V�\u000fqq\u001c�Ŝ�o�˥��\u0001�`U��k(\u001b/)��$e���\u0004��(�HO��5S\f�\"Q���\u0010�~5�:*�Q���L�h����{��\u0012�L\u0002RW\u0005�Ɋ3\u001e.}Ċq� ��-x�z\u0017:?5T{\u0000\u001a�\u001f۬�����Ԥ��!�]@c�\u0012�\u0017������\u0017��\u0017 \u0007ti�c\u0004��{�V\u0015�u𵆊N�/!��\u0003T��Z����B�w��|ԭ�: �R�",
+      "��>�U��\u0003I���\u0002`�`�\u0011 I�Aħ�\u000b\u000b�\r���a\f�^v3�e\u0010�Z�A0�ᢸ\u000b��`�0MT��~+\u0012\u0015��\u001c\u0003.\u0003���9�\u000f",
+      "\u0007���A�\u0001��̲�\u0018_�\u0018�\\����W�O�\u0019&)�5P�h픠G�\u001a%%�$�m\u0013kO%��Zo��o���O\u0013%���qp�4Tg\u0019\u0004h�?+\u001e.&�IRD��\u001fo�pX��R�",
+      "�����g�P\r��\u0006�m��\u000e���N;\\��sQ�5C\u0015\ts��\u0001.�n�T�`��J/��&�K�ӁA��.�D@��\u00048+\u0010�ꬠ�a-�p;ðQðYðEð�\u000b�!\r�\u000e\r��0�\u0015��`\u00174'��J�\\�֪u�jݬZw#�έU�������*�_��P��\u001cA����pkջ;�y(���Z��\u0007zƗ��bh7:G���q�[>B&\\Aľ�\u001f\f��@>�\u0017����Һ��a�tg�\t�pQ\u0019\b#�k�R\u001a\u000b`)�?�\u0014K�Պ\u0000v���&\u0014\u001c{�\u0001�\u0010�6��*����[�H��&\u0000-*�u�I�\u0016w�Z\b¥�Z�U����v���\u0017�\u0016w��\u0017���\u0002�\u0016�B�\b�p\r�5\u0004�\u000e�v�\u0015zA�$\u0002��(+��e\u001f���%z��E�A��5\u0011eZ �\u0019��)J\u001c��H\u0015f\u001b���x�0��*�6�",
+      "�SX�٩��l\u001b�0;�U�m'b\u0007<!�\u001d�\u0002�)��\u0005P�\u0000�*\u0000\b\u0005͡K�`�5��|\u0011;\u001f�\b\u0002��Z�\u000bV[S\u000b��B�0M�\u001e\u0019���!+�¨�^�L�ߊ��ٓ#�7р�T0K�f�\u001aY��\u0001����$\u0018��6nwҸ�!�l\u0013k��\u0017\u0015\u0018���E#��`�҂�c�7�ߒ(\u0006����\u0016�d|\u001f:�T\r���/�\r\u0013�;�+rl�+rҩ+��gے8�T�`h\u001e�݁\f\u0006id�e�rg��$e�Y0����\u0007&6\u000bչ����6V��\u0018ª%n\u0007V\rטq�H�\u001fA)\u0016�a��\u0000i\u001aaة�U\u0004\u0005\u0010�F�C\fy���5\u0002�AC�p�C�N6t�p�\\,*<�\u0005B5\u0017ZU\u000b�����\u0002��%8l��J/\u000f�u5�\") R\tlq�>��]��Ɇ\u0012����h���at#\r�y8��Y��@�f1P�X�\r]�H\b��[3��y��\u0010c_\u000f�p\u0007ca\u000f�1����B�d�]4��a��\u001d\u0006�\\\u0012�\u0003H{�ʏ�`AF ��\f㺂O�\u0002o�\u0002�N�Ca=�\u00133=�Ee\u000e`��C�=� \u001a\u0010\u001d\u001f{/�T2}\r�������Tx��\u0017\u0002Q-��\u000b����E�\u0015��lk��̲K�",
+      "���!J�g�<a�0G�\u001d;��\u0005Ӧ��T�9k>N�w}��KX��PE�* ���\r4���[\u0018��`H�\u0002�Y\u0005,�"
+    ],
+    "iris_emulator.rc": [
+      "IDI_ICON1 ICON \"src/resources/iris_emulator.ico\"",
+      ""
+    ],
+    "JAGUARCOREREFERENCE.zip": [
+      "PK\u0003\u0004",
+      "\u0000\u0000\u0000\u0000\u0000�y�R\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0019\u0000\t\u0000Virtual-Jaguar-Rx-master/UT\u0005\u0000\u0001���`PK\u0003\u0004",
+      "\u0000\u0000\u0000\b\u0000�y�R�?^�7\u0001\u0000\u0000:\u0003\u0000\u0000#\u0000\t\u0000Virtual-Jaguar-Rx-master/.gitignoreUT\u0005\u0000\u0001���`�R�n�0\f�#�\u000f��HX�u۱��i\u0007.��\u001d�\u0010L\u000b\u0005\u0002v`�o_��ְ��\"��=?�q�\u0017D���\u000eO n�\u0003\u0000�Q�#��|�\u0010",
+      "\u0010\u0004\u0003\\I\u0004�h�\u000e&R��\u00108J���_'�}\u0016��1*�a\u0018��|&.���%:�D*�9\u0016/�\u001eҬ���V�3�uL2H�!�Y�Y��nE��m+p�Y38\u0018iA;ױt��U\u0011�v���`���7��<z8�t�X'{3���\u0004h�\u001dJJe��\u0003����;�@��:�ɑ�(N�%�$\u0002�{m+�����y�\u0018x;�\u001b�\u0019{8�g���$��j���Q�^��\u001e�+T�BC�b�{zɉؠ��ue]ێ��{��6�E��\u0004j\u000bM^�Y�sǓ9�\u001bPK\u0003\u0004",
+      "\u0000\u0000\u0000\b\u0000�y�R|�wfW/\u0000\u0000K�\u0000\u0000 \u0000\t\u0000Virtual-Jaguar-Rx-master/LICENSEUT\u0005\u0000\u0001���`�][s�ƒ~�_�⋥*X��s�=q*U�L��#KZI���\u0016$�\"� ��E4��o�=\u0017���ڗM�ֱ$`����7$��\\J��]��W����W�˄�v}?3G���m�\u0016u���&?�#����ɏ?���1�e��7��K�.��������^u�������򬣷�d^-/���]���իU�����W��d�d�}M�\u0016m��ͦ�:�']�,i�$��$/ڮ)\u0016}g\u0013zvA�m��¶&�WI��7�bi��&y��7��҄�O��z,�Ǥ�|UwIV����\u0017��q����f�Ei����",
+      "�le��Ln�\u0005�\\鎴n����)C\\�U�YՍi\u001d2p��[�&�VTy\u000b�wu�p��[-^K6u�%G��6ٲ+�\u0004\u0007��௹m���憰�e���]�O�u�0`y�\u0001>۵[��b\tqV!H��{��ꚬ�R��鉋��U.���gMF?���`GB>�\u0010�����8�c�m^���6\u0000���\u0015���n����r\u0001��\f\u0016)�6�[Z�@�B�\u0007ħI���\u0013�3y�\u0013T8���\r`ɶے��vnk�+��z\u001b@\u001f�Zڬ\u00052@�@�b�\u0010f}��\u0019Ưu�,��W�߰",
+      "cK���\u0011�)���VɎ\u0010���7�\u0003\fxxR�\t�k��6\rh�0�8OA�f�Йh�\u001bZ��i�T�\fP߭�\u000e\u0017i�ٓ�HDB\u0011'",
+      "\u0003\u001e����u7�B���&)VX2�\u0015��<�[�\u0019��x��}�Ē�M�\u001e��G�1��fG�E?F�♈����:n�`[",
+      "tX�J*�3\fg�7���}��_7��&�\f�W��ƫ�]vB�,�Z���",
+      "\u000e��}\"�#�\u0001�%����p\bYS^\u0004�Y�M����7\rX����S\u0017,\u0017�k\\<\u001eĥ��m:�\rB_�%F*\u0016EYt�\fE��[���b�b\u0005"
+    ],
+    "libretro-handy-master.zip": [
+      "PK\u0003\u0004",
+      "\u0000\u0000\u0000\u0000\u0000��~\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0016\u0000\t\u0000libretro-handy-master/UT\u0005\u0000\u0001�\u0018�iPK\u0003\u0004",
+      "\u0000\u0000\u0000\u0000\u0000��~\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001e\u0000\t\u0000libretro-handy-master/.github/UT\u0005\u0000\u0001�\u0018�iPK\u0003\u0004",
+      "\u0000\u0000\u0000\u0000\u0000��~\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000(\u0000\t\u0000libretro-handy-master/.github/workflows/UT\u0005\u0000\u0001�\u0018�iPK\u0003\u0004",
+      "\u0000\u0000\u0000\b\u0000��~\\�\f�]�\u0001\u0000\u0000�\u0002\u0000\u00007\u0000\t\u0000libretro-handy-master/.github/workflows/compilation.ymlUT\u0005\u0000\u0001�\u0018�i}��N#1\f���\u0014\u0016�P{H�\"\u000e(\u0012\u0012,\u0007�y�\u0013Z�2�ˤM�l�tUA�}3�AP\t1�����o;�j�\u0012�WM\u0013�l\u0000b�~<�k\u0013��H<�\tc �!\u001dZc)*�\u0015\u0003�CD��o�l���4��ѐ���t9�\u0005!Ql w�s\u0016NqQ�)\u001d<+�1I(����x�O\f1F\u001a�\u0004d\u001a\\�f\u001b<]�\u001e�6d��_6\u0013��`+O��\u0003�\u0011�A�-R\u0005j7\u0012ަ\u0000@�-(c��;E\b/�������a\u0017�C�)lP��j;�-Di~\u001d���\u0002b3��R�\u0017�\u001d*\u000f���R��\u000f�@}H\f�\u001e�&\u0017k$��/�;@�\u00078���E�G�\\\u0005n�W�R��5?{}X�~|��\u0016�#��.��?������)��\f��v]V��9��E�\u0015(k�D�\u0005\u001c�S��Zr�\u0017�����\t�gyz>�7��ʛC�l��Sh�6D5\u0019n}9̹\u001c\u0007*A\u0019�ò�UUԾ�_��?PK\u0003\u0004",
+      "\u0000\u0000\u0000\b\u0000��~\\�r�#l\u0001\u0000\u0000�\u0002\u0000\u00008\u0000\t\u0000libretro-handy-master/.github/workflows/crowdin_prep.ymlUT\u0005\u0000\u0001�\u0018�i}R�n�0\u0010��+V��S@��*'*�\u0000H-*���\"',8`lˏPD��:1�\bAO�zvf��m�T��\u001a�H�3\u0004����\u001d8�%��e�\u0001+���v�\u000bB\u0004�`|*a\u0016H�\u0015飢\u0010�\u0004) cT,��z\t\u0018�%�\r\u000b�D��\u0000(gXy\u0002�����\t\u0015@\u0004\u001bj,�TԲ3��F�e�tI2�1���R�6�'d%ӊ\u0011fH�d�\"�\u0018t�\u0013&�\u0000�:a]ĩEc+�۪3�0�\f�S0�\u0005��`r\u0004���_\u0006�U�\u001dS6E+��+�u�6�,�+�\u0012�",
+      "�&/���'r�k��L��T��+\u001e.\u0015�\f��t�\u0006;;�W�!�c�5�0�<��\u001aV��(Χ꿽~\u000eF/��t�L�_1��{0��|L�\u0002�áf� b�9\u0013",
+      "C=B.,�\u001c��J�^p�m�\u001d�.�\u001a�-����w���[�� �PK\u0003\u0004",
+      "\u0000\u0000\u0000\b\u0000��~\\I�\u0002\u0000\u0000(\u0006\u0000\u0000=\u0000\t\u0000libretro-handy-master/.github/workflows/crowdin_translate.ymlUT\u0005\u0000\u0001�\u0018�i�TmO�0\u0010��_q*hH���i\u0013ʧn孠AŊ�i�\"'�4��/��F\u0015��v�R�\u0015�Ti�{{��\u0007gԈ�X",
+      "Z2�"
+    ],
+    "LICENSE": [
+      "GNU GENERAL PUBLIC LICENSE",
+      "Version 3, 29 June 2007",
+      "",
+      "Copyright (C) 2025 Gorigamia",
+      "",
+      "This program is free software: you can redistribute it and/or modify",
+      "it under the terms of the GNU General Public License as published by",
+      "the Free Software Foundation, either version 3 of the License, or",
+      "(at your option) any later version.",
+      ""
+    ],
+    "lynx_debug_frame.png": [
+      "�PNG",
+      "\u001a",
+      "\u0000\u0000\u0000\rIHDR\u0000\u0000\u0000�\u0000\u0000\u0000f\b\u0002\u0000\u0000\u0000�\u001c\r�\u0000\u0000\u0000\tpHYs\u0000\u0000\u000e�\u0000\u0000\u000e�\u0001�+\u000e\u001b\u0000\u0000\u0000FIDATx����\u0000\u0000\u0000\u0000à�S_�\u0000U\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�k��\u0000\u0001��vz\u0000\u0000\u0000\u0000IEND�B`�"
+    ],
+    "lynx_trace.txt": [
+      "Lynx CPU trace starting. MAPCTL=00 PC=FF80",
+      "R[FC88]=01 (Suzy)",
+      "W[FD8B]=02 (Mikey)",
+      "W[FD8A]=03 (Mikey)",
+      "MAPCTL=03",
+      "[100000] PC=FE1D A=00 X=00 Y=DD SP=01 P=A4 MC=03",
+      "MAPCTL=00",
+      "W[FD00]=9E (Mikey)",
+      "W[FD01]=18 (Mikey)",
+      "W[FDA0]=00 (Mikey)"
+    ],
+    "README.md": [
+      "# Íris Emulator",
+      "",
+      "<p align=\"center\">",
+      "<img src=\"src/resources/iris_logo.svg\" width=\"220\" alt=\"Íris Emulator Logo\"/>",
+      "</p>",
+      "",
+      "<p align=\"center\">",
+      "<b>Multi-system Atari emulator — Atari 2600 + Atari Lynx</b><br>",
+      "Built with C++17 · Qt 6 · SDL2 · Gearlynx engine<br>",
+      "Developed by <b>Gorigamia</b> · Open Source · Constantly updated"
+    ],
+    "README.md.bak": [
+      "# Íris Emulator",
+      "",
+      "Emulador multi-console (Atari 2600 + Atari Lynx) em C++17 com interface Qt 6 inspirada no PCSX2.",
+      "",
+      "---",
+      "",
+      "## O que já está implementado",
+      "",
+      "### Atari 2600 — Emulação completa",
+      ""
+    ]
+  },
+  "importantFolders": [
+    {
+      "path": "build_release2",
+      "category": "frontend",
+      "fileCount": 241,
+      "primaryLanguage": "C++"
+    },
+    {
+      "path": "build_release2\\ALL_BUILD.dir",
+      "category": "frontend",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release2\\ALL_BUILD.dir\\RelWithDebInfo",
+      "category": "scripts",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release2\\CMakeFiles\\4.2.3\\VCTargetsPath",
+      "category": "build",
+      "fileCount": 2
+    },
+    {
+      "path": "build_release2\\CMakeFiles\\4.2.3\\VCTargetsPath\\x64\\Debug\\VCTargetsPath.tlog",
+      "category": "build",
+      "fileCount": 1
+    },
+    {
+      "path": "build_release2\\CMakeFiles\\test_savestate_autogen.dir",
+      "category": "tests",
+      "fileCount": 3
+    },
+    {
+      "path": "build_release2\\INSTALL.dir\\RelWithDebInfo",
+      "category": "scripts",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release2\\irisemulator.dir\\RelWithDebInfo",
+      "category": "scripts",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release2\\Release\\iconengines",
+      "category": "core",
+      "fileCount": 1
+    },
+    {
+      "path": "build_release2\\test_savestate.dir",
+      "category": "tests",
+      "fileCount": 24
+    },
+    {
+      "path": "build_release2\\test_savestate.dir\\Release\\test_savestate.tlog",
+      "category": "tests",
+      "fileCount": 15
+    },
+    {
+      "path": "build_release2\\test_savestate.dir\\RelWithDebInfo",
+      "category": "scripts",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release2\\test_savestate_autogen",
+      "category": "tests",
+      "fileCount": 6,
+      "primaryLanguage": "C++"
+    },
+    {
+      "path": "build_release2\\ZERO_CHECK.dir\\RelWithDebInfo",
+      "category": "scripts",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release3",
+      "category": "frontend",
+      "fileCount": 298,
+      "primaryLanguage": "C++"
+    },
+    {
+      "path": "build_release3\\ALL_BUILD.dir",
+      "category": "frontend",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release3\\ALL_BUILD.dir\\RelWithDebInfo",
+      "category": "scripts",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release3\\CMakeFiles\\4.2.3\\VCTargetsPath",
+      "category": "build",
+      "fileCount": 2
+    },
+    {
+      "path": "build_release3\\CMakeFiles\\4.2.3\\VCTargetsPath\\x64\\Debug\\VCTargetsPath.tlog",
+      "category": "build",
+      "fileCount": 1
+    },
+    {
+      "path": "build_release3\\CMakeFiles\\test_savestate_autogen.dir",
+      "category": "tests",
+      "fileCount": 3
+    },
+    {
+      "path": "build_release3\\INSTALL.dir\\RelWithDebInfo",
+      "category": "scripts",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release3\\irisemulator.dir\\RelWithDebInfo",
+      "category": "scripts",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release3\\Release\\iconengines",
+      "category": "core",
+      "fileCount": 1
+    },
+    {
+      "path": "build_release3\\test_savestate.dir",
+      "category": "tests",
+      "fileCount": 24
+    },
+    {
+      "path": "build_release3\\test_savestate.dir\\Release\\test_savestate.tlog",
+      "category": "tests",
+      "fileCount": 15
+    },
+    {
+      "path": "build_release3\\test_savestate.dir\\RelWithDebInfo",
+      "category": "scripts",
+      "fileCount": 0
+    },
+    {
+      "path": "build_release3\\test_savestate_autogen",
+      "category": "tests",
+      "fileCount": 6,
+      "primaryLanguage": "C++"
+    },
+    {
+      "path": "build_release3\\ZERO_CHECK.dir\\RelWithDebInfo",
+      "category": "scripts",
+      "fileCount": 0
+    },
+    {
+      "path": "handy-sdl-master\\handy-sdl-master\\src\\gui",
+      "category": "frontend",
+      "fileCount": 4,
+      "primaryLanguage": "C++"
+    },
+    {
+      "path": "handy-sdl-master\\handy-sdl-master\\src\\zlib-113",
+      "category": "core",
+      "fileCount": 27,
+      "primaryLanguage": "C"
+    },
+    {
+      "path": "JAGUARCOREREFERENCE",
+      "category": "core",
+      "fileCount": 280,
+      "primaryLanguage": "C/C++"
+    },
+    {
+      "path": "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master\\docs",
+      "category": "docs",
+      "fileCount": 7
+    },
+    {
+      "path": "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master\\src\\gui",
+      "category": "frontend",
+      "fileCount": 57,
+      "primaryLanguage": "C++"
+    },
+    {
+      "path": "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master\\Win-VS2017\\jaguarcore",
+      "category": "core",
+      "fileCount": 2
+    },
+    {
+      "path": "libretro-handy-master",
+      "category": "core",
+      "fileCount": 95,
+      "primaryLanguage": "C/C++"
+    },
+    {
+      "path": "libretro-handy-master\\libretro-handy-master",
+      "category": "core",
+      "fileCount": 95,
+      "primaryLanguage": "C/C++"
+    },
+    {
+      "path": "libretro-handy-master\\libretro-handy-master\\libretro",
+      "category": "core",
+      "fileCount": 5,
+      "primaryLanguage": "C/C++"
+    },
+    {
+      "path": "libretro-handy-master\\libretro-handy-master\\libretro-common",
+      "category": "core",
+      "fileCount": 34,
+      "primaryLanguage": "C/C++"
+    },
+    {
+      "path": "pcsx2-qt\\Debugger\\Docking",
+      "category": "docs",
+      "fileCount": 20,
+      "primaryLanguage": "C++"
+    },
+    {
+      "path": "pcsx2-qt\\resources\\images",
+      "category": "assets",
+      "fileCount": 10
+    },
+    {
+      "path": "pcsx2-qt\\Settings",
+      "category": "config",
+      "fileCount": 134,
+      "primaryLanguage": "C/C++"
+    },
+    {
+      "path": "pcsx2-qt\\Tools",
+      "category": "scripts",
+      "fileCount": 6,
+      "primaryLanguage": "C++"
+    },
+    {
+      "path": "ROMS\\HC ROMS\\BY COMPANY\\Spectravision - Spectravideo",
+      "category": "tests",
+      "fileCount": 13
+    },
+    {
+      "path": "ROMS\\HC ROMS\\BY COMPANY (PAL)\\Spectravision - Spectravideo",
+      "category": "tests",
+      "fileCount": 13
+    },
+    {
+      "path": "src\\mapper",
+      "category": "frontend",
+      "fileCount": 15,
+      "primaryLanguage": "C/C++"
+    },
+    {
+      "path": "src\\ui",
+      "category": "frontend",
+      "fileCount": 22,
+      "primaryLanguage": "C++"
+    },
+    {
+      "path": "tools",
+      "category": "scripts",
+      "fileCount": 7,
+      "primaryLanguage": "Python"
+    }
+  ],
+  "readmeParagraphs": {
+    "build_release2\\Release": "# Íris Emulator",
+    "handy-sdl-master\\handy-sdl-master\\handy320": "--------------------------------------------\r\nHandy/SDL v0.5 release README\r\n--------------------------------------------\r",
+    "handy-sdl-master\\handy-sdl-master": "--------------------------------------------\r\nHandy/SDL v0.5 release README\r\n--------------------------------------------\r",
+    "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master\\docs": "----------------------------------------------\r\nVirtual Jaguar v2.1.3 Rx GCC/Qt release README\r\n----------------------------------------------\r",
+    "libretro-handy-master\\libretro-handy-master": "libretro-handy\n==============\nK. Wilkins' Atari Lynx emultor Handy (http://handy.sourceforge.net/) for libretro",
+    "root": "# Íris Emulator"
+  },
+  "totals": {
+    "numFiles": 7578,
+    "numDirs": 435,
+    "totalSizeBytes": 624166934,
+    "totalLinesOfCode": 1316754
+  },
+  "fileCategories": {
+    "other": 6702,
+    "test": 84,
+    "documentation": 40,
+    "source": 727,
+    "config": 21,
+    "build": 4
+  },
+  "linesOfCodePerLanguage": {
+    "C++": 179149,
+    "C/C++": 53077,
+    "C": 20258,
+    "Batch": 28,
+    "TypeScript": 1062062,
+    "Python": 2146,
+    "Shell": 34
+  },
+  "filesPerLanguage": {
+    "C++": 285,
+    "C/C++": 338,
+    "C": 38,
+    "Batch": 3,
+    "TypeScript": 44,
+    "Python": 16,
+    "Shell": 3
+  },
+  "projectTypes": [
+    ".NET Solution",
+    "C/C++ (CMake)",
+    "Python (requirements)"
+  ],
+  "frameworks": [
+    "React"
+  ],
+  "entryPoints": [
+    "libretro-handy-master\\libretro-handy-master\\intl\\core_option_translation.py",
+    "libretro-handy-master\\libretro-handy-master\\intl\\crowdin_prep.py",
+    "libretro-handy-master\\libretro-handy-master\\intl\\crowdin_source_upload.py",
+    "libretro-handy-master\\libretro-handy-master\\intl\\crowdin_translate.py",
+    "libretro-handy-master\\libretro-handy-master\\intl\\crowdin_translation_download.py",
+    "libretro-handy-master\\libretro-handy-master\\intl\\download_workflow.py",
+    "libretro-handy-master\\libretro-handy-master\\intl\\initial_sync.py",
+    "libretro-handy-master\\libretro-handy-master\\intl\\remove_initial_cycle.py",
+    "libretro-handy-master\\libretro-handy-master\\intl\\upload_workflow.py",
+    "libretro-handy-master\\libretro-handy-master\\intl\\v1_to_v2_converter.py",
+    "pcsx2-qt\\resources\\generate.sh",
+    "pcsx2-qt\\Translations\\update_base_translation.sh",
+    "pcsx2-qt\\Translations\\update_en_translation.sh",
+    "tools\\build_cover_index.py",
+    "tools\\fetch_boxarts.py"
+  ],
+  "ciCdTools": [
+    "GitLab CI"
+  ],
+  "packageManagers": [
+    "NuGet"
+  ],
+  "topLevelDirectories": [
+    {
+      "name": "pcsx2-qt",
+      "numFiles": 548,
+      "totalLoc": 1112138,
+      "dominantLanguage": "C++"
+    },
+    {
+      "name": "JAGUARCOREREFERENCE",
+      "numFiles": 280,
+      "totalLoc": 88421,
+      "dominantLanguage": "C/C++"
+    },
+    {
+      "name": "handy-sdl-master",
+      "numFiles": 120,
+      "totalLoc": 44409,
+      "dominantLanguage": "C/C++"
+    },
+    {
+      "name": "libretro-handy-master",
+      "numFiles": 95,
+      "totalLoc": 34971,
+      "dominantLanguage": "C/C++"
+    },
+    {
+      "name": "src",
+      "numFiles": 140,
+      "totalLoc": 13601,
+      "dominantLanguage": "C/C++"
+    },
+    {
+      "name": "build_release3",
+      "numFiles": 298,
+      "totalLoc": 11858,
+      "dominantLanguage": "C++"
+    },
+    {
+      "name": "build_release2",
+      "numFiles": 241,
+      "totalLoc": 10813,
+      "dominantLanguage": "C++"
+    },
+    {
+      "name": "tools",
+      "numFiles": 7,
+      "totalLoc": 543,
+      "dominantLanguage": "Python"
+    },
+    {
+      "name": "BIOS",
+      "numFiles": 2,
+      "totalLoc": 0
+    },
+    {
+      "name": "data",
+      "numFiles": 1,
+      "totalLoc": 0
+    },
+    {
+      "name": "ROMS",
+      "numFiles": 5238,
+      "totalLoc": 0
+    }
+  ],
+  "detailedDirectories": [
+    {
+      "path": "pcsx2-qt",
+      "name": "pcsx2-qt",
+      "level": 1,
+      "numFiles": 548,
+      "totalLoc": 1112138,
+      "dominantLanguage": "C++",
+      "category": "General",
+      "description": "General module with 548 files (C++)",
+      "subdirectories": [
+        {
+          "path": "pcsx2-qt\\Debugger",
+          "name": "Debugger",
+          "level": 2,
+          "numFiles": 88,
+          "totalLoc": 17260,
+          "dominantLanguage": "C/C++",
+          "category": "General",
+          "description": "General module with 88 files (C/C++)",
+          "subdirectories": [
+            {
+              "path": "pcsx2-qt\\Debugger\\SymbolTree",
+              "name": "SymbolTree",
+              "level": 3,
+              "numFiles": 16,
+              "totalLoc": 4939,
+              "dominantLanguage": "C++",
+              "category": "General",
+              "description": "General module with 16 files (C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "pcsx2-qt\\Debugger\\Docking",
+              "name": "Docking",
+              "level": 3,
+              "numFiles": 20,
+              "totalLoc": 4263,
+              "dominantLanguage": "C++",
+              "category": "Documentation",
+              "description": "Documentation module with 20 files (C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "pcsx2-qt\\Debugger\\Memory",
+              "name": "Memory",
+              "level": 3,
+              "numFiles": 11,
+              "totalLoc": 2525,
+              "dominantLanguage": "C++",
+              "category": "General",
+              "description": "General module with 11 files (C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "pcsx2-qt\\Debugger\\Breakpoints",
+              "name": "Breakpoints",
+              "level": 3,
+              "numFiles": 8,
+              "totalLoc": 1254,
+              "dominantLanguage": "C++",
+              "category": "General",
+              "description": "General module with 8 files (C++)",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "pcsx2-qt\\Settings",
+          "name": "Settings",
+          "level": 2,
+          "numFiles": 134,
+          "totalLoc": 15872,
+          "dominantLanguage": "C/C++",
+          "category": "Configuration",
+          "description": "Configuration module with 134 files (C/C++)",
+          "subdirectories": []
+        },
+        {
+          "path": "pcsx2-qt\\GameList",
+          "name": "GameList",
+          "level": 2,
+          "numFiles": 8,
+          "totalLoc": 1954,
+          "dominantLanguage": "C++",
+          "category": "General",
+          "description": "General module with 8 files (C++)",
+          "subdirectories": []
+        },
+        {
+          "path": "pcsx2-qt\\Tools",
+          "name": "Tools",
+          "level": 2,
+          "numFiles": 6,
+          "totalLoc": 294,
+          "dominantLanguage": "C++",
+          "category": "Tools/Scripts",
+          "description": "Tools/Scripts module with 6 files (C++)",
+          "subdirectories": [
+            {
+              "path": "pcsx2-qt\\Tools\\InputRecording",
+              "name": "InputRecording",
+              "level": 3,
+              "numFiles": 6,
+              "totalLoc": 294,
+              "dominantLanguage": "C++",
+              "category": "General",
+              "description": "General module with 6 files (C++)",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "pcsx2-qt\\resources",
+          "name": "resources",
+          "level": 2,
+          "numFiles": 223,
+          "totalLoc": 14,
+          "dominantLanguage": "Shell",
+          "category": "General",
+          "description": "General module with 223 files (Shell)",
+          "subdirectories": [
+            {
+              "path": "pcsx2-qt\\resources\\icons",
+              "name": "icons",
+              "level": 3,
+              "numFiles": 211,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 211 files",
+              "subdirectories": []
+            },
+            {
+              "path": "pcsx2-qt\\resources\\images",
+              "name": "images",
+              "level": 3,
+              "numFiles": 10,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 10 files",
+              "subdirectories": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "JAGUARCOREREFERENCE",
+      "name": "JAGUARCOREREFERENCE",
+      "level": 1,
+      "numFiles": 280,
+      "totalLoc": 88421,
+      "dominantLanguage": "C/C++",
+      "category": "Core/Business",
+      "description": "Core/Business module with 280 files (C/C++)",
+      "subdirectories": [
+        {
+          "path": "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master",
+          "name": "Virtual-Jaguar-Rx-master",
+          "level": 2,
+          "numFiles": 280,
+          "totalLoc": 88421,
+          "dominantLanguage": "C/C++",
+          "category": "General",
+          "description": "General module with 280 files (C/C++)",
+          "subdirectories": [
+            {
+              "path": "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master\\src",
+              "name": "src",
+              "level": 3,
+              "numFiles": 191,
+              "totalLoc": 87250,
+              "dominantLanguage": "C/C++",
+              "category": "General",
+              "description": "General module with 191 files (C/C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master\\res",
+              "name": "res",
+              "level": 3,
+              "numFiles": 63,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 63 files",
+              "subdirectories": []
+            },
+            {
+              "path": "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master\\Win-VS2017",
+              "name": "Win-VS2017",
+              "level": 3,
+              "numFiles": 10,
+              "totalLoc": 15,
+              "dominantLanguage": "C/C++",
+              "category": "General",
+              "description": "General module with 10 files (C/C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master\\docs",
+              "name": "docs",
+              "level": 3,
+              "numFiles": 7,
+              "totalLoc": 0,
+              "category": "Documentation",
+              "description": "----------------------------------------------\r",
+              "subdirectories": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "handy-sdl-master",
+      "name": "handy-sdl-master",
+      "level": 1,
+      "numFiles": 120,
+      "totalLoc": 44409,
+      "dominantLanguage": "C/C++",
+      "category": "General",
+      "description": "General module with 120 files (C/C++)",
+      "subdirectories": [
+        {
+          "path": "handy-sdl-master\\handy-sdl-master",
+          "name": "handy-sdl-master",
+          "level": 2,
+          "numFiles": 120,
+          "totalLoc": 44409,
+          "dominantLanguage": "C/C++",
+          "category": "General",
+          "description": "--------------------------------------------\r",
+          "subdirectories": [
+            {
+              "path": "handy-sdl-master\\handy-sdl-master\\src",
+              "name": "src",
+              "level": 3,
+              "numFiles": 104,
+              "totalLoc": 44402,
+              "dominantLanguage": "C/C++",
+              "category": "General",
+              "description": "General module with 104 files (C/C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "handy-sdl-master\\handy-sdl-master\\handy320",
+              "name": "handy320",
+              "level": 3,
+              "numFiles": 5,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "--------------------------------------------\r",
+              "subdirectories": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "libretro-handy-master",
+      "name": "libretro-handy-master",
+      "level": 1,
+      "numFiles": 95,
+      "totalLoc": 34971,
+      "dominantLanguage": "C/C++",
+      "category": "Library",
+      "description": "Library module with 95 files (C/C++)",
+      "subdirectories": [
+        {
+          "path": "libretro-handy-master\\libretro-handy-master",
+          "name": "libretro-handy-master",
+          "level": 2,
+          "numFiles": 95,
+          "totalLoc": 34971,
+          "dominantLanguage": "C/C++",
+          "category": "Library",
+          "description": "libretro-handy",
+          "subdirectories": [
+            {
+              "path": "libretro-handy-master\\libretro-handy-master\\libretro-common",
+              "name": "libretro-common",
+              "level": 3,
+              "numFiles": 34,
+              "totalLoc": 11620,
+              "dominantLanguage": "C/C++",
+              "category": "Infrastructure",
+              "description": "Infrastructure module with 34 files (C/C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "libretro-handy-master\\libretro-handy-master\\libretro",
+              "name": "libretro",
+              "level": 3,
+              "numFiles": 5,
+              "totalLoc": 7916,
+              "dominantLanguage": "C/C++",
+              "category": "Library",
+              "description": "Library module with 5 files (C/C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "libretro-handy-master\\libretro-handy-master\\intl",
+              "name": "intl",
+              "level": 3,
+              "numFiles": 13,
+              "totalLoc": 1663,
+              "dominantLanguage": "Python",
+              "category": "General",
+              "description": "General module with 13 files (Python)",
+              "subdirectories": []
+            },
+            {
+              "path": "libretro-handy-master\\libretro-handy-master\\blip",
+              "name": "blip",
+              "level": 3,
+              "numFiles": 4,
+              "totalLoc": 911,
+              "dominantLanguage": "C++",
+              "category": "General",
+              "description": "General module with 4 files (C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "libretro-handy-master\\libretro-handy-master\\jni",
+              "name": "jni",
+              "level": 3,
+              "numFiles": 2,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 2 files",
+              "subdirectories": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "src",
+      "name": "src",
+      "level": 1,
+      "numFiles": 140,
+      "totalLoc": 13601,
+      "dominantLanguage": "C/C++",
+      "category": "General",
+      "description": "General module with 140 files (C/C++)",
+      "subdirectories": [
+        {
+          "path": "src\\lynx",
+          "name": "lynx",
+          "level": 2,
+          "numFiles": 10,
+          "totalLoc": 2712,
+          "dominantLanguage": "C++",
+          "category": "General",
+          "description": "General module with 10 files (C++)",
+          "subdirectories": []
+        },
+        {
+          "path": "src\\mapper",
+          "name": "mapper",
+          "level": 2,
+          "numFiles": 15,
+          "totalLoc": 695,
+          "dominantLanguage": "C/C++",
+          "category": "Application",
+          "description": "Application module with 15 files (C/C++)",
+          "subdirectories": []
+        },
+        {
+          "path": "src\\audio",
+          "name": "audio",
+          "level": 2,
+          "numFiles": 2,
+          "totalLoc": 432,
+          "dominantLanguage": "C++",
+          "category": "General",
+          "description": "General module with 2 files (C++)",
+          "subdirectories": []
+        },
+        {
+          "path": "src\\jaguar",
+          "name": "jaguar",
+          "level": 2,
+          "numFiles": 3,
+          "totalLoc": 389,
+          "dominantLanguage": "C++",
+          "category": "General",
+          "description": "General module with 3 files (C++)",
+          "subdirectories": []
+        },
+        {
+          "path": "src\\resources",
+          "name": "resources",
+          "level": 2,
+          "numFiles": 72,
+          "totalLoc": 0,
+          "category": "General",
+          "description": "General module with 72 files",
+          "subdirectories": [
+            {
+              "path": "src\\resources\\icons",
+              "name": "icons",
+              "level": 3,
+              "numFiles": 65,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 65 files",
+              "subdirectories": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "build_release3",
+      "name": "build_release3",
+      "level": 1,
+      "numFiles": 298,
+      "totalLoc": 11858,
+      "dominantLanguage": "C++",
+      "category": "Web/UI",
+      "description": "Web/UI module with 298 files (C++)",
+      "subdirectories": [
+        {
+          "path": "build_release3\\irisemulator_autogen",
+          "name": "irisemulator_autogen",
+          "level": 2,
+          "numFiles": 34,
+          "totalLoc": 9763,
+          "dominantLanguage": "C++",
+          "category": "General",
+          "description": "General module with 34 files (C++)",
+          "subdirectories": [
+            {
+              "path": "build_release3\\irisemulator_autogen\\include_Release",
+              "name": "include_Release",
+              "level": 3,
+              "numFiles": 31,
+              "totalLoc": 9743,
+              "dominantLanguage": "C++",
+              "category": "General",
+              "description": "General module with 31 files (C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release3\\irisemulator_autogen\\C66PMKP5R6_Release",
+              "name": "C66PMKP5R6_Release",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 4,
+              "dominantLanguage": "C++",
+              "category": "General",
+              "description": "General module with 1 files (C++)",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "build_release3\\CMakeFiles",
+          "name": "CMakeFiles",
+          "level": 2,
+          "numFiles": 59,
+          "totalLoc": 1885,
+          "dominantLanguage": "C",
+          "category": "General",
+          "description": "General module with 59 files (C)",
+          "subdirectories": [
+            {
+              "path": "build_release3\\CMakeFiles\\4.2.3",
+              "name": "4.2.3",
+              "level": 3,
+              "numFiles": 38,
+              "totalLoc": 1885,
+              "dominantLanguage": "C",
+              "category": "General",
+              "description": "General module with 38 files (C)",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release3\\CMakeFiles\\e53d5fcb5977dbf46b79cc4a04267768",
+              "name": "e53d5fcb5977dbf46b79cc4a04267768",
+              "level": 3,
+              "numFiles": 2,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 2 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release3\\CMakeFiles\\8655c1dc4ba01bdcb4f85f0232e3c9b7",
+              "name": "8655c1dc4ba01bdcb4f85f0232e3c9b7",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release3\\CMakeFiles\\8aa2204bbd8ba1b92d7399a99b076587",
+              "name": "8aa2204bbd8ba1b92d7399a99b076587",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release3\\CMakeFiles\\d2b9db4bfc50f8a4c1ee33bafda8cc34",
+              "name": "d2b9db4bfc50f8a4c1ee33bafda8cc34",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "build_release3\\irisemulator.dir",
+          "name": "irisemulator.dir",
+          "level": 2,
+          "numFiles": 94,
+          "totalLoc": 0,
+          "category": "General",
+          "description": "General module with 94 files",
+          "subdirectories": [
+            {
+              "path": "build_release3\\irisemulator.dir\\Release",
+              "name": "Release",
+              "level": 3,
+              "numFiles": 94,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 94 files",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "build_release3\\Release",
+          "name": "Release",
+          "level": 2,
+          "numFiles": 55,
+          "totalLoc": 0,
+          "category": "General",
+          "description": "General module with 55 files",
+          "subdirectories": [
+            {
+              "path": "build_release3\\Release\\imageformats",
+              "name": "imageformats",
+              "level": 3,
+              "numFiles": 4,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 4 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release3\\Release\\generic",
+              "name": "generic",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release3\\Release\\iconengines",
+              "name": "iconengines",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release3\\Release\\networkinformation",
+              "name": "networkinformation",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release3\\Release\\platforms",
+              "name": "platforms",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "build_release3\\test_savestate.dir",
+          "name": "test_savestate.dir",
+          "level": 2,
+          "numFiles": 24,
+          "totalLoc": 0,
+          "category": "Testing",
+          "description": "Testing module with 24 files",
+          "subdirectories": [
+            {
+              "path": "build_release3\\test_savestate.dir\\Release",
+              "name": "Release",
+              "level": 3,
+              "numFiles": 24,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 24 files",
+              "subdirectories": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "build_release2",
+      "name": "build_release2",
+      "level": 1,
+      "numFiles": 241,
+      "totalLoc": 10813,
+      "dominantLanguage": "C++",
+      "category": "Web/UI",
+      "description": "Web/UI module with 241 files (C++)",
+      "subdirectories": [
+        {
+          "path": "build_release2\\irisemulator_autogen",
+          "name": "irisemulator_autogen",
+          "level": 2,
+          "numFiles": 34,
+          "totalLoc": 9653,
+          "dominantLanguage": "C++",
+          "category": "General",
+          "description": "General module with 34 files (C++)",
+          "subdirectories": [
+            {
+              "path": "build_release2\\irisemulator_autogen\\include_Release",
+              "name": "include_Release",
+              "level": 3,
+              "numFiles": 31,
+              "totalLoc": 9633,
+              "dominantLanguage": "C++",
+              "category": "General",
+              "description": "General module with 31 files (C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release2\\irisemulator_autogen\\C66PMKP5R6_Release",
+              "name": "C66PMKP5R6_Release",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 4,
+              "dominantLanguage": "C++",
+              "category": "General",
+              "description": "General module with 1 files (C++)",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "build_release2\\CMakeFiles",
+          "name": "CMakeFiles",
+          "level": 2,
+          "numFiles": 43,
+          "totalLoc": 950,
+          "dominantLanguage": "C++",
+          "category": "General",
+          "description": "General module with 43 files (C++)",
+          "subdirectories": [
+            {
+              "path": "build_release2\\CMakeFiles\\4.2.3",
+              "name": "4.2.3",
+              "level": 3,
+              "numFiles": 22,
+              "totalLoc": 950,
+              "dominantLanguage": "C++",
+              "category": "General",
+              "description": "General module with 22 files (C++)",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release2\\CMakeFiles\\9e7b25cbca656c1302f05ad8b49db70b",
+              "name": "9e7b25cbca656c1302f05ad8b49db70b",
+              "level": 3,
+              "numFiles": 2,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 2 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release2\\CMakeFiles\\1e480b8b6e3ea700607242a42c920641",
+              "name": "1e480b8b6e3ea700607242a42c920641",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release2\\CMakeFiles\\521a4c7af987058351cf2720c831b090",
+              "name": "521a4c7af987058351cf2720c831b090",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release2\\CMakeFiles\\eb776df6c62fa68a02e811bed5aa9e87",
+              "name": "eb776df6c62fa68a02e811bed5aa9e87",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "build_release2\\irisemulator.dir",
+          "name": "irisemulator.dir",
+          "level": 2,
+          "numFiles": 85,
+          "totalLoc": 0,
+          "category": "General",
+          "description": "General module with 85 files",
+          "subdirectories": [
+            {
+              "path": "build_release2\\irisemulator.dir\\Release",
+              "name": "Release",
+              "level": 3,
+              "numFiles": 85,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 85 files",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "build_release2\\test_savestate.dir",
+          "name": "test_savestate.dir",
+          "level": 2,
+          "numFiles": 24,
+          "totalLoc": 0,
+          "category": "Testing",
+          "description": "Testing module with 24 files",
+          "subdirectories": [
+            {
+              "path": "build_release2\\test_savestate.dir\\Release",
+              "name": "Release",
+              "level": 3,
+              "numFiles": 24,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 24 files",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "build_release2\\Release",
+          "name": "Release",
+          "level": 2,
+          "numFiles": 23,
+          "totalLoc": 0,
+          "category": "General",
+          "description": "# Íris Emulator",
+          "subdirectories": [
+            {
+              "path": "build_release2\\Release\\imageformats",
+              "name": "imageformats",
+              "level": 3,
+              "numFiles": 4,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 4 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release2\\Release\\data",
+              "name": "data",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "Data",
+              "description": "Data module with 1 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release2\\Release\\generic",
+              "name": "generic",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release2\\Release\\iconengines",
+              "name": "iconengines",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            },
+            {
+              "path": "build_release2\\Release\\networkinformation",
+              "name": "networkinformation",
+              "level": 3,
+              "numFiles": 1,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 1 files",
+              "subdirectories": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "ROMS",
+      "name": "ROMS",
+      "level": 1,
+      "numFiles": 5238,
+      "totalLoc": 0,
+      "category": "General",
+      "description": "General module with 5238 files",
+      "subdirectories": [
+        {
+          "path": "ROMS\\HC ROMS",
+          "name": "HC ROMS",
+          "level": 2,
+          "numFiles": 2914,
+          "totalLoc": 0,
+          "category": "General",
+          "description": "General module with 2914 files",
+          "subdirectories": [
+            {
+              "path": "ROMS\\HC ROMS\\BY COMPANY (PAL)",
+              "name": "BY COMPANY (PAL)",
+              "level": 3,
+              "numFiles": 637,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 637 files",
+              "subdirectories": []
+            },
+            {
+              "path": "ROMS\\HC ROMS\\BY ALPHABET (PAL)",
+              "name": "BY ALPHABET (PAL)",
+              "level": 3,
+              "numFiles": 633,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 633 files",
+              "subdirectories": []
+            },
+            {
+              "path": "ROMS\\HC ROMS\\BY ALPHABET",
+              "name": "BY ALPHABET",
+              "level": 3,
+              "numFiles": 623,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 623 files",
+              "subdirectories": []
+            },
+            {
+              "path": "ROMS\\HC ROMS\\BY COMPANY",
+              "name": "BY COMPANY",
+              "level": 3,
+              "numFiles": 623,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 623 files",
+              "subdirectories": []
+            },
+            {
+              "path": "ROMS\\HC ROMS\\NTSC VERSIONS OF PAL ORIGINALS",
+              "name": "NTSC VERSIONS OF PAL ORIGINALS",
+              "level": 3,
+              "numFiles": 44,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 44 files",
+              "subdirectories": []
+            }
+          ]
+        },
+        {
+          "path": "ROMS\\ROMS",
+          "name": "ROMS",
+          "level": 2,
+          "numFiles": 2202,
+          "totalLoc": 0,
+          "category": "General",
+          "description": "General module with 2202 files",
+          "subdirectories": []
+        },
+        {
+          "path": "ROMS\\Lynx",
+          "name": "Lynx",
+          "level": 2,
+          "numFiles": 122,
+          "totalLoc": 0,
+          "category": "General",
+          "description": "General module with 122 files",
+          "subdirectories": [
+            {
+              "path": "ROMS\\Lynx\\Atari Lynx",
+              "name": "Atari Lynx",
+              "level": 3,
+              "numFiles": 121,
+              "totalLoc": 0,
+              "category": "General",
+              "description": "General module with 121 files",
+              "subdirectories": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "path": "tools",
+      "name": "tools",
+      "level": 1,
+      "numFiles": 7,
+      "totalLoc": 543,
+      "dominantLanguage": "Python",
+      "category": "Tools/Scripts",
+      "description": "Tools/Scripts module with 7 files (Python)",
+      "subdirectories": []
+    },
+    {
+      "path": "BIOS",
+      "name": "BIOS",
+      "level": 1,
+      "numFiles": 2,
+      "totalLoc": 0,
+      "category": "General",
+      "description": "General module with 2 files",
+      "subdirectories": [
+        {
+          "path": "BIOS\\lynxboot",
+          "name": "lynxboot",
+          "level": 2,
+          "numFiles": 1,
+          "totalLoc": 0,
+          "category": "General",
+          "description": "General module with 1 files",
+          "subdirectories": []
+        }
+      ]
+    },
+    {
+      "path": "data",
+      "name": "data",
+      "level": 1,
+      "numFiles": 1,
+      "totalLoc": 0,
+      "category": "Data",
+      "description": "Data module with 1 files",
+      "subdirectories": []
+    }
+  ],
+  "architecturalInsights": {
+    "coreApplications": [],
+    "entryPointDetails": [
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\libretro-handy-master\\libretro-handy-master\\intl\\core_option_translation.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\libretro-handy-master\\libretro-handy-master\\intl\\crowdin_prep.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\libretro-handy-master\\libretro-handy-master\\intl\\crowdin_source_upload.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\libretro-handy-master\\libretro-handy-master\\intl\\crowdin_translate.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\libretro-handy-master\\libretro-handy-master\\intl\\crowdin_translation_download.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\libretro-handy-master\\libretro-handy-master\\intl\\download_workflow.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\libretro-handy-master\\libretro-handy-master\\intl\\initial_sync.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\libretro-handy-master\\libretro-handy-master\\intl\\remove_initial_cycle.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\libretro-handy-master\\libretro-handy-master\\intl\\upload_workflow.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\libretro-handy-master\\libretro-handy-master\\intl\\v1_to_v2_converter.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\pcsx2-qt\\resources\\generate.sh",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\pcsx2-qt\\Translations\\update_base_translation.sh",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\pcsx2-qt\\Translations\\update_en_translation.sh",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\tools\\build_cover_index.py",
+        "type": "Unknown",
+        "description": ""
+      },
+      {
+        "path": "C:\\Users\\gorigamia\\AppData\\Local\\Programs\\Microsoft VS Code\\tools\\fetch_boxarts.py",
+        "type": "Unknown",
+        "description": ""
+      }
+    ],
+    "serviceArchitecture": {
+      "microservices": [],
+      "monoliths": [],
+      "libraries": [
+        "libretro-handy-master"
+      ]
+    },
+    "layeredArchitecture": {
+      "presentation": [
+        "build_release3",
+        "build_release2"
+      ],
+      "business": [
+        "JAGUARCOREREFERENCE"
+      ],
+      "data": [
+        "data"
+      ],
+      "infrastructure": []
+    }
+  },
+  "largeFiles": [
+    {
+      "path": "Gearlynx-main.zip",
+      "sizeMb": 143.01
+    },
+    {
+      "path": "lynx_trace.txt",
+      "sizeMb": 112.14
+    },
+    {
+      "path": "IrisEmulator-v1.17-Windows-x64.zip",
+      "sizeMb": 21.05
+    },
+    {
+      "path": "build_release2\\Release\\opengl32sw.dll",
+      "sizeMb": 19.68
+    },
+    {
+      "path": "build_release3\\Release\\opengl32sw.dll",
+      "sizeMb": 19.68
+    },
+    {
+      "path": "build_release2\\Release\\Qt6Gui.dll",
+      "sizeMb": 8.86
+    },
+    {
+      "path": "build_release3\\Release\\Qt6Gui.dll",
+      "sizeMb": 8.86
+    },
+    {
+      "path": "build_release2\\Release\\Qt6Widgets.dll",
+      "sizeMb": 6.2
+    },
+    {
+      "path": "build_release3\\Release\\Qt6Widgets.dll",
+      "sizeMb": 6.2
+    },
+    {
+      "path": "build_release2\\Release\\Qt6Core.dll",
+      "sizeMb": 5.87
+    },
+    {
+      "path": "build_release3\\Release\\Qt6Core.dll",
+      "sizeMb": 5.87
+    },
+    {
+      "path": "build_release2\\Release\\D3Dcompiler_47.dll",
+      "sizeMb": 3.98
+    },
+    {
+      "path": "build_release3\\Release\\D3Dcompiler_47.dll",
+      "sizeMb": 3.98
+    },
+    {
+      "path": "build_release3\\Release\\irisemulator.exe",
+      "sizeMb": 2.77
+    },
+    {
+      "path": "JAGUARCOREREFERENCE.zip",
+      "sizeMb": 2.63
+    },
+    {
+      "path": "handy_specifications.pdf",
+      "sizeMb": 2.49
+    },
+    {
+      "path": "build_release3\\irisemulator.dir\\Release\\cpuemu.obj",
+      "sizeMb": 2.23
+    },
+    {
+      "path": "build_release3\\irisemulator.dir\\Release\\irisemulator.tlog\\CL.read.1.tlog",
+      "sizeMb": 2.15
+    },
+    {
+      "path": "build_release2\\irisemulator.dir\\Release\\irisemulator.tlog\\CL.read.1.tlog",
+      "sizeMb": 1.93
+    },
+    {
+      "path": "build_release3\\Release\\Qt6OpenGL.dll",
+      "sizeMb": 1.88
+    },
+    {
+      "path": "build_release2\\Release\\Qt6Network.dll",
+      "sizeMb": 1.67
+    },
+    {
+      "path": "build_release3\\Release\\Qt6Network.dll",
+      "sizeMb": 1.67
+    },
+    {
+      "path": "build_release2\\Release\\SDL2.dll",
+      "sizeMb": 1.56
+    },
+    {
+      "path": "build_release3\\Release\\SDL2.dll",
+      "sizeMb": 1.56
+    },
+    {
+      "path": "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master\\src\\jagcdbios.cpp",
+      "sizeMb": 1.52
+    },
+    {
+      "path": "JAGUARCOREREFERENCE\\Virtual-Jaguar-Rx-master\\src\\jagdevcdbios.cpp",
+      "sizeMb": 1.52
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_ru-RU.ts",
+      "sizeMb": 1.27
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_uk-UA.ts",
+      "sizeMb": 1.25
+    },
+    {
+      "path": "build_release3\\irisemulator.dir\\Release\\SettingsDialog.obj",
+      "sizeMb": 1.24
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_el-GR.ts",
+      "sizeMb": 1.24
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_fa-IR.ts",
+      "sizeMb": 1.24
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_hi-IN.ts",
+      "sizeMb": 1.23
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_ka-GE.ts",
+      "sizeMb": 1.23
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_bg-BG.ts",
+      "sizeMb": 1.22
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_da-DK.ts",
+      "sizeMb": 1.22
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_gn-PY.ts",
+      "sizeMb": 1.22
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_qu-PE.ts",
+      "sizeMb": 1.22
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_sr-SP.ts",
+      "sizeMb": 1.22
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_vi-VN.ts",
+      "sizeMb": 1.22
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_af-ZA.ts",
+      "sizeMb": 1.21
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_he-IL.ts",
+      "sizeMb": 1.21
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_hr-HR.ts",
+      "sizeMb": 1.21
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_ja-JP.ts",
+      "sizeMb": 1.21
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_nl-NL.ts",
+      "sizeMb": 1.21
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_ro-RO.ts",
+      "sizeMb": 1.21
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_ar-SA.ts",
+      "sizeMb": 1.2
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_lt-LT.ts",
+      "sizeMb": 1.2
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_fr-FR.ts",
+      "sizeMb": 1.19
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_cs-CZ.ts",
+      "sizeMb": 1.18
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_es-419.ts",
+      "sizeMb": 1.18
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_es-ES.ts",
+      "sizeMb": 1.18
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_hu-HU.ts",
+      "sizeMb": 1.18
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_ko-KR.ts",
+      "sizeMb": 1.18
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_no-NO.ts",
+      "sizeMb": 1.18
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_pl-PL.ts",
+      "sizeMb": 1.18
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_tr-TR.ts",
+      "sizeMb": 1.18
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_zh-TW.ts",
+      "sizeMb": 1.18
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_ca-ES.ts",
+      "sizeMb": 1.17
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_de-DE.ts",
+      "sizeMb": 1.17
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_it-IT.ts",
+      "sizeMb": 1.17
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_lv-LV.ts",
+      "sizeMb": 1.17
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_pt-BR.ts",
+      "sizeMb": 1.17
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_pt-PT.ts",
+      "sizeMb": 1.17
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_fi-FI.ts",
+      "sizeMb": 1.16
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_sv-SE.ts",
+      "sizeMb": 1.16
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_id-ID.ts",
+      "sizeMb": 1.15
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_en.ts",
+      "sizeMb": 1.14
+    },
+    {
+      "path": "pcsx2-qt\\Translations\\pcsx2-qt_zh-CN.ts",
+      "sizeMb": 1.13
+    },
+    {
+      "path": "build_release2\\irisemulator.dir\\Release\\SettingsDialog.obj",
+      "sizeMb": 1
+    }
+  ],
+  "dependencies": {
+    "production": [],
+    "development": [],
+    "total": 0
+  },
+  "complexity": {
+    "averageFileSize": 173.76009501187647,
+    "maxFileSize": 1499568.5376,
+    "nestedDepth": 0,
+    "estimatedComplexity": "very high"
+  },
+  "gitRepo": {
+    "firstCommitDate": "2026-04-11",
+    "totalCommits": 11,
+    "numContributors": 0,
+    "currentBranch": "main",
+    "remoteUrls": [
+      "https://github.com/Adoregabriel2005/iris-emulator.git"
+    ]
+  },
+  "license": "Custom"
+}

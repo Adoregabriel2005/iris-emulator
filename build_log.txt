@@ -1,0 +1,7 @@
+Versão do MSBuild 17.14.40+3e7442088 para .NET Framework
+
+  Automatic MOC and UIC for target irisemulator
+  irisemulator.vcxproj -> D:\PROJETOS\ATARI2600\build_release3\Release\irisemulator.exe
+  Automatic MOC and UIC for target test_savestate
+MSVCRT.lib(exe_main.obj) : error LNK2019: símbolo externo não resolvido, main, referenciado na função "int __cdecl __scrt_common_main_seh(void)" (?__scrt_common_main_seh@@YAHXZ) [D:\PROJETOS\ATARI2600\build_release3\test_savestate.vcxproj]
+D:\PROJETOS\ATARI2600\build_release3\Release\test_savestate.exe : fatal error LNK1120: 1 externo não resolvidos [D:\PROJETOS\ATARI2600\build_release3\test_savestate.vcxproj]

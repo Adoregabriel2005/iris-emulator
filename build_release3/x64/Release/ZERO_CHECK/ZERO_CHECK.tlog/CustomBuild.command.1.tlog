@@ -1,0 +1,10 @@
+^D:\PROJETOS\ATARI2600\BUILD_RELEASE3\CMAKEFILES\E53D5FCB5977DBF46B79CC4A04267768\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/PROJETOS/ATARI2600 -BD:/PROJETOS/ATARI2600/build_release3 --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file D:/PROJETOS/ATARI2600/build_release3/IrisEmulator.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

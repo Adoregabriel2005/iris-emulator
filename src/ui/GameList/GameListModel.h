@@ -10,6 +10,7 @@ enum class ConsoleType
 {
     Atari2600,
     AtariLynx,
+    AtariJaguar,
     Unknown
 };
 
@@ -20,6 +21,8 @@ struct GameListEntry
     QString fileName;
     qint64 fileSize = 0;
     QString mapperType;
+    QString publisher;
+    QString region;
     QPixmap coverPixmap;
     ConsoleType consoleType = ConsoleType::Atari2600;
 };
@@ -34,6 +37,8 @@ public:
         Column_Console,
         Column_Cover,
         Column_Title,
+        Column_Publisher,
+        Column_Region,
         Column_FileName,
         Column_Size,
         Column_Mapper,
@@ -69,6 +74,9 @@ private:
     void scanDirectory(const QString& dir);
     QPixmap loadCover(const QString& romPath) const;
     QString guessMapper(qint64 size) const;
+    static QString parsePublisher(const QString& baseName, ConsoleType console);
+    static QString parseRegion(const QString& baseName);
+    static QString cleanTitle(const QString& baseName);
 
     std::vector<GameListEntry> m_entries;
     float m_cover_scale = 1.0f;
@@ -76,4 +84,5 @@ private:
     QPixmap m_placeholder_pixmap;
     QPixmap m_atari2600_logo;
     QPixmap m_atarilynx_logo;
+    QPixmap m_atarijaguar_logo;
 };

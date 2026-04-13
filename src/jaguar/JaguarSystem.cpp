@@ -58,6 +58,44 @@ JaguarSystem::~JaguarSystem()
 }
 
 // -----------------------------------------------------------------------------
+// loadBIOSFromDisk
+// Tenta carregar jagboot.rom do disco. Candidatos em ordem:
+//   1. QSettings key "Jaguar/BIOSPath"
+//   2. Próximo ao .exe
+//   3. Caminho padrão do usuário
+// Se encontrar arquivo válido (exatamente 0x20000 bytes), copia para
+// jagMemSpace + 0xE00000 e retorna true. Caso contrário retorna false
+// e o chamador usa SelectBIOS() com o array interno.
+// -----------------------------------------------------------------------------
+bool JaguarSystem::loadBIOSFromDisk()
+{
+    QSettings qs("Underground Software", "Virtual Jaguar");
+    QString appDir = QCoreApplication::applicationDirPath();
+
+    QStringList candidates = {
+        qs.value("Jaguar/BIOSPath", "").toString(),
+        appDir + "/jagboot.rom",
+        appDir + "/jaguar.rom",
+        appDir + "/jaguar.j64",
+        "D:/ROMS/JAGUAR/[BIOS] Atari Jaguar (World)/jagboot.rom",
+        "D:/ROMS/JAGUAR/[BIOS] Atari Jaguar (World)/[BIOS] Atari Jaguar (World).j64",
+    };
+
+    for (const QString &path : candidates) {
+        if (path.isEmpty()) continue;
+        QFile f(path);
+        if (!f.open(QIODevice::ReadOnly)) continue;
+        if (f.size() != 0x20000) continue;
+        QByteArray data = f.readAll();
+        memcpy(jagMemSpace + 0xE00000, data.constData(), 0x20000);
+        qDebug() << "JaguarSystem: BIOS carregada do disco:" << path;
+        return true;
+    }
+    qDebug() << "JaguarSystem: BIOS do disco n\u00e3o encontrada, usando array interno";
+    return false;
+}
+
+// -----------------------------------------------------------------------------
 // loadROM
 // Sequence mirrors mainwin.cpp exactly:
 //   ReadSettings -> JaguarInit -> SelectBIOS -> JaguarReset -> DACPauseAudioThread(false)
@@ -83,7 +121,7 @@ bool JaguarSystem::loadROM(const QString &path)
     vjs.useJaguarBIOS           = qs.value("useJaguarBIOS",      false).toBool();
     vjs.useRetailBIOS           = qs.value("useRetailBIOS",      false).toBool();
     vjs.useDevBIOS              = qs.value("useDevBIOS",         false).toBool();
-    vjs.useFastBlitter          = qs.value("useFastBlitter",     false).toBool();
+    vjs.useFastBlitter          = qs.value("Jaguar/FastBlitter",   false).toBool();
     vjs.biosType                = qs.value("biosType",           BT_M_SERIES).toInt();
     vjs.jaguarModel             = qs.value("jaguarModel",        JAG_M_SERIES).toInt();
     vjs.allowWritesToROM        = true;
@@ -113,8 +151,13 @@ bool JaguarSystem::loadROM(const QString &path)
     JaguarInit();
     m_initialized = true;
 
-    // 4. BIOS
-    SelectBIOS(vjs.biosType);
+    // 4. BIOS — tenta carregar do disco primeiro, fallback para array interno
+    if (vjs.useJaguarBIOS) {
+        if (!loadBIOSFromDisk())
+            SelectBIOS(vjs.biosType);
+    } else {
+        SelectBIOS(vjs.biosType);
+    }
 
     // 5. Screen buffer
     JaguarSetScreenBuffer(m_framebuffer.data());
@@ -135,10 +178,17 @@ bool JaguarSystem::loadROM(const QString &path)
         return false;
     }
 
-    // 8. Fix vectors + reset 68K (mirrors mainwin LoadSoftware)
-    SET32(jaguarMainRAM, 0, vjs.DRAM_size);
-    if (!vjs.useJaguarBIOS)
+    // 8. Boot vectors — BIOS real ou HLE
+    // Com BIOS: SetBIOS() copia SP+PC de jagMemSpace+0xE00000 para jaguarMainRAM[0..7]
+    //           m68k_pulse_reset() lê esses vetores → CPU inicia pela BIOS
+    //           A BIOS roda a intro, inicializa GPU/OP/Blitter e pula pro jogo
+    // Sem BIOS: HLE — SP = topo da DRAM, PC = endereço do jogo direto
+    if (vjs.useJaguarBIOS) {
+        SetBIOS(); // copia [SP, PC] da ROM 0xE00000 → jaguarMainRAM[0..7]
+    } else {
+        SET32(jaguarMainRAM, 0, vjs.DRAM_size);
         SET32(jaguarMainRAM, 4, jaguarRunAddress);
+    }
     m68k_pulse_reset();
 
     // 9. VST host — no plugin loading, just init gain
@@ -158,7 +208,8 @@ bool JaguarSystem::loadROM(const QString &path)
 
     qDebug() << "JaguarSystem: loaded" << QFileInfo(path).fileName()
              << (m_is_cdrom ? "(CD-ROM)" : "(cartridge)")
-             << "runAddr=" << Qt::hex << jaguarRunAddress;
+             << "runAddr=" << Qt::hex << jaguarRunAddress
+             << "CRC32=" << Qt::hex << jaguarMainROMCRC32;
     return true;
 }
 

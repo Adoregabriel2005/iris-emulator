@@ -30,6 +30,7 @@
     <file>white/svg/window-2-line.svg</file>
     <file>white/svg/console-atari2600.svg</file>
     <file>white/svg/console-atarilynx.svg</file>
+    <file>white/svg/console-atarijaguar.svg</file>
     <file>white/svg/image-line.svg</file>
     <file>white/svg/stop-circle-line.svg</file>
     <file>white/svg/download-2-line.svg</file>
@@ -61,6 +62,7 @@
     <file>black/svg/window-2-line.svg</file>
     <file>black/svg/console-atari2600.svg</file>
     <file>black/svg/console-atarilynx.svg</file>
+    <file>black/svg/console-atarijaguar.svg</file>
     <file>black/svg/image-line.svg</file>
     <file>black/svg/stop-circle-line.svg</file>
     <file>black/svg/download-2-line.svg</file>
