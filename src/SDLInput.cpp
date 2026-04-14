@@ -240,21 +240,6 @@ const char* SDLInput::actionName(InputAction action)
     case InputAction::LynxLeftShoulder:  return "Lynx L Shoulder";
     case InputAction::LynxRightShoulder: return "Lynx R Shoulder";
     case InputAction::LynxStart:         return "Lynx Start";
-    case InputAction::JagUp:    return "Jag Up";
-    case InputAction::JagDown:  return "Jag Down";
-    case InputAction::JagLeft:  return "Jag Left";
-    case InputAction::JagRight: return "Jag Right";
-    case InputAction::JagA:     return "Jag A";
-    case InputAction::JagB:     return "Jag B";
-    case InputAction::JagC:     return "Jag C";
-    case InputAction::JagOption: return "Jag Option";
-    case InputAction::JagPause:  return "Jag Pause";
-    case InputAction::Jag1: return "Jag 1"; case InputAction::Jag2: return "Jag 2";
-    case InputAction::Jag3: return "Jag 3"; case InputAction::Jag4: return "Jag 4";
-    case InputAction::Jag5: return "Jag 5"; case InputAction::Jag6: return "Jag 6";
-    case InputAction::Jag7: return "Jag 7"; case InputAction::Jag8: return "Jag 8";
-    case InputAction::Jag9: return "Jag 9"; case InputAction::JagStar: return "Jag *";
-    case InputAction::Jag0: return "Jag 0"; case InputAction::JagHash: return "Jag #";
     default: return "Unknown";
     }
 }
@@ -289,28 +274,6 @@ InputBinding SDLInput::defaultBinding(InputAction action)
     case InputAction::LynxLeftShoulder:   b.code = SDL_SCANCODE_A;      break;
     case InputAction::LynxRightShoulder:  b.code = SDL_SCANCODE_S;      break;
     case InputAction::LynxStart:          b.code = SDL_SCANCODE_RETURN; break;
-    // Atari Jaguar defaults
-    case InputAction::JagUp:    b.code = SDL_SCANCODE_UP;     break;
-    case InputAction::JagDown:  b.code = SDL_SCANCODE_DOWN;   break;
-    case InputAction::JagLeft:  b.code = SDL_SCANCODE_LEFT;   break;
-    case InputAction::JagRight: b.code = SDL_SCANCODE_RIGHT;  break;
-    case InputAction::JagA:     b.code = SDL_SCANCODE_Z;      break;
-    case InputAction::JagB:     b.code = SDL_SCANCODE_X;      break;
-    case InputAction::JagC:     b.code = SDL_SCANCODE_C;      break;
-    case InputAction::JagOption: b.code = SDL_SCANCODE_A;     break;
-    case InputAction::JagPause:  b.code = SDL_SCANCODE_RETURN; break;
-    case InputAction::Jag1: b.code = SDL_SCANCODE_KP_1; break;
-    case InputAction::Jag2: b.code = SDL_SCANCODE_KP_2; break;
-    case InputAction::Jag3: b.code = SDL_SCANCODE_KP_3; break;
-    case InputAction::Jag4: b.code = SDL_SCANCODE_KP_4; break;
-    case InputAction::Jag5: b.code = SDL_SCANCODE_KP_5; break;
-    case InputAction::Jag6: b.code = SDL_SCANCODE_KP_6; break;
-    case InputAction::Jag7: b.code = SDL_SCANCODE_KP_7; break;
-    case InputAction::Jag8: b.code = SDL_SCANCODE_KP_8; break;
-    case InputAction::Jag9: b.code = SDL_SCANCODE_KP_9; break;
-    case InputAction::JagStar: b.code = SDL_SCANCODE_KP_MULTIPLY; break;
-    case InputAction::Jag0:    b.code = SDL_SCANCODE_KP_0;        break;
-    case InputAction::JagHash: b.code = SDL_SCANCODE_KP_MINUS;    break;
     default: b.type = InputBinding::Type::None; break;
     }
     return b;
@@ -612,43 +575,5 @@ LynxInputState SDLInput::pollLynx()
         if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_START)) s.start = true;
     }
 
-    return s;
-}
-
-JaguarInputState SDLInput::pollJaguar()
-{
-    JaguarInputState s;
-    if (!m_initialized) return s;
-    SDL_PumpEvents();
-    const Uint8* keys = m_keystate;
-    auto act = [&](InputAction a) { return isActionActive(m_bindings[static_cast<int>(a)], keys); };
-
-    s.up     = act(InputAction::JagUp);    s.down  = act(InputAction::JagDown);
-    s.left   = act(InputAction::JagLeft);  s.right = act(InputAction::JagRight);
-    s.a      = act(InputAction::JagA);     s.b     = act(InputAction::JagB);
-    s.c      = act(InputAction::JagC);
-    s.option = act(InputAction::JagOption); s.pause = act(InputAction::JagPause);
-    s.n1=act(InputAction::Jag1); s.n2=act(InputAction::Jag2); s.n3=act(InputAction::Jag3);
-    s.n4=act(InputAction::Jag4); s.n5=act(InputAction::Jag5); s.n6=act(InputAction::Jag6);
-    s.n7=act(InputAction::Jag7); s.n8=act(InputAction::Jag8); s.n9=act(InputAction::Jag9);
-    s.star=act(InputAction::JagStar); s.n0=act(InputAction::Jag0); s.hash=act(InputAction::JagHash);
-
-    if (m_controller) {
-        if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_DPAD_UP))    s.up = true;
-        if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN))  s.down = true;
-        if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT))  s.left = true;
-        if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) s.right = true;
-        Sint16 lx = SDL_GameControllerGetAxis(m_controller, SDL_CONTROLLER_AXIS_LEFTX);
-        Sint16 ly = SDL_GameControllerGetAxis(m_controller, SDL_CONTROLLER_AXIS_LEFTY);
-        if (lx < -AXIS_DEADZONE) s.left = true;
-        if (lx > AXIS_DEADZONE)  s.right = true;
-        if (ly < -AXIS_DEADZONE) s.up = true;
-        if (ly > AXIS_DEADZONE)  s.down = true;
-        if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_B)) s.a = true;
-        if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_A)) s.b = true;
-        if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_X)) s.c = true;
-        if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) s.option = true;
-        if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_START)) s.pause = true;
-    }
     return s;
 }

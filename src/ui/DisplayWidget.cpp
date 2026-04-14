@@ -2,202 +2,17 @@
 #include "../SDLInput.h"
 
 #include <QtCore/QSettings>
+#include <QtGui/QPainter>
 #include <QtGui/QResizeEvent>
+#include <QtWidgets/QApplication>
 #include <algorithm>
 #include <cmath>
 
-// ─── Vertex shader ───────────────────────────────────────────────────────────
-static const char* VS_SRC = R"(
-#version 330 core
-layout(location = 0) in vec2 aPos;
-layout(location = 1) in vec2 aUV;
-out vec2 vUV;
-void main() {
-    gl_Position = vec4(aPos, 0.0, 1.0);
-    vUV = aUV;
-}
-)";
-
-// ─── Fragment shader — all filters in one ────────────────────────────────────
-static const char* FS_SRC = R"(
-#version 330 core
-in vec2 vUV;
-out vec4 fragColor;
-
-uniform sampler2D uTex;
-uniform int   uFilter;       // 0=None 1=Scanlines 2=CRT 3=Smooth 4=LCD 5=LCDBlur 6=RF 7=SVideo
-uniform float uIntensity;    // 0..1
-uniform vec2  uResolution;   // widget size in pixels
-uniform vec2  uTexSize;      // texture (frame) size in pixels
-uniform float uTime;         // frame counter for RF noise
-
-// ── Scanline ──
-float scanline(vec2 uv) {
-    float line = floor(uv.y * uTexSize.y);
-    return mod(line, 2.0) < 1.0 ? 1.0 : (1.0 - uIntensity * 0.7);
-}
-
-// ── Phosphor RGB mask ──
-vec3 rgbMask(vec2 uv) {
-    int col = int(mod(uv.x * uResolution.x, 3.0));
-    if (col == 0) return vec3(1.0 + uIntensity * 0.15, 0.85, 0.85);
-    if (col == 1) return vec3(0.85, 1.0 + uIntensity * 0.10, 0.85);
-    return vec3(0.85, 0.85, 1.0 + uIntensity * 0.15);
-}
-
-// ── Vignette ──
-float vignette(vec2 uv) {
-    vec2 d = uv - 0.5;
-    return 1.0 - dot(d, d) * uIntensity * 2.5;
-}
-
-// ── LCD grid ──
-float lcdGrid(vec2 uv) {
-    vec2 pixel = uv * uTexSize;
-    vec2 frac  = fract(pixel);
-    float gapX = step(0.88, frac.x);
-    float gapY = step(0.88, frac.y);
-    return 1.0 - max(gapX, gapY) * uIntensity * 0.85;
-}
-
-// ── Pseudo-random noise (cheap hash) ──
-float hash(vec2 p) {
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
-// ── RF Cable simulation ──
-// Simulates: composite chroma bleed, horizontal smear, dot crawl,
-// luminance noise, color desaturation, slight vertical roll jitter
-vec4 rfFilter(vec2 uv) {
-    // Horizontal chroma bleed — sample color slightly offset
-    float bleed = uIntensity * 0.012;
-    vec4 cR = texture(uTex, uv + vec2( bleed, 0.0));
-    vec4 cG = texture(uTex, uv);
-    vec4 cB = texture(uTex, uv - vec2( bleed, 0.0));
-    vec3 col = vec3(cR.r, cG.g, cB.b);
-
-    // Luma/chroma separation smear (horizontal blur)
-    float smear = uIntensity * 0.006;
-    vec3 smearCol = vec3(0.0);
-    for (int i = -2; i <= 2; i++) {
-        smearCol += texture(uTex, uv + vec2(float(i) * smear, 0.0)).rgb;
-    }
-    smearCol /= 5.0;
-    col = mix(col, smearCol, uIntensity * 0.45);
-
-    // Dot crawl — diagonal interference pattern
-    float crawl = sin((uv.x + uv.y) * uTexSize.x * 0.5 + uTime * 0.3) * 0.5 + 0.5;
-    col += crawl * uIntensity * 0.04;
-
-    // Luminance noise
-    float noise = (hash(uv + vec2(uTime * 0.01, 0.0)) - 0.5) * uIntensity * 0.12;
-    col += noise;
-
-    // Scanlines (RF TVs always had them)
-    float sl = scanline(uv);
-    col *= sl;
-
-    // Color desaturation (RF degrades chroma)
-    float luma = dot(col, vec3(0.299, 0.587, 0.114));
-    col = mix(col, vec3(luma), uIntensity * 0.30);
-
-    // Slight brightness drop + warm tint
-    col *= 0.88 + uIntensity * 0.05;
-    col.r *= 1.0 + uIntensity * 0.06;
-    col.b *= 1.0 - uIntensity * 0.04;
-
-    // Vignette
-    col *= vignette(uv);
-
-    return vec4(clamp(col, 0.0, 1.0), 1.0);
-}
-
-// ── S-Video simulation ──
-// S-Video separates luma (Y) and chroma (C), so:
-// - No chroma bleed (sharp edges)
-// - Slight luma softening (Y bandwidth ~5 MHz)
-// - Chroma is slightly softer than luma
-// - Mild scanlines (S-Video on a CRT)
-// - Subtle color boost (S-Video had better saturation than RF/composite)
-vec4 svideoFilter(vec2 uv) {
-    // Luma channel: slight horizontal softening
-    float lumaBlur = 1.0 / uTexSize.x * uIntensity * 0.8;
-    vec3 c0 = texture(uTex, uv).rgb;
-    vec3 cL = texture(uTex, uv - vec2(lumaBlur, 0.0)).rgb;
-    vec3 cR2 = texture(uTex, uv + vec2(lumaBlur, 0.0)).rgb;
-    vec3 col = (c0 * 2.0 + cL + cR2) / 4.0;
-
-    // Chroma softening (wider blur on color channels)
-    float chromaBlur = 1.0 / uTexSize.x * uIntensity * 2.0;
-    vec3 chromaL = texture(uTex, uv - vec2(chromaBlur, 0.0)).rgb;
-    vec3 chromaR = texture(uTex, uv + vec2(chromaBlur, 0.0)).rgb;
-    vec3 chroma = (chromaL + col + chromaR) / 3.0;
-
-    // Reconstruct: keep luma sharp, soften chroma
-    float luma = dot(col, vec3(0.299, 0.587, 0.114));
-    vec3 lumaVec = vec3(luma);
-    col = lumaVec + (chroma - lumaVec) * (1.0 - uIntensity * 0.25);
-
-    // Mild scanlines (CRT with S-Video)
-    float sl = 1.0 - (1.0 - scanline(uv)) * uIntensity * 0.5;
-    col *= sl;
-
-    // Color boost — S-Video had richer saturation vs RF
-    float lumaFinal = dot(col, vec3(0.299, 0.587, 0.114));
-    col = mix(vec3(lumaFinal), col, 1.0 + uIntensity * 0.18);
-
-    // Subtle phosphor warmth
-    col.r *= 1.0 + uIntensity * 0.03;
-    col.g *= 1.0 + uIntensity * 0.01;
-
-    // Light vignette
-    col *= 1.0 - dot(uv - 0.5, uv - 0.5) * uIntensity * 0.6;
-
-    return vec4(clamp(col, 0.0, 1.0), 1.0);
-}
-
-void main() {
-    vec4 col = texture(uTex, vUV);
-
-    if (uFilter == 0) { // None
-        fragColor = col;
-    }
-    else if (uFilter == 1) { // Scanlines
-        float sl = scanline(vUV);
-        fragColor = vec4(col.rgb * sl, col.a);
-    }
-    else if (uFilter == 2) { // CRT
-        float sl  = scanline(vUV);
-        vec3  rgb = col.rgb * sl * rgbMask(vUV);
-        float vig = vignette(vUV);
-        fragColor = vec4(rgb * vig, col.a);
-    }
-    else if (uFilter == 3) { // Smooth
-        fragColor = col;
-    }
-    else if (uFilter == 4) { // LCD
-        float grid = lcdGrid(vUV);
-        fragColor = vec4(col.rgb * grid, col.a);
-    }
-    else if (uFilter == 5) { // LCDBlur
-        float grid = lcdGrid(vUV);
-        fragColor = vec4(col.rgb * grid, col.a);
-    }
-    else if (uFilter == 6) { // RF Jaguar
-        fragColor = rfFilter(vUV);
-    }
-    else { // S-Video Jaguar
-        fragColor = svideoFilter(vUV);
-    }
-}
-)";
-
-// ─────────────────────────────────────────────────────────────────────────────
-
 DisplayWidget::DisplayWidget(QWidget* parent)
-    : QOpenGLWidget(parent)
+    : QWidget(parent)
 {
     setFocusPolicy(Qt::StrongFocus);
+    setAttribute(Qt::WA_OpaquePaintEvent);
     setMinimumSize(160, 120);
 
     QSettings settings;
@@ -207,170 +22,27 @@ DisplayWidget::DisplayWidget(QWidget* parent)
     else if (filterStr == "smooth")    m_filter = ScreenFilter::Smooth;
     else if (filterStr == "lcd")       m_filter = ScreenFilter::LCD;
     else if (filterStr == "lcdblur")   m_filter = ScreenFilter::LCDBlur;
-    else if (filterStr == "rf")        m_filter = ScreenFilter::RFJaguar;
-    else if (filterStr == "svideo")    m_filter = ScreenFilter::SVideoJaguar;
     else                               m_filter = ScreenFilter::None;
 
     m_scanline_intensity = settings.value("Video/ScanlineIntensity", 50).toInt();
     m_lcd_ghosting       = settings.value("Video/LCDGhosting", 40).toInt();
-
-    // Request OpenGL 3.3 Core
-    QSurfaceFormat fmt;
-    fmt.setVersion(3, 3);
-    fmt.setProfile(QSurfaceFormat::CoreProfile);
-    fmt.setSwapInterval(1); // VSync
-    setFormat(fmt);
 }
 
-DisplayWidget::~DisplayWidget()
+DisplayWidget::~DisplayWidget() {}
+
+void DisplayWidget::updateFrame(const QImage& frame)
 {
-    makeCurrent();
-    m_shader.reset();
-    m_texture.reset();
-    m_vbo.destroy();
-    m_vao.destroy();
-    doneCurrent();
+    if (m_filter == ScreenFilter::LCDBlur && !m_current_frame.isNull())
+        m_prev_frame = m_current_frame;
+    m_current_frame = frame;
+    update();
 }
 
-void DisplayWidget::initializeGL()
+void DisplayWidget::clearFrame()
 {
-    initializeOpenGLFunctions();
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-    // Compile shaders
-    m_shader = std::make_unique<QOpenGLShaderProgram>();
-    m_shader->addShaderFromSourceCode(QOpenGLShader::Vertex,   VS_SRC);
-    m_shader->addShaderFromSourceCode(QOpenGLShader::Fragment, FS_SRC);
-    m_shader->link();
-
-    // Full-screen quad: pos(x,y) + uv(u,v)
-    // NDC: (-1,-1) bottom-left, (1,1) top-right
-    // UV:  (0,0) top-left, (1,1) bottom-right  → flip Y
-    float verts[] = {
-        -1.f, -1.f,  0.f, 1.f,
-         1.f, -1.f,  1.f, 1.f,
-        -1.f,  1.f,  0.f, 0.f,
-         1.f,  1.f,  1.f, 0.f,
-    };
-
-    m_vao.create();
-    m_vao.bind();
-
-    m_vbo.create();
-    m_vbo.bind();
-    m_vbo.allocate(verts, sizeof(verts));
-
-    m_shader->bind();
-    m_shader->setAttributeBuffer(0, GL_FLOAT, 0,                2, 4 * sizeof(float));
-    m_shader->setAttributeBuffer(1, GL_FLOAT, 2 * sizeof(float), 2, 4 * sizeof(float));
-    m_shader->enableAttributeArray(0);
-    m_shader->enableAttributeArray(1);
-    m_shader->release();
-
-    m_vao.release();
-    m_vbo.release();
-
-    m_gl_initialized = true;
-}
-
-void DisplayWidget::resizeGL(int w, int h)
-{
-    glViewport(0, 0, w, h);
-    emit sizeChanged(QSize(w, h));
-}
-
-void DisplayWidget::uploadTexture(const QImage& img)
-{
-    if (img.isNull()) return;
-
-    QImage rgba = img.convertToFormat(QImage::Format_RGBA8888);
-
-    if (!m_texture || m_texture->width() != rgba.width() || m_texture->height() != rgba.height()) {
-        m_texture = std::make_unique<QOpenGLTexture>(QOpenGLTexture::Target2D);
-        m_texture->setSize(rgba.width(), rgba.height());
-        m_texture->setFormat(QOpenGLTexture::RGBA8_UNorm);
-        m_texture->allocateStorage();
-    }
-
-    bool smooth = (m_filter == ScreenFilter::Smooth || m_filter == ScreenFilter::CRT
-                 || m_filter == ScreenFilter::SVideoJaguar);
-    // RF uses nearest for the authentic pixelated look
-    bool nearest = (m_filter == ScreenFilter::RFJaguar || m_filter == ScreenFilter::None
-                  || m_filter == ScreenFilter::LCD || m_filter == ScreenFilter::LCDBlur);
-    m_texture->setMinificationFilter(smooth  ? QOpenGLTexture::Linear : QOpenGLTexture::Nearest);
-    m_texture->setMagnificationFilter(smooth  ? QOpenGLTexture::Linear : QOpenGLTexture::Nearest);
-    m_texture->setWrapMode(QOpenGLTexture::ClampToEdge);
-
-    m_texture->setData(QOpenGLTexture::RGBA, QOpenGLTexture::UInt8, rgba.constBits());
-}
-
-void DisplayWidget::paintGL()
-{
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    if (m_current_frame.isNull() || !m_gl_initialized || !m_shader)
-        return;
-
-    // For LCDBlur: blend on CPU before upload
-    QImage frameToDraw = m_current_frame;
-    if (m_filter == ScreenFilter::LCDBlur && !m_prev_frame.isNull()
-        && m_prev_frame.size() == m_current_frame.size())
-        frameToDraw = applyLCDBlur(m_current_frame);
-
-    // Jaguar upscaling: scale frame to target resolution before upload
-    if (m_is_jaguar && m_upscale != JagUpscale::Native && !frameToDraw.isNull()) {
-        int targetH = frameToDraw.height();
-        switch (m_upscale) {
-            case JagUpscale::P480:  targetH = 480;  break;
-            case JagUpscale::P720:  targetH = 720;  break;
-            case JagUpscale::P1080: targetH = 1080; break;
-            default: break;
-        }
-        if (targetH != frameToDraw.height()) {
-            // Maintain source aspect for the upscale
-            int targetW = frameToDraw.width() * targetH / frameToDraw.height();
-            frameToDraw = frameToDraw.scaled(targetW, targetH,
-                Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        }
-    }
-
-    uploadTexture(frameToDraw);
-    if (!m_texture) return;
-
-    // Compute letterbox rect in NDC
-    QRect dr = calculateDisplayRect();
-    float x0 = (2.f * dr.left()   / width())  - 1.f;
-    float x1 = (2.f * dr.right()  / width())  - 1.f;
-    float y0 = 1.f - (2.f * dr.bottom() / height());
-    float y1 = 1.f - (2.f * dr.top()    / height());
-
-    float verts[] = {
-        x0, y0,  0.f, 1.f,
-        x1, y0,  1.f, 1.f,
-        x0, y1,  0.f, 0.f,
-        x1, y1,  1.f, 0.f,
-    };
-
-    m_vbo.bind();
-    m_vbo.write(0, verts, sizeof(verts));
-    m_vbo.release();
-
-    m_shader->bind();
-    m_texture->bind(0);
-    m_shader->setUniformValue("uTex",        0);
-    m_shader->setUniformValue("uFilter",     static_cast<int>(m_filter));
-    m_shader->setUniformValue("uIntensity",  m_scanline_intensity / 100.f);
-    m_shader->setUniformValue("uResolution", QVector2D(width(), height()));
-    m_shader->setUniformValue("uTexSize",    QVector2D(frameToDraw.width(), frameToDraw.height()));
-    m_shader->setUniformValue("uTime",       static_cast<float>(m_frame_counter));
-
-    m_vao.bind();
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    m_vao.release();
-
-    m_texture->release();
-    m_shader->release();
-    m_frame_counter++;
+    m_current_frame = QImage();
+    m_prev_frame    = QImage();
+    update();
 }
 
 QRect DisplayWidget::calculateDisplayRect() const
@@ -378,25 +50,9 @@ QRect DisplayWidget::calculateDisplayRect() const
     if (m_current_frame.isNull())
         return rect();
 
-    float display_aspect;
-
-    if (m_is_jaguar) {
-        switch (m_aspect) {
-            case AspectRatio::FourThree:    display_aspect = 4.f / 3.f; break;
-            case AspectRatio::SixteenNine:  display_aspect = 16.f / 9.f; break;
-            default: // Auto: use source pixel aspect
-                display_aspect = static_cast<float>(m_current_frame.width())
-                               / static_cast<float>(m_current_frame.height());
-                break;
-        }
-    } else if (m_current_frame.height() <= 102) {
-        // Lynx: use pixel aspect
-        display_aspect = static_cast<float>(m_current_frame.width())
-                       / static_cast<float>(m_current_frame.height());
-    } else {
-        // 2600: always 4:3
-        display_aspect = 4.f / 3.f;
-    }
+    const float display_aspect = (m_current_frame.height() <= 102)
+        ? static_cast<float>(m_current_frame.width()) / static_cast<float>(m_current_frame.height())
+        : 4.0f / 3.0f;
 
     const float widget_aspect = static_cast<float>(width()) / static_cast<float>(height());
     int display_w, display_h;
@@ -412,26 +68,9 @@ QRect DisplayWidget::calculateDisplayRect() const
     return QRect((width() - display_w) / 2, (height() - display_h) / 2, display_w, display_h);
 }
 
-void DisplayWidget::updateFrame(const QImage& frame)
-{
-    if (m_filter == ScreenFilter::LCDBlur && !m_current_frame.isNull())
-        m_prev_frame = m_current_frame;
-
-    m_current_frame = frame;
-    update();
-}
-
-void DisplayWidget::clearFrame()
-{
-    m_current_frame = QImage();
-    m_prev_frame    = QImage();
-    update();
-}
-
 void DisplayWidget::setScreenFilter(ScreenFilter filter)
 {
     m_filter = filter;
-    m_texture.reset(); // force re-upload with new filter params
     update();
 }
 
@@ -447,19 +86,200 @@ void DisplayWidget::setLCDGhostingStrength(int percent)
     update();
 }
 
-void DisplayWidget::setAspectRatio(AspectRatio ar)
+// ─────────────────────────────────────────────────────────────────────────────
+// paintEvent
+// ─────────────────────────────────────────────────────────────────────────────
+void DisplayWidget::paintEvent(QPaintEvent* event)
 {
-    m_aspect = ar;
-    update();
+    Q_UNUSED(event);
+    QPainter painter(this);
+    painter.fillRect(rect(), Qt::black);
+
+    if (m_current_frame.isNull())
+        return;
+
+    QRect dr = calculateDisplayRect();
+
+    switch (m_filter) {
+    case ScreenFilter::None:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter.drawImage(dr, m_current_frame);
+        break;
+
+    case ScreenFilter::Smooth:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter.drawImage(dr, m_current_frame);
+        break;
+
+    case ScreenFilter::Scanlines:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter.drawImage(dr, m_current_frame);
+        drawScanlines(painter, dr);
+        break;
+
+    case ScreenFilter::CRT:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter.drawImage(dr, m_current_frame);
+        drawScanlines(painter, dr);
+        drawCRT(painter, dr);
+        break;
+
+    case ScreenFilter::LCD:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter.drawImage(dr, m_current_frame);
+        drawLCD(painter, dr);
+        break;
+
+    case ScreenFilter::LCDBlur: {
+        // Blend frame atual com anterior para simular ghosting do LCD do Lynx
+        QImage blended = m_current_frame;
+        if (!m_prev_frame.isNull() && m_prev_frame.size() == m_current_frame.size()) {
+            blended = applyLCDBlur(m_current_frame);
+        }
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter.drawImage(dr, blended);
+        drawLCD(painter, dr);
+        break;
+    }
+    }
 }
 
-void DisplayWidget::setJagUpscale(JagUpscale up)
+// ─────────────────────────────────────────────────────────────────────────────
+// Scanlines — alternância real de brilho entre linhas pares/ímpares
+// ─────────────────────────────────────────────────────────────────────────────
+void DisplayWidget::drawScanlines(QPainter& painter, const QRect& rect)
 {
-    m_upscale = up;
-    m_texture.reset();
-    update();
+    if (m_scanline_intensity <= 0)
+        return;
+
+    // Quantos pixels de tela por linha de source
+    const int srcH   = m_current_frame.height();
+    const float scale = static_cast<float>(rect.height()) / srcH;
+    const int lineH  = std::max(1, static_cast<int>(std::round(scale)));
+
+    // Escurece linhas ímpares (gap entre scanlines)
+    const int darkAlpha  = m_scanline_intensity * 220 / 100;
+    // Leve brilho nas linhas pares (phosphor glow)
+    const int glowAlpha  = m_scanline_intensity * 18 / 100;
+
+    painter.setPen(Qt::NoPen);
+
+    for (int srcY = 0; srcY < srcH; srcY++) {
+        int screenY = rect.top() + static_cast<int>(srcY * scale);
+
+        // Linha escura (gap do CRT)
+        int gapY = screenY + std::max(1, lineH - 1);
+        if (gapY < rect.bottom()) {
+            painter.setBrush(QColor(0, 0, 0, darkAlpha));
+            painter.drawRect(rect.left(), gapY, rect.width(), lineH > 2 ? lineH / 2 : 1);
+        }
+
+        // Phosphor glow sutil na linha ativa
+        if (glowAlpha > 0) {
+            painter.setBrush(QColor(255, 255, 220, glowAlpha));
+            painter.drawRect(rect.left(), screenY, rect.width(), std::max(1, lineH - 1));
+        }
+    }
+
+    // Linha horizontal de separação entre scanlines (mais escura)
+    const int sepAlpha = m_scanline_intensity * 160 / 100;
+    painter.setBrush(QColor(0, 0, 0, sepAlpha));
+    for (int srcY = 0; srcY < srcH; srcY += 2) {
+        int screenY = rect.top() + static_cast<int>(srcY * scale) + std::max(1, lineH - 1);
+        painter.drawRect(rect.left(), screenY, rect.width(), 1);
+    }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CRT — vignette forte + curvatura + phosphor RGB mask + bloom
+// ─────────────────────────────────────────────────────────────────────────────
+void DisplayWidget::drawCRT(QPainter& painter, const QRect& rect)
+{
+    // ── Phosphor RGB mask (colunas R/G/B alternadas) ──
+    const int maskAlpha = m_scanline_intensity * 25 / 100;
+    if (maskAlpha > 0) {
+        painter.setPen(Qt::NoPen);
+        for (int x = rect.left(); x < rect.right(); x += 3) {
+            painter.setBrush(QColor(255, 0, 0, maskAlpha));
+            painter.drawRect(x,     rect.top(), 1, rect.height());
+            painter.setBrush(QColor(0, 255, 0, maskAlpha / 2));
+            painter.drawRect(x + 1, rect.top(), 1, rect.height());
+            painter.setBrush(QColor(0, 0, 255, maskAlpha));
+            painter.drawRect(x + 2, rect.top(), 1, rect.height());
+        }
+    }
+
+    // ── Vignette forte nas bordas ──
+    QRadialGradient vignette(rect.center(), rect.width() * 0.62f);
+    vignette.setColorAt(0.0, QColor(0, 0, 0, 0));
+    vignette.setColorAt(0.55, QColor(0, 0, 0, 0));
+    vignette.setColorAt(0.80, QColor(0, 0, 0, 60));
+    vignette.setColorAt(1.0,  QColor(0, 0, 0, 180));
+    painter.fillRect(rect, vignette);
+
+    // ── Curvatura: cantos muito escuros ──
+    int cs = rect.width() / 6;
+    auto drawCorner = [&](QPoint center) {
+        QRadialGradient g(center, cs);
+        g.setColorAt(0.0, QColor(0, 0, 0, 140));
+        g.setColorAt(1.0, QColor(0, 0, 0, 0));
+        painter.fillRect(QRect(center - QPoint(cs, cs), QSize(cs * 2, cs * 2)), g);
+    };
+    drawCorner(rect.topLeft());
+    drawCorner(rect.topRight());
+    drawCorner(rect.bottomLeft());
+    drawCorner(rect.bottomRight());
+
+    // ── Reflexo de tela (linha horizontal de brilho no topo) ──
+    QLinearGradient glare(rect.topLeft(), QPoint(rect.left(), rect.top() + rect.height() / 4));
+    glare.setColorAt(0.0, QColor(255, 255, 255, 18));
+    glare.setColorAt(1.0, QColor(255, 255, 255, 0));
+    painter.fillRect(rect, glare);
+
+    // ── Borda do tubo (frame escuro ao redor) ──
+    painter.setPen(QPen(QColor(0, 0, 0, 200), 4));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRect(rect.adjusted(1, 1, -1, -1));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LCD — grid de pixels com gap entre eles (tela do Lynx)
+// ─────────────────────────────────────────────────────────────────────────────
+void DisplayWidget::drawLCD(QPainter& painter, const QRect& rect)
+{
+    const int srcW = m_current_frame.width();
+    const int srcH = m_current_frame.height();
+    const float scaleX = static_cast<float>(rect.width())  / srcW;
+    const float scaleY = static_cast<float>(rect.height()) / srcH;
+
+    // Só desenha o grid se tiver escala suficiente (pelo menos 2px por pixel)
+    if (scaleX < 2.0f || scaleY < 2.0f)
+        return;
+
+    const int gapAlpha = m_scanline_intensity * 180 / 100;
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(0, 0, 0, gapAlpha));
+
+    // Linhas horizontais (gap entre linhas de pixels)
+    for (int y = 0; y < srcH; y++) {
+        int screenY = rect.top() + static_cast<int>(y * scaleY) + static_cast<int>(scaleY) - 1;
+        painter.drawRect(rect.left(), screenY, rect.width(), 1);
+    }
+
+    // Linhas verticais (gap entre colunas de pixels)
+    for (int x = 0; x < srcW; x++) {
+        int screenX = rect.left() + static_cast<int>(x * scaleX) + static_cast<int>(scaleX) - 1;
+        painter.drawRect(screenX, rect.top(), 1, rect.height());
+    }
+
+    // Leve tint esverdeado — o LCD do Lynx original tinha um tint verde
+    painter.setBrush(QColor(20, 40, 10, 25));
+    painter.drawRect(rect);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LCD Blur — blend com frame anterior para simular ghosting do Lynx original
+// ─────────────────────────────────────────────────────────────────────────────
 QImage DisplayWidget::applyLCDBlur(const QImage& src) const
 {
     if (m_prev_frame.isNull() || m_prev_frame.size() != src.size())
@@ -468,13 +288,14 @@ QImage DisplayWidget::applyLCDBlur(const QImage& src) const
     QImage result = src.convertToFormat(QImage::Format_ARGB32);
     const QImage prev = m_prev_frame.convertToFormat(QImage::Format_ARGB32);
 
-    const float ghostStrength = m_lcd_ghosting / 100.f;
-    const float curStrength   = 1.f - ghostStrength * 0.6f;
+    const float ghostStrength = m_lcd_ghosting / 100.0f;
+    const float curStrength   = 1.0f - ghostStrength * 0.6f;
 
     for (int y = 0; y < result.height(); y++) {
         const QRgb* srcLine  = reinterpret_cast<const QRgb*>(src.constScanLine(y));
         const QRgb* prevLine = reinterpret_cast<const QRgb*>(prev.constScanLine(y));
         QRgb*       dstLine  = reinterpret_cast<QRgb*>(result.scanLine(y));
+
         for (int x = 0; x < result.width(); x++) {
             int r = static_cast<int>(qRed(srcLine[x])   * curStrength + qRed(prevLine[x])   * ghostStrength * 0.6f);
             int g = static_cast<int>(qGreen(srcLine[x]) * curStrength + qGreen(prevLine[x]) * ghostStrength * 0.6f);
@@ -485,16 +306,23 @@ QImage DisplayWidget::applyLCDBlur(const QImage& src) const
     return result;
 }
 
+void DisplayWidget::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    emit sizeChanged(event->size());
+    update();
+}
+
 void DisplayWidget::keyPressEvent(QKeyEvent* event)
 {
     if (m_input && !event->isAutoRepeat())
         m_input->setQtKeyState(event->key(), true);
-    QOpenGLWidget::keyPressEvent(event);
+    QWidget::keyPressEvent(event);
 }
 
 void DisplayWidget::keyReleaseEvent(QKeyEvent* event)
 {
     if (m_input && !event->isAutoRepeat())
         m_input->setQtKeyState(event->key(), false);
-    QOpenGLWidget::keyReleaseEvent(event);
+    QWidget::keyReleaseEvent(event);
 }

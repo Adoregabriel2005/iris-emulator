@@ -42,8 +42,6 @@ public:
     bool isCDROM() const { return m_is_cdrom; }
 
 private:
-    bool loadBIOSFromDisk();
-
     bool m_running     = false;
     bool m_initialized = false;
     bool m_is_cdrom    = false;
