@@ -404,8 +404,7 @@ void MainWindow::connectSignals()
 
             // FPS counter
             m_fps_frame_count++;
-            qint64 now = QDateTime::currentMSecsSinceEpoch();
-            qint64 elapsed = now - m_fps_last_time;
+            qint64 elapsed = m_fps_timer.elapsed();
             if (elapsed >= 1000)
             {
                 double fps = m_fps_frame_count * 1000.0 / elapsed;
@@ -414,7 +413,7 @@ void MainWindow::connectSignals()
                     .arg(fps, 0, 'f', 1).arg(speed, 0, 'f', 0));
                 m_status_fps_widget->show();
                 m_fps_frame_count = 0;
-                m_fps_last_time = now;
+                m_fps_timer.restart();
             }
         }
     });
@@ -950,7 +949,7 @@ void MainWindow::startROM(const QString& path)
     bool vsync = timerSettings.value("Video/VSync", true).toBool();
     m_emulation_timer->start(vsync ? 16 : 1); // VSync: ~60fps, No VSync: uncapped
     m_fps_frame_count = 0;
-    m_fps_last_time = QDateTime::currentMSecsSinceEpoch();
+    m_fps_timer.restart();
 
     // Sync pause state
     QSignalBlocker sb1(m_ui.actionPause);

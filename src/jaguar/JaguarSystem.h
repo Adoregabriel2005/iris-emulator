@@ -1,17 +1,17 @@
 #pragma once
 
 #include "IEmulatorCore.h"
-#include "SDLInput.h"
+#include "JaguarPatchDB.h"
+
 #include <QImage>
 #include <QString>
 #include <cstdint>
 #include <vector>
 
-// Atari Jaguar emulator — wraps Virtual Jaguar RX core
-// CPU: Motorola 68000 @ 13.3 MHz
-// Tom: GPU + Blitter + Object Processor @ 26.6 MHz
-// Jerry: DSP + DAC + Joystick + Timers @ 26.6 MHz
-// RAM: 2MB DRAM
+// Forward declarations — full types included in JaguarSystem.cpp
+struct JoystickState;
+struct JaguarInputState;
+
 class JaguarSystem : public IEmulatorCore
 {
     Q_OBJECT
@@ -19,12 +19,12 @@ public:
     explicit JaguarSystem(QObject *parent = nullptr);
     ~JaguarSystem() override;
 
-    bool loadROM(const QString &path) override;
-    void start() override;
-    void stop() override;
-    void step() override;
+    bool   loadROM(const QString &path) override;
+    void   start()   override;
+    void   stop()    override;
+    void   step()    override;
     QImage getFrame() const override;
-    bool isRunning() const override { return m_running; }
+    bool   isRunning() const override { return m_running; }
 
     bool saveState(const QString &path) override;
     bool loadState(const QString &path) override;
@@ -32,32 +32,46 @@ public:
     void setJoystickState(const JoystickState &s) override;
     void setJaguarInputState(const JaguarInputState &s);
 
-    // Audio — managed internally by VJ's DAC/SDL subsystem
     void initAudio(const QString &deviceName = QString()) override;
     void closeAudio() override;
     void setAudioVolume(int percent) override;
     void setAudioEnabled(bool enabled) override;
-    bool isAudioEnabled() const override { return m_audio_enabled; }
-
-    bool isCDROM() const { return m_is_cdrom; }
+    bool isAudioEnabled() const override { return m_audioEnabled; }
 
 private:
-    bool m_running     = false;
-    bool m_initialized = false;
-    bool m_is_cdrom    = false;
+    void applyPatches();
 
-    static constexpr int JAG_TEX_WIDTH  = 1024;  // power-of-2 pitch required by VJ
-    static constexpr int JAG_TEX_HEIGHT = 512;
-    static constexpr int JAG_WIDTH      = 326;   // default visible width
-    static constexpr int JAG_HEIGHT     = 240;   // default visible height (NTSC)
+    void patch_Doom_MenuStall();
+    void patch_CF_DrawSky();
+    void patch_CF_BufferFlip();
+    void patch_CF_GameBegin();
+    void patch_CF_GameEnd();
+    void patch_AvP_SetVidParams();
+    void patch_CM_UploadGPU();
+    void patch_CM_UploadGPUFinish();
+    void patch_CM_BgBlit();
+    void patch_CM_EndFrame();
+
+    static constexpr int kTexW = 1024;
+    static constexpr int kTexH = 512;
     std::vector<uint32_t> m_framebuffer;
     QImage m_frame;
 
-    // VJ globals (tom.h/jaguar.h)
-    // No local state needed - use extern tomWidth/tomHeight/screenBuffer
+    bool m_running      = false;
+    bool m_initialized  = false;
+    bool m_audioEnabled = true;
+    int  m_audioVolume  = 80;
 
-    bool m_audio_enabled = true;
-    int  m_audio_volume  = 80;
+    const JagGamePatch* m_activePatch = nullptr;
+
+    bool     m_doomInStall  = false;
+    uint32_t m_doomTicStall = 0;
+
+    bool     m_cfInGame        = false;
+    uint32_t m_cfCurrentFbAddr = 0;
+
+    uint32_t m_cmUploadPrgAddr  = 0;
+    uint32_t m_cmCurrentBufAddr = 0;
 
     uint8_t m_joypad0[21] = {};
     uint8_t m_joypad1[21] = {};

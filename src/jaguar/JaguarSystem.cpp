@@ -1,45 +1,45 @@
+// VJ core headers MUST come before SDLInput.h
+// joystick.h from VJ defines BUTTON_U etc. which must not conflict with SDL types
 #include "JaguarSystem.h"
-#include "SDLInput.h"
-#include "../audio/VSTHost.h"
-#include <SDL.h>
 
 #include "jaguar.h"
 #include "tom.h"
 #include "jerry.h"
+#include "dsp.h"
+#include "gpu.h"
 #include "memory.h"
 #include "settings.h"
 #include "joystick.h"
 #include "dac.h"
 #include "file.h"
-#include "gpu.h"
 #include "event.h"
-#include "m68000/m68kinterface.h"
-#include "jaguar/log.h"
 #include "modelsBIOS.h"
+#include "m68000/m68kinterface.h"
+#include "log.h"
 
-#include <QFile>
+// SDLInput after VJ core to get JoystickState/JaguarInputState definitions
+#include "SDLInput.h"
+
 #include <QFileInfo>
 #include <QDir>
-#include <QDataStream>
 #include <QCoreApplication>
 #include <QSettings>
 #include <QDebug>
 #include <cstring>
 #include <algorithm>
-#include <cmath>
 
-extern VJSettings vjs;
-extern bool startM68KTracing;
-extern bool jaguarCartInserted;
-extern uint8_t jagMemSpace[];
-
-// -----------------------------------------------------------------------------
+extern VJSettings  vjs;
+extern bool        jaguarCartInserted;
+extern uint8_t     jagMemSpace[];
+extern bool        frameDone;
+extern uint32_t    jaguarMainROMCRC32;
+extern uint32_t    jaguarRunAddress;
 
 JaguarSystem::JaguarSystem(QObject *parent)
     : IEmulatorCore(parent)
-    , m_framebuffer(JAG_TEX_WIDTH * JAG_TEX_HEIGHT, 0)
+    , m_framebuffer(kTexW * kTexH, 0)
 {
-    m_frame = QImage(JAG_WIDTH, JAG_HEIGHT, QImage::Format_RGB32);
+    m_frame = QImage(326, 240, QImage::Format_RGB32);
     m_frame.fill(Qt::black);
     QString logPath = QCoreApplication::applicationDirPath() + "/jaguar_iris.log";
     LogInit(logPath.toLocal8Bit().data());
@@ -49,7 +49,6 @@ JaguarSystem::~JaguarSystem()
 {
     stop();
     if (m_initialized) {
-        VSTHost::instance().shutdown();
         DACDone();
         JaguarDone();
         m_initialized = false;
@@ -57,77 +56,45 @@ JaguarSystem::~JaguarSystem()
     LogDone();
 }
 
-// -----------------------------------------------------------------------------
-// loadROM
-// Sequence mirrors mainwin.cpp exactly:
-//   ReadSettings -> JaguarInit -> SelectBIOS -> JaguarReset -> DACPauseAudioThread(false)
-//   -> JaguarLoadFile -> SET32 stack/PC -> m68k_pulse_reset
-// -----------------------------------------------------------------------------
 bool JaguarSystem::loadROM(const QString &path)
 {
     if (m_initialized) {
-        VSTHost::instance().shutdown();
         DACDone();
         JaguarDone();
         m_initialized = false;
     }
 
-    // 1. vjs settings
-    QSettings qs("Underground Software", "Virtual Jaguar");
+    QSettings qs;
     memset(&vjs, 0, sizeof(vjs));
-    vjs.hardwareTypeNTSC        = qs.value("hardwareTypeNTSC",   true).toBool();
-    vjs.GPUEnabled              = qs.value("GPUEnabled",         true).toBool();
-    vjs.DSPEnabled              = qs.value("DSPEnabled",         true).toBool();
-    vjs.usePipelinedDSP         = qs.value("usePipelinedDSP",    false).toBool();
-    vjs.audioEnabled            = qs.value("audioEnabled",       true).toBool();
-    vjs.useJaguarBIOS           = qs.value("useJaguarBIOS",      false).toBool();
-    vjs.useRetailBIOS           = qs.value("useRetailBIOS",      false).toBool();
-    vjs.useDevBIOS              = qs.value("useDevBIOS",         false).toBool();
-    vjs.useFastBlitter          = qs.value("useFastBlitter",     false).toBool();
-    vjs.biosType                = qs.value("biosType",           BT_M_SERIES).toInt();
-    vjs.jaguarModel             = qs.value("jaguarModel",        JAG_M_SERIES).toInt();
-    vjs.allowWritesToROM        = true;
-    vjs.allowM68KExceptionCatch = false;
+    vjs.hardwareTypeNTSC        = (qs.value("Jaguar/TVStandard", "NTSC").toString() != "PAL");
+    vjs.GPUEnabled              = true;
+    vjs.DSPEnabled              = true;
+    vjs.usePipelinedDSP         = false;
+    vjs.audioEnabled            = true;
+    vjs.useJaguarBIOS           = false;
+    vjs.useRetailBIOS           = false;
+    vjs.useFastBlitter          = false;
     vjs.DRAM_size               = 0x200000;
-    vjs.hardwareTypeAlpine      = false;
-    vjs.softTypeDebugger        = false;
+    vjs.jaguarModel             = JAG_M_SERIES;
+    vjs.biosType                = BT_M_SERIES;
+    vjs.allowM68KExceptionCatch = false;
+    vjs.allowWritesToROM        = true;
 
     {
-        QString ep = qs.value("EEPROMs",
-            QCoreApplication::applicationDirPath() + "/eeproms/").toString();
+        QString ep = qs.value("Jaguar/EEPROMPath", "eeproms").toString();
         QDir().mkpath(ep);
         strncpy(vjs.EEPROMPath, ep.toLocal8Bit().constData(), MAX_PATH - 1);
     }
-    {
-        QString rp = qs.value("ROMs",
-            QCoreApplication::applicationDirPath() + "/software/").toString();
-        strncpy(vjs.ROMPath, rp.toLocal8Bit().constData(), MAX_PATH - 1);
-    }
 
-    // 2. SDL audio subsystem
-    if (!(SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO))
-        SDL_InitSubSystem(SDL_INIT_AUDIO);
-
-    // 3. JaguarInit (calls DACInit internally)
     jaguarCartInserted = true;
     JaguarInit();
     m_initialized = true;
 
-    // 4. BIOS
-    SelectBIOS(vjs.biosType);
-
-    // 5. Screen buffer
     JaguarSetScreenBuffer(m_framebuffer.data());
-    JaguarSetScreenPitch(JAG_TEX_WIDTH);
+    JaguarSetScreenPitch(kTexW);
 
-    // 6. JaguarReset + start audio (mirrors TogglePowerState(on))
-    JaguarReset();
-    DACPauseAudioThread(false);
-
-    // 7. Load ROM
     QByteArray pathBytes = path.toLocal8Bit();
-    bool ok = JaguarLoadFile(pathBytes.data());
-    if (!ok) {
+    if (!JaguarLoadFile(pathBytes.data())) {
         qWarning() << "JaguarSystem: failed to load" << path;
         DACDone();
         JaguarDone();
@@ -135,34 +102,35 @@ bool JaguarSystem::loadROM(const QString &path)
         return false;
     }
 
-    // 8. Fix vectors + reset 68K (mirrors mainwin LoadSoftware)
-    SET32(jaguarMainRAM, 0, vjs.DRAM_size);
-    if (!vjs.useJaguarBIOS)
-        SET32(jaguarMainRAM, 4, jaguarRunAddress);
-    m68k_pulse_reset();
+    m_activePatch = nullptr;
+    for (int i = 0; i < kJagPatchDBCount; ++i) {
+        if (kJagPatchDB[i].crc32 != 0 &&
+            kJagPatchDB[i].crc32 == jaguarMainROMCRC32) {
+            m_activePatch = &kJagPatchDB[i];
+            qDebug() << "JaguarSystem: patch active for" << kJagPatchDB[i].name;
+            break;
+        }
+    }
 
-    // 9. VST host — no plugin loading, just init gain
-    VSTHost::instance().init(48000.0, 2048);
-    // Only install SDL wrapper if user has plugins or non-unity gain
-    if (VSTHost::instance().pluginCount() > 0 ||
-        std::fabs(VSTHost::instance().masterGain() - 1.0f) > 0.01f)
-        VSTHost::instance().installSDLCallbackWrapper();
+    m_doomInStall      = false;
+    m_doomTicStall     = 0;
+    m_cfInGame         = false;
+    m_cfCurrentFbAddr  = 0;
+    m_cmUploadPrgAddr  = 0;
+    m_cmCurrentBufAddr = 0;
 
-    // 10. Clear input
+    JaguarReset();
+    DACPauseAudioThread(false);
+
     memset(m_joypad0, 0, sizeof(m_joypad0));
     memset(m_joypad1, 0, sizeof(m_joypad1));
     m_frame.fill(Qt::black);
 
-    QString lower = path.toLower();
-    m_is_cdrom = lower.endsWith(".cdi") || lower.endsWith(".iso");
-
     qDebug() << "JaguarSystem: loaded" << QFileInfo(path).fileName()
-             << (m_is_cdrom ? "(CD-ROM)" : "(cartridge)")
+             << "CRC32=" << Qt::hex << jaguarMainROMCRC32
              << "runAddr=" << Qt::hex << jaguarRunAddress;
     return true;
 }
-
-// -----------------------------------------------------------------------------
 
 void JaguarSystem::start()
 {
@@ -188,100 +156,115 @@ void JaguarSystem::step()
 
     JaguarExecuteNew();
 
-    int visW = static_cast<int>(TOMGetVideoModeWidth());
-    int visH = vjs.hardwareTypeNTSC ? VIRTUAL_SCREEN_HEIGHT_NTSC
-                                    : VIRTUAL_SCREEN_HEIGHT_PAL;
-    visW = std::clamp(visW, 160, 800);
-    visH = std::clamp(visH, 100, 576);
+    applyPatches();
+
+    const uint16_t vmode  = GET16(tomRam8, 0x28);
+    const uint16_t hdb1   = GET16(tomRam8, 0x38);
+    const uint16_t hde    = GET16(tomRam8, 0x3C);
+    const int      pwidth = ((vmode & 0x0E00) >> 9) + 1;
+    const int      calcW  = (hde > hdb1) ? (hde - hdb1) / pwidth : 0;
+    const int visW = std::clamp(calcW > 0 ? calcW : VIRTUAL_SCREEN_WIDTH, 256, 800);
+    const int visH = std::clamp(
+        vjs.hardwareTypeNTSC ? VIRTUAL_SCREEN_HEIGHT_NTSC : VIRTUAL_SCREEN_HEIGHT_PAL,
+        100, 576);
 
     if (m_frame.size() != QSize(visW, visH))
         m_frame = QImage(visW, visH, QImage::Format_RGB32);
 
-    for (int y = 0; y < visH; ++y) {
-        const uint32_t *src = screenBuffer + y * screenPitch;
+    for (int y = 0; y < visH && y < kTexH; ++y) {
+        const uint32_t *src = m_framebuffer.data() + y * kTexW;
         QRgb *dst = reinterpret_cast<QRgb *>(m_frame.scanLine(y));
-        for (int x = 0; x < visW; ++x) {
-            uint32_t p = src[x];
+        for (int x = 0; x < visW && x < kTexW; ++x) {
+            const uint32_t p = src[x];
             dst[x] = qRgb((p >> 24) & 0xFF, (p >> 16) & 0xFF, (p >> 8) & 0xFF);
         }
     }
 }
 
-// -----------------------------------------------------------------------------
-
 QImage JaguarSystem::getFrame() const { return m_frame; }
-bool JaguarSystem::saveState(const QString &path)
+
+void JaguarSystem::applyPatches()
 {
-    if (!m_initialized) return false;
-
-    QFile f(path);
-    if (!f.open(QIODevice::WriteOnly)) return false;
-
-    QDataStream ds(&f);
-    ds.setByteOrder(QDataStream::BigEndian);
-
-    // Header
-    ds.writeRawData("IRIS_JAG", 8);
-    ds << (quint32)1; // version
-
-    // 68K registers
-    for (int r = M68K_REG_D0; r <= M68K_REG_A7; r++)
-        ds << (quint32)m68k_get_reg(nullptr, (m68k_register_t)r);
-    ds << (quint32)m68k_get_reg(nullptr, M68K_REG_PC);
-    ds << (quint32)m68k_get_reg(nullptr, M68K_REG_SR);
-
-    // Main RAM (2MB)
-    ds.writeRawData(reinterpret_cast<const char*>(jaguarMainRAM), vjs.DRAM_size);
-
-    // TOM RAM (16KB)
-    ds.writeRawData(reinterpret_cast<const char*>(TOMGetRamPointer()), 0x4000);
-
-    return f.error() == QFile::NoError;
-}
-
-bool JaguarSystem::loadState(const QString &path)
-{
-    if (!m_initialized) return false;
-
-    QFile f(path);
-    if (!f.open(QIODevice::ReadOnly)) return false;
-
-    QDataStream ds(&f);
-    ds.setByteOrder(QDataStream::BigEndian);
-
-    // Header
-    char magic[8];
-    ds.readRawData(magic, 8);
-    if (memcmp(magic, "IRIS_JAG", 8) != 0) return false;
-    quint32 version; ds >> version;
-    if (version != 1) return false;
-
-    // 68K registers
-    for (int r = M68K_REG_D0; r <= M68K_REG_A7; r++) {
-        quint32 v; ds >> v;
-        m68k_set_reg((m68k_register_t)r, v);
+    if (!m_activePatch) return;
+    const uint32_t pc = m68k_get_reg(nullptr, M68K_REG_PC);
+    for (int i = 0; i < m_activePatch->count; ++i) {
+        if (m_activePatch->entries[i].m68kPC != pc) continue;
+        switch (m_activePatch->entries[i].action) {
+        case JagPatchAction::Doom_MenuStall:     patch_Doom_MenuStall();     break;
+        case JagPatchAction::CF_DrawSky:         patch_CF_DrawSky();         break;
+        case JagPatchAction::CF_BufferFlip:      patch_CF_BufferFlip();      break;
+        case JagPatchAction::CF_GameBegin:       patch_CF_GameBegin();       break;
+        case JagPatchAction::CF_GameEnd:         patch_CF_GameEnd();         break;
+        case JagPatchAction::AvP_SetVidParams:   patch_AvP_SetVidParams();   break;
+        case JagPatchAction::CM_UploadGPU:       patch_CM_UploadGPU();       break;
+        case JagPatchAction::CM_UploadGPUFinish: patch_CM_UploadGPUFinish(); break;
+        case JagPatchAction::CM_BgBlit:          patch_CM_BgBlit();          break;
+        case JagPatchAction::CM_EndFrame:        patch_CM_EndFrame();        break;
+        default: break;
+        }
     }
-    quint32 pc, sr; ds >> pc >> sr;
-    m68k_set_reg(M68K_REG_PC, pc);
-    m68k_set_reg(M68K_REG_SR, sr);
-
-    // Main RAM
-    ds.readRawData(reinterpret_cast<char*>(jaguarMainRAM), vjs.DRAM_size);
-
-    // TOM RAM
-    ds.readRawData(reinterpret_cast<char*>(TOMGetRamPointer()), 0x4000);
-
-    return f.error() == QFile::NoError;
 }
+
+void JaguarSystem::patch_Doom_MenuStall()
+{
+    const uint32_t ticCount = JaguarReadLong(0x00047DA4);
+    if (m_doomInStall) {
+        if (ticCount >= m_doomTicStall) m_doomInStall = false;
+    } else {
+        m_doomTicStall = ticCount + 2;
+        m_doomInStall  = true;
+    }
+    if (m_doomInStall)
+        m68k_set_reg(M68K_REG_PC, 0x00009CAA - 2);
+}
+
+void JaguarSystem::patch_CF_DrawSky()
+{
+    if (!m_cfInGame) return;
+    const uint32_t fbOffset = JaguarReadLong(0x00004044);
+    m_cfCurrentFbAddr = 0x000E8000 + fbOffset;
+}
+
+void JaguarSystem::patch_CF_BufferFlip()  { m_cfCurrentFbAddr = 0; }
+void JaguarSystem::patch_CF_GameBegin()   { m_cfInGame = true; }
+void JaguarSystem::patch_CF_GameEnd()     { m_cfInGame = false; }
+
+void JaguarSystem::patch_AvP_SetVidParams()
+{
+    const uint16_t cur = JaguarReadWord(0x0002EE8C);
+    if (cur > 2) JaguarWriteWord(0x0002EE8C, 2);
+}
+
+void JaguarSystem::patch_CM_UploadGPU()
+{
+    m_cmUploadPrgAddr = m68k_get_reg(nullptr, M68K_REG_D0);
+}
+
+void JaguarSystem::patch_CM_UploadGPUFinish() {}
+
+void JaguarSystem::patch_CM_BgBlit()
+{
+    const uint32_t a0     = m68k_get_reg(nullptr, M68K_REG_A0);
+    const uint32_t bgAddr = JaguarReadLong(a0);
+    if (bgAddr >= 0x00110000 && bgAddr <= 0x00110010) {
+        const uint16_t fadeCount = JaguarReadWord(0x00009A50);
+        m_cmCurrentBufAddr = (fadeCount == 0) ? bgAddr : 0;
+    }
+}
+
+void JaguarSystem::patch_CM_EndFrame() { m_cmCurrentBufAddr = 0; }
+
+bool JaguarSystem::saveState(const QString &path) { Q_UNUSED(path); return false; }
+bool JaguarSystem::loadState(const QString &path) { Q_UNUSED(path); return false; }
 
 void JaguarSystem::setJoystickState(const JoystickState &s)
 {
     memset(m_joypad0, 0, sizeof(m_joypad0));
-    if (s.up)    m_joypad0[BUTTON_U] = 1;
-    if (s.down)  m_joypad0[BUTTON_D] = 1;
-    if (s.left)  m_joypad0[BUTTON_L] = 1;
-    if (s.right) m_joypad0[BUTTON_R] = 1;
-    if (s.fire)  m_joypad0[BUTTON_B] = 1;
+    if (s.up)    m_joypad0[BUTTON_U]     = 1;
+    if (s.down)  m_joypad0[BUTTON_D]     = 1;
+    if (s.left)  m_joypad0[BUTTON_L]     = 1;
+    if (s.right) m_joypad0[BUTTON_R]     = 1;
+    if (s.fire)  m_joypad0[BUTTON_B]     = 1;
     if (s.reset) m_joypad0[BUTTON_PAUSE] = 1;
 }
 
@@ -299,11 +282,16 @@ void JaguarSystem::setJaguarInputState(const JaguarInputState &s)
     if (s.pause)  m_joypad0[BUTTON_PAUSE]  = 1;
     if (s.star)   m_joypad0[BUTTON_s]      = 1;
     if (s.hash)   m_joypad0[BUTTON_d]      = 1;
-    if (s.n1) m_joypad0[BUTTON_1] = 1; if (s.n2) m_joypad0[BUTTON_2] = 1;
-    if (s.n3) m_joypad0[BUTTON_3] = 1; if (s.n4) m_joypad0[BUTTON_4] = 1;
-    if (s.n5) m_joypad0[BUTTON_5] = 1; if (s.n6) m_joypad0[BUTTON_6] = 1;
-    if (s.n7) m_joypad0[BUTTON_7] = 1; if (s.n8) m_joypad0[BUTTON_8] = 1;
-    if (s.n9) m_joypad0[BUTTON_9] = 1; if (s.n0) m_joypad0[BUTTON_0] = 1;
+    if (s.n0)  m_joypad0[BUTTON_0] = 1;
+    if (s.n1)  m_joypad0[BUTTON_1] = 1;
+    if (s.n2)  m_joypad0[BUTTON_2] = 1;
+    if (s.n3)  m_joypad0[BUTTON_3] = 1;
+    if (s.n4)  m_joypad0[BUTTON_4] = 1;
+    if (s.n5)  m_joypad0[BUTTON_5] = 1;
+    if (s.n6)  m_joypad0[BUTTON_6] = 1;
+    if (s.n7)  m_joypad0[BUTTON_7] = 1;
+    if (s.n8)  m_joypad0[BUTTON_8] = 1;
+    if (s.n9)  m_joypad0[BUTTON_9] = 1;
 }
 
 void JaguarSystem::initAudio(const QString &)
@@ -318,11 +306,11 @@ void JaguarSystem::closeAudio()
 
 void JaguarSystem::setAudioVolume(int percent)
 {
-    m_audio_volume = std::clamp(percent, 0, 100);
+    m_audioVolume = std::clamp(percent, 0, 100);
 }
 
 void JaguarSystem::setAudioEnabled(bool enabled)
 {
-    m_audio_enabled = enabled;
+    m_audioEnabled = enabled;
     if (m_initialized) DACPauseAudioThread(!enabled);
 }

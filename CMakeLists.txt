@@ -10,45 +10,28 @@ set(CMAKE_AUTOUIC ON)
 file(GLOB GEARLYNX_SRC "${CMAKE_SOURCE_DIR}/build/src/*.cpp")
 set(GEARLYNX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/build/src")
 
-# Jaguar core (Virtual Jaguar RX reference)
-set(JAGUAR_REF_DIR "${CMAKE_SOURCE_DIR}/JAGUARCOREREFERENCE/Virtual-Jaguar-Rx-master/src")
-
-file(GLOB JAGUAR_SRC
-    "${JAGUAR_REF_DIR}/*.cpp"
-)
-# Exclude reference GUI/debug/ELF dependent units not needed in Iris runtime
-list(FILTER JAGUAR_SRC EXCLUDE REGEX ".*/debugger/.*")
+# Virtual Jaguar RX core
+set(JAG_DIR "${CMAKE_SOURCE_DIR}/JAGUAR REFERENCE 2.0/src")
+file(GLOB JAG_SRC "${JAG_DIR}/*.cpp")
+list(FILTER JAG_SRC EXCLUDE REGEX ".*/debugger/.*")
+list(FILTER JAG_SRC EXCLUDE REGEX ".*/gui/.*")
 set(M68K_SRC
-    "${JAGUAR_REF_DIR}/m68000/m68kinterface.c"
-    "${JAGUAR_REF_DIR}/m68000/cpuextra.c"
-    "${JAGUAR_REF_DIR}/m68000/readcpu.c"
-    "${JAGUAR_REF_DIR}/m68000/m68kdasm.c"
-    "${JAGUAR_REF_DIR}/m68000/obj/cpuemu.c"
-    "${JAGUAR_REF_DIR}/m68000/obj/cpustbl.c"
-    "${JAGUAR_REF_DIR}/m68000/obj/cpudefs.c"
+    "${JAG_DIR}/m68000/m68kinterface.c"
+    "${JAG_DIR}/m68000/cpuextra.c"
+    "${JAG_DIR}/m68000/readcpu.c"
+    "${JAG_DIR}/m68000/m68kdasm.c"
+    "${JAG_DIR}/m68000/obj/cpuemu.c"
+    "${JAG_DIR}/m68000/obj/cpustbl.c"
+    "${JAG_DIR}/m68000/obj/cpudefs.c"
 )
-
-# VST3 SDK minimal sources needed for IID definitions and FUID
-set(VST3_SDK_DIR "${CMAKE_SOURCE_DIR}/src/audio/vst3sdk")
-set(VST3_SRC
-    "${VST3_SDK_DIR}/pluginterfaces/base/funknown.cpp"
-    "${VST3_SDK_DIR}/pluginterfaces/base/conststringtable.cpp"
-    "${VST3_SDK_DIR}/pluginterfaces/base/ustring.cpp"
-    "${CMAKE_SOURCE_DIR}/src/audio/vst3_iids.cpp"
-)
-set(JAGUAR_INCLUDE_DIR "${JAGUAR_REF_DIR}")
-
-# Suppress const-string and other legacy C warnings in the VJ core
-# Also disable the interactive debug dialogs (QMessageBox popups) and
-# the Alpine/Debugger features that require the VJ GUI
 if(MSVC)
-    set_source_files_properties(${JAGUAR_SRC} PROPERTIES
-        COMPILE_OPTIONS "/Zc:strictStrings-;/wd4996;/wd4244;/wd4267"
-        COMPILE_DEFINITIONS "ALPINE_FUNCTIONS=0;CPU_DEBUG_MEMORY=0;CPU_DEBUG_TRACING=0;IRIS_HEADLESS=1"
+    set_source_files_properties(${JAG_SRC} PROPERTIES
+        COMPILE_OPTIONS "/Zc:strictStrings-;/wd4996;/wd4244;/wd4267;/wd4828"
+        COMPILE_DEFINITIONS "IRIS_HEADLESS=1;CPU_DEBUG_MEMORY=0;CPU_DEBUG_TRACING=0;ALPINE_FUNCTIONS=0"
     )
 endif()
 
-# Force Qt6 from official installer (not vcpkg) to avoid DLL conflicts
+# Force Qt6 from official installer
 set(Qt6_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6" CACHE PATH "" FORCE)
 set(Qt6CoreTools_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6CoreTools" CACHE PATH "" FORCE)
 set(Qt6GuiTools_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6GuiTools" CACHE PATH "" FORCE)
@@ -60,11 +43,9 @@ set(Qt6Svg_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6Svg" CACHE PATH "" FORCE)
 set(Qt6Network_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6Network" CACHE PATH "" FORCE)
 set(Qt6EntryPointPrivate_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6EntryPointPrivate" CACHE PATH "" FORCE)
 set(Qt6ZlibPrivate_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6ZlibPrivate" CACHE PATH "" FORCE)
-
 set(Qt6OpenGL_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6OpenGL" CACHE PATH "" FORCE)
 set(Qt6OpenGLWidgets_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6OpenGLWidgets" CACHE PATH "" FORCE)
 
-# Disable vcpkg auto DLL copy — it copies vcpkg Qt DLLs that conflict with official Qt
 set(VCPKG_APPLOCAL_DEPS OFF CACHE BOOL "" FORCE)
 set(X_VCPKG_APPLOCAL_DEPS_INSTALL OFF CACHE BOOL "" FORCE)
 
@@ -72,7 +53,6 @@ find_package(Qt6 COMPONENTS Widgets Svg Network OpenGL OpenGLWidgets REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(ZLIB REQUIRED)
 
-# discord-rpc via vcpkg (sem CMake config, usar find_library)
 find_path(DISCORD_RPC_INCLUDE_DIR discord_rpc.h PATHS "D:/vcpkg/installed/x64-windows/include" REQUIRED)
 find_library(DISCORD_RPC_LIB discord-rpc PATHS "D:/vcpkg/installed/x64-windows/lib" REQUIRED)
 
@@ -98,6 +78,14 @@ qt_add_executable(irisemulator
     src/ui/GameList/GameListWidget.ui
     src/ui/GameList/GameListModel.cpp
     src/ui/GameList/GameListModel.h
+    src/ui/CoverDownloadDialog.cpp
+    src/ui/CoverDownloadDialog.h
+    src/ui/DebugWindow.cpp
+    src/ui/DebugWindow.h
+    src/ui/WelcomeDialog.cpp
+    src/ui/WelcomeDialog.h
+    src/ui/AboutDialog.cpp
+    src/ui/AboutDialog.h
     src/EmulatorCore.cpp
     src/SDLInput.cpp
     src/CPU6507.cpp
@@ -116,45 +104,33 @@ qt_add_executable(irisemulator
     src/mapper/Mapper3E.h
     src/mapper/MapperFA.h
     src/mapper/MapperFE.h
-    src/lynx/LynxSystem.cpp
-    src/lynx/LynxSystem.h
     src/jaguar/JaguarSystem.cpp
     src/jaguar/JaguarSystem.h
-    src/audio/VSTHost.cpp
-    src/audio/VSTHost.h
+    src/jaguar/jaguar_gui_stubs.cpp
+    src/jaguar/JaguarPatchDB.h
+    src/lynx/LynxSystem.cpp
+    src/lynx/LynxSystem.h
     src/IEmulatorCore.h
     src/DiscordRPC.cpp
     src/DiscordRPC.h
-    src/ui/CoverDownloadDialog.cpp
-    src/ui/CoverDownloadDialog.h
-    src/ui/DebugWindow.cpp
-    src/ui/DebugWindow.h
-    src/ui/WelcomeDialog.cpp
-    src/ui/WelcomeDialog.h
-    src/ui/AboutDialog.cpp
-    src/ui/AboutDialog.h
-    src/ui/JaguarIntroWidget.cpp
-    src/ui/JaguarIntroWidget.h
     ${GEARLYNX_SRC}
-    ${JAGUAR_SRC}
+    ${JAG_SRC}
     ${M68K_SRC}
-    ${VST3_SRC}
     src/resources/icons/resources.qrc
 )
 
 target_include_directories(irisemulator PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/lynx
-    ${CMAKE_SOURCE_DIR}/src/jaguar
     ${CMAKE_SOURCE_DIR}/src/audio
     ${CMAKE_SOURCE_DIR}/src/audio/vst3sdk
     ${CMAKE_SOURCE_DIR}/src/mapper
     ${CMAKE_SOURCE_DIR}/src/ui
     ${CMAKE_SOURCE_DIR}/src/ui/GameList
-    ${GEARLYNX_INCLUDE_DIR}
-    ${JAGUAR_INCLUDE_DIR}
-    ${JAGUAR_INCLUDE_DIR}/m68000
+    "${JAG_DIR}"
+    "${JAG_DIR}/m68000"
     ${CMAKE_SOURCE_DIR}/src/jaguar
+    ${GEARLYNX_INCLUDE_DIR}
     ${DISCORD_RPC_INCLUDE_DIR}
     $<TARGET_PROPERTY:SDL2::SDL2,INTERFACE_INCLUDE_DIRECTORIES>
     ${CMAKE_CURRENT_BINARY_DIR}

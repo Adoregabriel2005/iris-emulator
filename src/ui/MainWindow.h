@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QtCore/QElapsedTimer>
 #include <QtCore/QFileInfo>
 #include <QtCore/QStandardPaths>
 #include <QtWidgets/QLabel>
@@ -19,6 +20,7 @@ class OverlayWidget;
 class EmulatorCore;
 class IEmulatorCore;
 class LynxSystem;
+class JaguarSystem;
 class SDLInput;
 class DiscordRPC;
 class DebugWindow;
@@ -101,7 +103,7 @@ private:
     void setProgressBar(int current, int total);
     void clearProgressBar();
 
-    enum class ConsoleMode { Auto, Atari2600, AtariLynx };
+    enum class ConsoleMode { Auto, Atari2600, AtariLynx, AtariJaguar };
 
     void setConsoleMode(ConsoleMode mode);
     void updateConsoleModeActionText();
@@ -121,7 +123,8 @@ private:
     DisplayWidget* m_display_widget = nullptr;
     OverlayWidget* m_overlay_widget = nullptr;
     EmulatorCore* m_emu_core = nullptr;
-    LynxSystem* m_lynx_core = nullptr;
+    LynxSystem*    m_lynx_core    = nullptr;
+    JaguarSystem*  m_jaguar_core  = nullptr;
     IEmulatorCore* m_active_core = nullptr; // points to whichever core is running
     SDLInput* m_sdl_input = nullptr;
 
@@ -141,7 +144,7 @@ private:
     bool m_is_running = false;
     bool m_was_paused = false;
     int m_fps_frame_count = 0;
-    qint64 m_fps_last_time = 0;
+    QElapsedTimer m_fps_timer;
     QString m_current_rom_path;
     QString m_current_game_title;
 };
