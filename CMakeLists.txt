@@ -11,7 +11,7 @@ file(GLOB GEARLYNX_SRC "${CMAKE_SOURCE_DIR}/build/src/*.cpp")
 set(GEARLYNX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/build/src")
 
 # Virtual Jaguar RX core
-set(JAG_DIR "${CMAKE_SOURCE_DIR}/JAGUAR REFERENCE 2.0/src")
+set(JAG_DIR "${CMAKE_SOURCE_DIR}/JAGUAR REFERENCE 1/src")
 file(GLOB JAG_SRC "${JAG_DIR}/*.cpp")
 list(FILTER JAG_SRC EXCLUDE REGEX ".*/debugger/.*")
 list(FILTER JAG_SRC EXCLUDE REGEX ".*/gui/.*")
