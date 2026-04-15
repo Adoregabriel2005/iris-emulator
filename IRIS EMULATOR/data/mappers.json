@@ -1,0 +1,31 @@
+{
+  "717656f561823edaa69240471c3106963f5c307e": { "name": "Activision Decathlon (NTSC)", "type": "F8SC" },
+  "e0d47565df935c064bc4055636f37a0432ab3727": { "name": "Activision Decathlon [fixed] (NTSC)", "type": "F8SC" },
+  "7a89163982d0b3c89ed87371334b6a10c56e1d2a": { "name": "Decathlon (PAL 16K)", "type": "F6" },
+
+  "282f94817401e3725c622b73a0c05685ce761783": { "name": "H.E.R.O. (NTSC)", "type": "F8" },
+  "04e9462254ae9db4804b3d331f2ad22c61901311": { "name": "H.E.R.O. (SECAM)", "type": "F8" },
+  "9d1f48fd30026f84f6c1c08fe69d423fa437f40f": { "name": "H.E.R.O. (Tron)", "type": "F8" },
+  "de0b7ee7226831a4c8f4d57badc025e1da42f1d4": { "name": "H.E.R.O. (JVP)", "type": "F8" },
+
+  "47619edb352f7f955f811cbb03a00746c8e099b1": { "name": "Beamrider (NTSC)", "type": "F8SC" },
+  "0ae5d0f01e63e053baba4bdaaed8a82e59334aaf": { "name": "Beamrider (PAL)", "type": "F8SC" },
+
+  "29547a5b632060fbbc935267b709811a77fff127": { "name": "Crackpots (HES PAL 8K)", "type": "F8SC" },
+
+  "78606c2f3dd418e903a0760746d11714e74a55a6": { "name": "Miner 2049er (NTSC)", "type": "3F" },
+  "c44b2f87695440828d6844ae630d3f975b582385": { "name": "Miner 2049er (PAL)", "type": "3F" },
+
+  "5db168bb450dc82f618dfa60b9f271ade3a057c7": { "name": "Espial (NTSC)", "type": "3F" },
+  "27d925d482553deff23f0889b3051091977d6920": { "name": "Espial (PAL)", "type": "3F" },
+
+  "8727630ca840dd7643bfc5762a6f597194ecdda3": { "name": "Polaris (Prototype)", "type": "3F" },
+  "2410931a8a18b915993b6982fbabab0f437967a4": { "name": "Polaris (PAL)", "type": "3F" },
+
+  "21a3ee57cb622f410ffd51986ab80acadb8d44b7": { "name": "Robot Tank (NTSC)", "type": "FA" },
+  "2333bc875ce8fffe7c755c748856c07d079db45c": { "name": "Robot Tank (HES PAL)", "type": "FA" },
+  "413341c947157197ad4c9dd3cef7d0da7b2e9361": { "name": "Robot Tank (PAL)", "type": "FA" },
+
+  "49e01b8048ae344cb65838f6b1c1de0e1f416f29": { "name": "BurgerTime (NTSC)", "type": "E7" },
+  "6db8fa65755db86438ada3d90f4c39cc288dcf84": { "name": "Masters of the Universe (NTSC)", "type": "E7" }
+}

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Gradiente do fundo -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#0d0d1a"/>
+    </radialGradient>
+    <!-- Gradiente da íris -->
+    <radialGradient id="irisGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4a90d9"/>
+      <stop offset="40%" stop-color="#2563b0"/>
+      <stop offset="100%" stop-color="#0a2a6e"/>
+    </radialGradient>
+    <!-- Gradiente do brilho -->
+    <radialGradient id="glowGrad" cx="35%" cy="30%" r="40%">
+      <stop offset="0%" stop-color="#7ec8ff" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#7ec8ff" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Sombra do olho -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#0058d0" flood-opacity="0.5"/>
+    </filter>
+    <!-- Brilho externo -->
+    <filter id="outerGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Fundo redondo -->
+  <rect width="512" height="512" rx="80" fill="url(#bgGrad)"/>
+
+  <!-- Forma do olho (amêndoa) -->
+  <g filter="url(#shadow)">
+    <path d="M 80 256 Q 256 100 432 256 Q 256 412 80 256 Z" fill="#0a1628" stroke="#1e4a8a" stroke-width="3"/>
+
+    <!-- Íris -->
+    <circle cx="256" cy="256" r="100" fill="url(#irisGrad)"/>
+
+    <!-- Anéis da íris -->
+    <circle cx="256" cy="256" r="100" fill="none" stroke="#3a7bd5" stroke-width="2" opacity="0.6"/>
+    <circle cx="256" cy="256" r="82" fill="none" stroke="#2a5fa8" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="256" cy="256" r="65" fill="none" stroke="#1e4a8a" stroke-width="1" opacity="0.4"/>
+
+    <!-- Pupila -->
+    <circle cx="256" cy="256" r="44" fill="#050810"/>
+
+    <!-- Reflexo de luz principal -->
+    <ellipse cx="228" cy="228" rx="18" ry="14" fill="white" opacity="0.85" transform="rotate(-20, 228, 228)"/>
+    <!-- Reflexo secundário menor -->
+    <ellipse cx="278" cy="274" rx="7" ry="5" fill="white" opacity="0.35" transform="rotate(-20, 278, 274)"/>
+
+    <!-- Brilho geral da íris -->
+    <circle cx="256" cy="256" r="100" fill="url(#glowGrad)"/>
+
+    <!-- Cílios superiores (linhas decorativas) -->
+    <line x1="180" y1="168" x2="172" y2="148" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <line x1="210" y1="148" x2="206" y2="126" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <line x1="242" y1="140" x2="242" y2="118" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <line x1="274" y1="148" x2="278" y2="126" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <line x1="304" y1="164" x2="312" y2="144" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <line x1="330" y1="188" x2="342" y2="172" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+
+    <!-- Contorno do olho -->
+    <path d="M 80 256 Q 256 100 432 256 Q 256 412 80 256 Z" fill="none" stroke="#4a90d9" stroke-width="4"/>
+  </g>
+
+  <!-- Fuji Atari estilizado dentro da pupila -->
+  <g transform="translate(256,256)" opacity="0.9">
+    <!-- Três barras do Fuji em azul claro -->
+    <rect x="-14" y="-10" width="8" height="18" rx="2" fill="#7ec8ff" opacity="0.9"/>
+    <rect x="-3" y="-16" width="6" height="24" rx="2" fill="#a8d8ff" opacity="0.95"/>
+    <rect x="6" y="-10" width="8" height="18" rx="2" fill="#7ec8ff" opacity="0.9"/>
+  </g>
+
+  <!-- Texto ÍRIS -->
+  <text x="256" y="430" font-family="'Segoe UI', Arial, sans-serif" font-size="72" font-weight="700"
+        fill="white" text-anchor="middle" letter-spacing="12" opacity="0.95">ÍRIS</text>
+
+  <!-- Linha decorativa sob o texto -->
+  <line x1="140" y1="448" x2="372" y2="448" stroke="#4a90d9" stroke-width="2" opacity="0.6"/>
+
+  <!-- Subtexto EMULATOR -->
+  <text x="256" y="472" font-family="'Segoe UI', Arial, sans-serif" font-size="22" font-weight="400"
+        fill="#4a90d9" text-anchor="middle" letter-spacing="8" opacity="0.8">EMULATOR</text>
+</svg>

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(findstr *)",
+      "Bash(taskkill *)",
+      "Bash(xcopy *)",
+      "Bash(copy *)"
+    ]
+  },
+  "$version": 3
+}

@@ -1,0 +1,1 @@
+290: QAction* firstAction = m_ui.toolBar- ? nullptr : m_ui.toolBar-; 

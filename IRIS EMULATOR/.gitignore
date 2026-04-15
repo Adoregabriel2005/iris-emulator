@@ -1,0 +1,89 @@
+# Build directories
+build/
+build_release2/
+out/
+*.vcxproj.user
+
+# ROMs — never commit (copyright)
+ROMS/
+*.bin
+*.a26
+*.rom
+*.lnx
+*.lyx
+*.zip
+
+# BIOS — never commit (copyright)
+BIOS/
+*.img
+*.mig
+
+# Covers / art
+.ataricovers/
+*.jpg
+*.png
+!src/resources/*.png
+!src/resources/*.svg
+
+# Python venv
+.venv/
+__pycache__/
+*.pyc
+
+# Logs / debug
+*.log
+debug_out.txt
+lynx_trace.txt
+lynx_debug_frame.png
+
+# Qt / CMake generated
+*.autogen/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.dir/
+*.stamp
+*.ilk
+*.pdb
+*.exp
+*.lib
+!src/resources/iris_emulator.ico
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode (keep c_cpp_properties for contributors)
+.vscode/*
+!.vscode/c_cpp_properties.json
+
+# Archives
+*.zip
+*.7z
+*.rar
+Gearlynx-main.zip
+handy-sdl-master.zip
+libretro-handy-master.zip
+
+# Gearlynx source (included as build/src, not tracked separately)
+handy-sdl-master/
+libretro-handy-master/
+
+# Reference code — not part of the project
+pcsx2-qt/
+JAGUARCOREREFERENCE/
+
+# Backup and docs
+README.md.bak
+handy_specifications.pdf
+aqtinstall.log
+debug_out.txt
+lynx_trace.txt
+lynx_debug_frame.png
+
+# GitHub agents
+.github/agents/

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#0d0d1a"/>
+    </radialGradient>
+    <radialGradient id="iris" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#5ba3e8"/>
+      <stop offset="45%" stop-color="#2563b0"/>
+      <stop offset="100%" stop-color="#0a2a6e"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="35%" cy="30%" r="40%">
+      <stop offset="0%" stop-color="#7ec8ff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#7ec8ff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="s">
+      <feDropShadow dx="0" dy="3" stdDeviation="8" flood-color="#0058d0" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Fundo -->
+  <rect width="256" height="256" rx="48" fill="url(#bg)"/>
+
+  <!-- Olho -->
+  <g filter="url(#s)">
+    <path d="M 28 128 Q 128 44 228 128 Q 128 212 28 128 Z" fill="#080f1e"/>
+    <circle cx="128" cy="128" r="56" fill="url(#iris)"/>
+    <circle cx="128" cy="128" r="56" fill="none" stroke="#3a7bd5" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="128" cy="128" r="44" fill="none" stroke="#2a5fa8" stroke-width="1" opacity="0.4"/>
+    <circle cx="128" cy="128" r="24" fill="#040810"/>
+    <ellipse cx="114" cy="114" rx="10" ry="8" fill="white" opacity="0.85" transform="rotate(-20,114,114)"/>
+    <ellipse cx="140" cy="138" rx="4" ry="3" fill="white" opacity="0.3" transform="rotate(-20,140,138)"/>
+    <circle cx="128" cy="128" r="56" fill="url(#glow)"/>
+    <!-- Fuji na pupila -->
+    <rect x="120" y="122" width="4" height="10" rx="1" fill="#7ec8ff" opacity="0.9"/>
+    <rect x="126" y="119" width="4" height="13" rx="1" fill="#a8d8ff" opacity="0.95"/>
+    <rect x="132" y="122" width="4" height="10" rx="1" fill="#7ec8ff" opacity="0.9"/>
+    <!-- Contorno -->
+    <path d="M 28 128 Q 128 44 228 128 Q 128 212 28 128 Z" fill="none" stroke="#4a90d9" stroke-width="3"/>
+  </g>
+</svg>

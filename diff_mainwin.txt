@@ -1,0 +1,543 @@
+commit e13a9bb0c5dd20eaf9921a6be6b2ab92a55cc9a4
+Author: Gorigamia <gorigamia@github.com>
+Date:   Sun Apr 12 18:16:25 2026 -0300
+
+    feat: Jaguar HLE boot intro + fix JaguarInputState/pollJaguar
+
+diff --git a/src/ui/MainWindow.cpp b/src/ui/MainWindow.cpp
+index e9d6435..14e0b60 100644
+--- a/src/ui/MainWindow.cpp
++++ b/src/ui/MainWindow.cpp
+@@ -11,6 +11,10 @@
+ #include "CoverDownloadDialog.h"
+ #include "DebugWindow.h"
+ #include "DiscordRPC.h"
++#include "WelcomeDialog.h"
++#include "AboutDialog.h"
++#include "JaguarIntroWidget.h"
++#include "../jaguar/JaguarSystem.h"
+ 
+ #include <QtCore/QDateTime>
+ #include <QtCore/QDir>
+@@ -31,9 +35,10 @@
+ 
+ const char* MainWindow::ROM_FILE_FILTER =
+     QT_TRANSLATE_NOOP("MainWindow",
+-        "All Supported ROMs (*.bin *.a26 *.rom *.lnx *.lyx *.zip);;"
++        "All Supported ROMs (*.bin *.a26 *.rom *.lnx *.lyx *.j64 *.jag *.zip);;"
+         "Atari 2600 ROMs (*.bin *.a26 *.rom);;"
+         "Atari Lynx ROMs (*.lnx *.lyx);;"
++        "Atari Jaguar ROMs (*.j64 *.jag);;"
+         "All Files (*.*)");
+ 
+ MainWindow* g_main_window = nullptr;
+@@ -52,6 +57,15 @@ MainWindow::~MainWindow()
+         g_main_window = nullptr;
+ }
+ 
++// Returns the base save-state directory, creating sub-folders on first call.
++static QString saveStateBaseDir()
++{
++    QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/savestates";
++    QDir().mkpath(base + "/quick");
++    QDir().mkpath(base + "/manual");
++    return base;
++}
++
+ void MainWindow::initialize()
+ {
+     m_ui.setupUi(this);
+@@ -59,30 +73,16 @@ void MainWindow::initialize()
+     connectSignals();
+     restoreStateFromConfig();
+ 
+-    // Wizard de primeiro uso: pedir diretório de ROMs se não tiver nenhum
+-    {
+-        QSettings s;
+-        QStringList dirs = s.value("GameList/Directories").toStringList();
+-        if (dirs.isEmpty()) {
+-            QMessageBox msg(this);
+-            msg.setWindowTitle(tr("Welcome to Íris Emulator!"));
+-            msg.setIconPixmap(QPixmap(":/iris_icon.svg").scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+-            msg.setText(tr(
+-                "<b>Welcome to Íris Emulator!</b><br><br>"
+-                "To get started, add a folder containing your ROM files.<br>"
+-                "Supported formats: <code>.bin .a26 .rom</code> (Atari 2600) · <code>.lnx .lyx</code> (Atari Lynx)<br><br>"
+-                "<b>Note:</b> ROMs are not included and cannot be provided.<br>"
+-                "You must own the original cartridges to legally use ROM files."));
+-            msg.setStandardButtons(QMessageBox::Ok | QMessageBox::Open);
+-            msg.button(QMessageBox::Open)->setText(tr("Add ROM Folder"));
+-            if (msg.exec() == QMessageBox::Open) {
+-                QString dir = QFileDialog::getExistingDirectory(this, tr("Select ROM Folder"));
+-                if (!dir.isEmpty()) {
+-                    dirs.append(dir);
+-                    s.setValue("GameList/Directories", dirs);
+-                }
+-            }
+-        }
++    // Ensure save-state folders exist from the very first launch
++    saveStateBaseDir();
++
++    // Welcome wizard / greeting
++    if (WelcomeDialog::shouldShow()) {
++        bool firstRun = WelcomeDialog::isFirstRun();
++        WelcomeDialog dlg(m_sdl_input, firstRun, this);
++        dlg.exec();
++        if (firstRun)
++            refreshGameList(true);
+     }
+ 
+     switchToGameListView();
+@@ -134,6 +134,19 @@ void MainWindow::setupAdditionalUi()
+     m_overlay_widget = new OverlayWidget(m_display_widget);
+     m_overlay_widget->hide();
+ 
++    // Jaguar boot intro (HLE, shown before Jaguar games start)
++    m_jaguar_intro = new JaguarIntroWidget(m_display_widget);
++    m_jaguar_intro->hide();
++    connect(m_jaguar_intro, &JaguarIntroWidget::finished, this, [this]() {
++        m_jaguar_intro->hide();
++        // Now actually start the emulation timer
++        QSettings s;
++        bool vsync = s.value("Video/VSync", true).toBool();
++        m_emulation_timer->start(vsync ? 16 : 1);
++        m_fps_frame_count = 0;
++        m_fps_timer.restart();
++    });
++
+     // Status bar widgets (like PCSX2)
+     m_status_progress_widget = new QProgressBar(m_ui.statusBar);
+     m_status_progress_widget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+@@ -389,8 +402,13 @@ void MainWindow::connectSignals()
+         if (m_active_core && m_active_core->isRunning())
+         {
+             // Poll SDL input
+-            JoystickState js = m_sdl_input->poll();
+-            m_active_core->setJoystickState(js);
++            if (m_active_core == m_jaguar_core) {
++                JaguarInputState js = m_sdl_input->pollJaguar();
++                m_jaguar_core->setJaguarInputState(js);
++            } else {
++                JoystickState js = m_sdl_input->poll();
++                m_active_core->setJoystickState(js);
++            }
+ 
+             // Step one frame
+             m_active_core->step();
+@@ -455,16 +473,21 @@ void MainWindow::onPauseActionToggled(bool checked)
+     {
+         m_emulation_timer->stop();
+         m_status_verbose_widget->setText(tr("Paused"));
+-        if (m_discord && m_is_running)
+-            m_discord->updatePaused(m_current_game_title,
+-                (m_active_core == m_lynx_core) ? "Atari Lynx" : "Atari 2600");
++        if (m_discord && m_is_running) {
++            QString console = (m_active_core == m_lynx_core)   ? "Atari Lynx"
++                            : (m_active_core == m_jaguar_core) ? "Atari Jaguar"
++                            : "Atari 2600";
++            m_discord->updatePaused(m_current_game_title, console);
++        }
+     }
+     else
+     {
+         m_emulation_timer->start(16);
+         m_status_verbose_widget->setText(tr("Running"));
+         if (m_discord && m_is_running) {
+-            QString console = (m_active_core == m_lynx_core) ? "Atari Lynx" : "Atari 2600";
++            QString console = (m_active_core == m_lynx_core)   ? "Atari Lynx"
++                            : (m_active_core == m_jaguar_core) ? "Atari Jaguar"
++                            : "Atari 2600";
+             m_discord->updatePlaying(m_current_game_title, console, QString());
+         }
+     }
+@@ -484,6 +507,8 @@ void MainWindow::onToggleConsoleModeTriggered()
+         nextMode = ConsoleMode::Atari2600;
+     else if (m_console_mode == ConsoleMode::Atari2600)
+         nextMode = ConsoleMode::AtariLynx;
++    else if (m_console_mode == ConsoleMode::AtariLynx)
++        nextMode = ConsoleMode::AtariJaguar;
+ 
+     setConsoleMode(nextMode);
+ }
+@@ -499,9 +524,10 @@ void MainWindow::setConsoleMode(MainWindow::ConsoleMode mode)
+     QString modeName;
+     switch (mode)
+     {
+-        case ConsoleMode::Auto: modeName = tr("Auto"); break;
+-        case ConsoleMode::Atari2600: modeName = tr("Atari 2600"); break;
+-        case ConsoleMode::AtariLynx: modeName = tr("Atari Lynx"); break;
++        case ConsoleMode::Auto:        modeName = tr("Auto"); break;
++        case ConsoleMode::Atari2600:    modeName = tr("Atari 2600"); break;
++        case ConsoleMode::AtariLynx:    modeName = tr("Atari Lynx"); break;
++        case ConsoleMode::AtariJaguar:  modeName = tr("Atari Jaguar"); break;
+     }
+ 
+     if (m_status_verbose_widget)
+@@ -525,15 +551,10 @@ void MainWindow::updateConsoleModeActionText()
+     QString text;
+     switch (m_console_mode)
+     {
+-        case ConsoleMode::Auto:
+-            text = tr("Console Mode: Auto");
+-            break;
+-        case ConsoleMode::Atari2600:
+-            text = tr("Console Mode: Atari 2600");
+-            break;
+-        case ConsoleMode::AtariLynx:
+-            text = tr("Console Mode: Atari Lynx");
+-            break;
++        case ConsoleMode::Auto:       text = tr("Console Mode: Auto"); break;
++        case ConsoleMode::Atari2600:   text = tr("Console Mode: Atari 2600"); break;
++        case ConsoleMode::AtariLynx:   text = tr("Console Mode: Atari Lynx"); break;
++        case ConsoleMode::AtariJaguar: text = tr("Console Mode: Atari Jaguar"); break;
+     }
+ 
+     m_toggle_console_mode_action->setText(text);
+@@ -543,12 +564,10 @@ QString MainWindow::getConsoleModeName() const
+ {
+     switch (m_console_mode)
+     {
+-        case ConsoleMode::Auto:
+-            return tr("Auto");
+-        case ConsoleMode::Atari2600:
+-            return tr("Atari 2600");
+-        case ConsoleMode::AtariLynx:
+-            return tr("Atari Lynx");
++        case ConsoleMode::Auto:       return tr("Auto");
++        case ConsoleMode::Atari2600:   return tr("Atari 2600");
++        case ConsoleMode::AtariLynx:   return tr("Atari Lynx");
++        case ConsoleMode::AtariJaguar: return tr("Atari Jaguar");
+     }
+ 
+     return tr("Auto");
+@@ -632,9 +651,8 @@ void MainWindow::onViewSystemDisplayTriggered()
+ 
+ void MainWindow::onAboutActionTriggered()
+ {
+-    QMessageBox::about(this, tr("About Íris Emulator"),
+-        tr("Íris Emulator\n\nAn Atari 2600 (and future Atari Lynx) emulator built with Qt and SDL2.\n"
+-           "Based on PCSX2 Qt interface design patterns."));
++    AboutDialog dlg(this);
++    dlg.exec();
+ }
+ 
+ void MainWindow::onGameListEntryActivated()
+@@ -799,6 +817,8 @@ void MainWindow::onEmulationStarted()
+     m_status_verbose_widget->setText(tr("Running"));
+     if (m_active_core == m_lynx_core) {
+         m_status_resolution_widget->setText(QStringLiteral("160x102"));
++    } else if (m_active_core == m_jaguar_core) {
++        m_status_resolution_widget->setText(QStringLiteral("720x576"));
+     } else {
+         m_status_resolution_widget->setText(QStringLiteral("160x%1").arg(
+             m_emu_core->getTVStandard() == TVStandard::NTSC ? 192 : 228));
+@@ -807,7 +827,9 @@ void MainWindow::onEmulationStarted()
+ 
+     // Discord RPC
+     if (m_discord) {
+-        QString console = (m_active_core == m_lynx_core) ? "Atari Lynx" : "Atari 2600";
++        QString console = (m_active_core == m_lynx_core)   ? "Atari Lynx"
++                        : (m_active_core == m_jaguar_core) ? "Atari Jaguar"
++                        : "Atari 2600";
+         m_discord->updatePlaying(m_current_game_title, console, QString());
+     }
+ }
+@@ -868,14 +890,17 @@ void MainWindow::startROM(const QString& path)
+     stopEmulation();
+ 
+     QString lower = path.toLower();
+-    bool isLynxPath = lower.endsWith(".lnx") || lower.endsWith(".lyx");
++    bool isLynxPath   = lower.endsWith(".lnx") || lower.endsWith(".lyx");
++    bool isJaguarPath = lower.endsWith(".j64") || lower.endsWith(".jag");
+     ConsoleMode actualConsole = m_console_mode;
+ 
+-    if (actualConsole == ConsoleMode::Auto)
+-        actualConsole = isLynxPath ? ConsoleMode::AtariLynx : ConsoleMode::Atari2600;
++    if (actualConsole == ConsoleMode::Auto) {
++        if (isLynxPath)        actualConsole = ConsoleMode::AtariLynx;
++        else if (isJaguarPath) actualConsole = ConsoleMode::AtariJaguar;
++        else                   actualConsole = ConsoleMode::Atari2600;
++    }
+ 
+     if (actualConsole == ConsoleMode::AtariLynx) {
+-        // Destruir core 2600 se estava ativo, evitar estado cruzado
+         if (m_active_core == m_emu_core) {
+             delete m_emu_core;
+             m_emu_core = new EmulatorCore(this);
+@@ -883,8 +908,11 @@ void MainWindow::startROM(const QString& path)
+         if (!m_lynx_core)
+             m_lynx_core = new LynxSystem(this);
+         m_active_core = m_lynx_core;
++    } else if (actualConsole == ConsoleMode::AtariJaguar) {
++        if (!m_jaguar_core)
++            m_jaguar_core = new JaguarSystem(this);
++        m_active_core = m_jaguar_core;
+     } else {
+-        // Destruir core Lynx se estava ativo, evitar estado cruzado
+         if (m_active_core == m_lynx_core) {
+             delete m_lynx_core;
+             m_lynx_core = nullptr;
+@@ -930,6 +958,10 @@ void MainWindow::startROM(const QString& path)
+     if (actualConsole == ConsoleMode::Atari2600)
+         onTVStandardChanged();
+ 
++    // Apply Jaguar-specific display settings immediately
++    m_display_widget->setIsJaguar(actualConsole == ConsoleMode::AtariJaguar);
++    applyVideoSettings();
++
+     m_active_core->start();
+ 
+     // Initialize audio output
+@@ -945,11 +977,18 @@ void MainWindow::startROM(const QString& path)
+     }
+ 
+     // Start the frame timer — respect VSync setting
+-    QSettings timerSettings;
+-    bool vsync = timerSettings.value("Video/VSync", true).toBool();
+-    m_emulation_timer->start(vsync ? 16 : 1); // VSync: ~60fps, No VSync: uncapped
+-    m_fps_frame_count = 0;
+-    m_fps_timer.restart();
++    // For Jaguar: show boot intro first, timer starts after intro finishes
++    if (actualConsole == ConsoleMode::AtariJaguar && m_jaguar_intro) {
++        m_jaguar_intro->resize(m_display_widget->size());
++        m_jaguar_intro->play();
++        // timer will be started by JaguarIntroWidget::finished signal
++    } else {
++        QSettings timerSettings;
++        bool vsync = timerSettings.value("Video/VSync", true).toBool();
++        m_emulation_timer->start(vsync ? 16 : 1);
++        m_fps_frame_count = 0;
++        m_fps_timer.restart();
++    }
+ 
+     // Sync pause state
+     QSignalBlocker sb1(m_ui.actionPause);
+@@ -981,12 +1020,16 @@ void MainWindow::stopEmulation()
+ void MainWindow::applyVideoSettings()
+ {
+     QSettings settings;
+-    QString filterStr = settings.value("Video/Filter", "none").toString();
++    QString filterStr     = settings.value("Video/Filter", "none").toString();
+     QString lynxFilterStr = settings.value("Video/LynxFilter", "smooth").toString();
++    QString jagFilterStr  = settings.value("Jaguar/Filter", "none").toString();
+ 
+-    // Escolhe o filtro certo baseado no console ativo
+-    bool isLynx = (m_active_core == m_lynx_core);
+-    QString activeFilter = isLynx ? lynxFilterStr : filterStr;
++    bool isLynx   = (m_active_core == m_lynx_core);
++    bool isJaguar = (m_active_core == m_jaguar_core);
++
++    QString activeFilter = isJaguar ? jagFilterStr
++                         : isLynx  ? lynxFilterStr
++                         : filterStr;
+ 
+     auto strToFilter = [](const QString& s) {
+         if (s == "scanlines") return DisplayWidget::ScreenFilter::Scanlines;
+@@ -994,18 +1037,46 @@ void MainWindow::applyVideoSettings()
+         if (s == "smooth")    return DisplayWidget::ScreenFilter::Smooth;
+         if (s == "lcd")       return DisplayWidget::ScreenFilter::LCD;
+         if (s == "lcdblur")   return DisplayWidget::ScreenFilter::LCDBlur;
++        if (s == "rf")        return DisplayWidget::ScreenFilter::RFJaguar;
++        if (s == "svideo")    return DisplayWidget::ScreenFilter::SVideoJaguar;
+         return DisplayWidget::ScreenFilter::None;
+     };
+ 
++    m_display_widget->setIsJaguar(isJaguar);
+     m_display_widget->setScreenFilter(strToFilter(activeFilter));
+-    m_display_widget->setScanlineIntensity(settings.value("Video/ScanlineIntensity", 50).toInt());
++
++    // Intensity: Jaguar filters use their own setting
++    int intensity = isJaguar
++        ? settings.value("Jaguar/FilterIntensity", 70).toInt()
++        : settings.value("Video/ScanlineIntensity", 50).toInt();
++    m_display_widget->setScanlineIntensity(intensity);
+     m_display_widget->setLCDGhostingStrength(settings.value("Video/LCDGhosting", 40).toInt());
+ 
++    // Jaguar aspect ratio
++    if (isJaguar) {
++        QString ar = settings.value("Jaguar/AspectRatio", "4:3").toString();
++        if (ar == "4:3")
++            m_display_widget->setAspectRatio(DisplayWidget::AspectRatio::FourThree);
++        else if (ar == "16:9")
++            m_display_widget->setAspectRatio(DisplayWidget::AspectRatio::SixteenNine);
++        else
++            m_display_widget->setAspectRatio(DisplayWidget::AspectRatio::Auto);
++
++        QString up = settings.value("Jaguar/Upscale", "native").toString();
++        if (up == "480p")       m_display_widget->setJagUpscale(DisplayWidget::JagUpscale::P480);
++        else if (up == "720p")  m_display_widget->setJagUpscale(DisplayWidget::JagUpscale::P720);
++        else if (up == "1080p") m_display_widget->setJagUpscale(DisplayWidget::JagUpscale::P1080);
++        else                    m_display_widget->setJagUpscale(DisplayWidget::JagUpscale::Native);
++    } else {
++        m_display_widget->setAspectRatio(DisplayWidget::AspectRatio::Auto);
++        m_display_widget->setJagUpscale(DisplayWidget::JagUpscale::Native);
++    }
++
+     bool vsync = settings.value("Video/VSync", true).toBool();
+     if (m_is_running && m_emulation_timer->isActive())
+         m_emulation_timer->setInterval(vsync ? 16 : 1);
+ 
+-    if (m_emu_core && m_is_running && !isLynx) {
++    if (m_emu_core && m_is_running && !isLynx && !isJaguar) {
+         QString tvStd = settings.value("Video/TVStandard", "NTSC").toString();
+         if (tvStd == "PAL")        m_emu_core->setTVStandard(TVStandard::PAL);
+         else if (tvStd == "SECAM") m_emu_core->setTVStandard(TVStandard::SECAM);
+@@ -1105,12 +1176,13 @@ void MainWindow::loadSaveStateSlot(int slot)
+     if (!m_active_core || m_current_rom_path.isEmpty())
+         return;
+ 
+-    QString state_dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/savestates";
++    // Slot 1 = quick save (quick/), slots 2-10 = manual (manual/)
++    QString base = saveStateBaseDir();
++    QString subdir = (slot == 1) ? base + "/quick" : base + "/manual";
+     QString basename = QFileInfo(m_current_rom_path).completeBaseName();
+-    QString state_path = state_dir + "/" + basename + QString(".slot%1.sav").arg(slot);
++    QString state_path = subdir + "/" + basename + QString(".slot%1.sav").arg(slot);
+ 
+-    if (!QFile::exists(state_path))
+-    {
++    if (!QFile::exists(state_path)) {
+         onStatusMessage(tr("No save state in slot %1").arg(slot));
+         return;
+     }
+@@ -1126,10 +1198,10 @@ void MainWindow::saveSaveStateSlot(int slot)
+     if (!m_active_core || m_current_rom_path.isEmpty())
+         return;
+ 
+-    QString state_dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/savestates";
+-    QDir().mkpath(state_dir);
++    QString base = saveStateBaseDir();
++    QString subdir = (slot == 1) ? base + "/quick" : base + "/manual";
+     QString basename = QFileInfo(m_current_rom_path).completeBaseName();
+-    QString state_path = state_dir + "/" + basename + QString(".slot%1.sav").arg(slot);
++    QString state_path = subdir + "/" + basename + QString(".slot%1.sav").arg(slot);
+ 
+     if (m_active_core->saveState(state_path))
+         onStatusMessage(tr("State saved to slot %1").arg(slot));
+@@ -1140,27 +1212,26 @@ void MainWindow::saveSaveStateSlot(int slot)
+ void MainWindow::populateLoadStateMenu(QMenu* menu)
+ {
+     menu->clear();
++    if (m_current_rom_path.isEmpty()) return;
+ 
+-    if (m_current_rom_path.isEmpty())
+-        return;
+-
+-    QString state_dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/savestates";
++    QString base = saveStateBaseDir();
+     QString basename = QFileInfo(m_current_rom_path).completeBaseName();
+ 
+-    for (int slot = 1; slot <= 10; slot++)
+-    {
+-        QString state_path = state_dir + "/" + basename + QString(".slot%1.sav").arg(slot);
++    for (int slot = 1; slot <= 10; slot++) {
++        QString subdir = (slot == 1) ? base + "/quick" : base + "/manual";
++        QString state_path = subdir + "/" + basename + QString(".slot%1.sav").arg(slot);
+         QString label;
+-        if (QFile::exists(state_path))
+-        {
++        if (QFile::exists(state_path)) {
+             QFileInfo fi(state_path);
+-            label = tr("Slot %1 - %2").arg(slot).arg(fi.lastModified().toString(QStringLiteral("yyyy-MM-dd hh:mm")));
++            label = tr("Slot %1%2 — %3")
++                .arg(slot)
++                .arg(slot == 1 ? tr(" (Quick)") : "")
++                .arg(fi.lastModified().toString(QStringLiteral("yyyy-MM-dd hh:mm")));
++        } else {
++            label = tr("Slot %1%2 — Empty")
++                .arg(slot)
++                .arg(slot == 1 ? tr(" (Quick)") : "");
+         }
+-        else
+-        {
+-            label = tr("Slot %1 - Empty").arg(slot);
+-        }
+-
+         QAction* action = menu->addAction(label);
+         action->setEnabled(QFile::exists(state_path));
+         connect(action, &QAction::triggered, [this, slot]() { loadSaveStateSlot(slot); });
+@@ -1170,27 +1241,26 @@ void MainWindow::populateLoadStateMenu(QMenu* menu)
+ void MainWindow::populateSaveStateMenu(QMenu* menu)
+ {
+     menu->clear();
++    if (m_current_rom_path.isEmpty()) return;
+ 
+-    if (m_current_rom_path.isEmpty())
+-        return;
+-
+-    QString state_dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/savestates";
++    QString base = saveStateBaseDir();
+     QString basename = QFileInfo(m_current_rom_path).completeBaseName();
+ 
+-    for (int slot = 1; slot <= 10; slot++)
+-    {
+-        QString state_path = state_dir + "/" + basename + QString(".slot%1.sav").arg(slot);
++    for (int slot = 1; slot <= 10; slot++) {
++        QString subdir = (slot == 1) ? base + "/quick" : base + "/manual";
++        QString state_path = subdir + "/" + basename + QString(".slot%1.sav").arg(slot);
+         QString label;
+-        if (QFile::exists(state_path))
+-        {
++        if (QFile::exists(state_path)) {
+             QFileInfo fi(state_path);
+-            label = tr("Slot %1 - %2").arg(slot).arg(fi.lastModified().toString(QStringLiteral("yyyy-MM-dd hh:mm")));
+-        }
+-        else
+-        {
+-            label = tr("Slot %1 - Empty").arg(slot);
++            label = tr("Slot %1%2 — %3")
++                .arg(slot)
++                .arg(slot == 1 ? tr(" (Quick)") : "")
++                .arg(fi.lastModified().toString(QStringLiteral("yyyy-MM-dd hh:mm")));
++        } else {
++            label = tr("Slot %1%2 — Empty")
++                .arg(slot)
++                .arg(slot == 1 ? tr(" (Quick)") : "");
+         }
+-
+         QAction* action = menu->addAction(label);
+         connect(action, &QAction::triggered, [this, slot]() { saveSaveStateSlot(slot); });
+     }
+@@ -1213,7 +1283,8 @@ void MainWindow::dragEnterEvent(QDragEnterEvent* event)
+         {
+             QString path = url.toLocalFile().toLower();
+             if (path.endsWith(".bin") || path.endsWith(".a26") || path.endsWith(".rom")
+-                || path.endsWith(".lnx") || path.endsWith(".lyx"))
++                || path.endsWith(".lnx") || path.endsWith(".lyx")
++                || path.endsWith(".j64") || path.endsWith(".jag"))
+             {
+                 event->acceptProposedAction();
+                 return;
+@@ -1231,7 +1302,8 @@ void MainWindow::dropEvent(QDropEvent* event)
+             QString path = url.toLocalFile();
+             QString lower = path.toLower();
+             if (lower.endsWith(".bin") || lower.endsWith(".a26") || lower.endsWith(".rom")
+-                || lower.endsWith(".lnx") || lower.endsWith(".lyx"))
++                || lower.endsWith(".lnx") || lower.endsWith(".lyx")
++                || lower.endsWith(".j64") || lower.endsWith(".jag"))
+             {
+                 startROM(path);
+                 return;
+@@ -1260,5 +1332,22 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
+         }
+         return;
+     }
++
++    // Quick save/load shortcuts
++    if (m_is_running && !m_overlay_widget->isOverlayVisible())
++    {
++        if (event->key() == Qt::Key_F5) { saveSaveStateSlot(1); return; }
++        if (event->key() == Qt::Key_F7) { loadSaveStateSlot(1); return; }
++        // F1-F4 = slots 1-4 load, Shift+F1-F4 = save
++        if (event->key() >= Qt::Key_F1 && event->key() <= Qt::Key_F4) {
++            int slot = event->key() - Qt::Key_F1 + 1;
++            if (event->modifiers() & Qt::ShiftModifier)
++                saveSaveStateSlot(slot);
++            else
++                loadSaveStateSlot(slot);
++            return;
++        }
++    }
++
+     QMainWindow::keyPressEvent(event);
+ }

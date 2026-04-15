@@ -1,0 +1,44 @@
+{
+    "configurations": [
+        {
+            "name": "Win32 MSVC",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/ui",
+                "${workspaceFolder}/src/ui/GameList",
+                "${workspaceFolder}/src/lynx",
+                "${workspaceFolder}/src/mapper",
+                "${workspaceFolder}/build/src",
+                "${workspaceFolder}/build_release2/irisemulator_autogen/include_Release",
+                "D:/Qt/6.8.3/msvc2022_64/include",
+                "D:/Qt/6.8.3/msvc2022_64/include/QtCore",
+                "D:/Qt/6.8.3/msvc2022_64/include/QtGui",
+                "D:/Qt/6.8.3/msvc2022_64/include/QtWidgets",
+                "D:/Qt/6.8.3/msvc2022_64/include/QtSvg",
+                "D:/Qt/6.8.3/msvc2022_64/include/QtNetwork",
+                "D:/vcpkg/installed/x64-windows/include",
+                "D:/vcpkg/packages/sdl2_x64-windows/include",
+                "D:/vcpkg/packages/sdl2_x64-windows/include/SDL2"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "WIN32",
+                "_WINDOWS",
+                "QT_WIDGETS_LIB",
+                "QT_GUI_LIB",
+                "QT_CORE_LIB",
+                "QT_SVG_LIB",
+                "QT_NETWORK_LIB"
+            ],
+            "windowsSdkVersion": "10.0.22621.0",
+            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808/bin/Hostx64/x64/cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64",
+            "compileCommands": ""
+        }
+    ],
+    "version": 4
+}
