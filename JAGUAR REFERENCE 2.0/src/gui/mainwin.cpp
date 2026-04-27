@@ -4,31 +4,12 @@
 // (C) 2009 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
-//  RG = Richard Goedeken
-
 //
 // Who  When        What
 // ---  ----------  ------------------------------------------------------------
 // JLH  12/23/2009  Created this file
 // JLH  12/20/2010  Added settings, menus & toolbars
 // JLH  07/05/2011  Added CD BIOS functionality to GUI
-// JPM   June/2016  Visual Studio support & Soft debugger integration
-// JPM  01/11/2017  Added stack browser
-// JPM   Feb./2017  Added GPU/DSP disassembly
-// JPM  07/12/2017  Added all Watch window
-// JPM   Aug./2017  Added heap allocator and memories window, a restart feature, and a [Not Supported] breakpoints window
-// JPM  Sept./2017  Save position, size & visibility windows status in the settings; added Exception Vector Table window, the 'Rx' word to the emulator window name, and the keybindings in the settings
-// JPM  11/04/2017  Added the local window
-// JPM  08/31/2018  Added the call stack window
-// JPM  Sept./2018  Added the new Models and BIOS handler, a screenshot feature and source code files browsing
-// JPM   Oct./2018  Added search paths in the settings, breakpoints feature, cartridge view menu
-// JPM  11/18/2018  Fix crash with non-debugger mode
-// JPM  April/2019  Added ELF sections check, added a save memory dump
-// JPM   Aug./2019  Update texts descriptions, set cartridge view menu for debugger mode only, added a HW registers browser and source level tracing
-// JPM  Marc./2020  Added the step over for source level tracing
-//  RG   Jan./2021  Linux build fixes
-// JPM   Apr./2021  Handle number of M68K cycles used in tracing mode, added video output display in a window
 //
 
 // FIXED:
@@ -41,17 +22,17 @@
 //
 // STILL TO BE DONE:
 //
-// - The source file listing do not need to be refresh more than one time
 // - Fix bug in switching between PAL & NTSC in fullscreen mode.
 // - Remove SDL dependencies (sound, mainly) from Jaguar core lib
-// - Fix inconsistency with trailing slashes in paths (eeproms needs one, software doesn't)
+// - Fix inconsistency with trailing slashes in paths (eeproms needs one,
+//   software doesn't)
 //
 // SFDX CODE: S1E9T8H5M23YS
 
 // Uncomment this for debugging...
 //#define DEBUG
-//#define DEBUGFOO			// Various tool debugging... but not used
-//#define DEBUGTP			// Toolpalette debugging... but not used
+//#define DEBUGFOO			// Various tool debugging...
+//#define DEBUGTP				// Toolpalette debugging...
 
 #include "mainwin.h"
 
@@ -60,7 +41,6 @@
 #include "about.h"
 #include "configdialog.h"
 #include "controllertab.h"
-#include "keybindingstab.h"
 #include "filepicker.h"
 #include "gamepad.h"
 #include "generaltab.h"
@@ -69,58 +49,27 @@
 #include "profile.h"
 #include "settings.h"
 #include "version.h"
-#include "emustatus.h"
 #include "debug/cpubrowser.h"
 #include "debug/m68kdasmbrowser.h"
 #include "debug/memorybrowser.h"
-#include "debug/stackbrowser.h"
 #include "debug/opbrowser.h"
 #include "debug/riscdasmbrowser.h"
-#include "debug/hwregsbrowser.h"
 
 #include "dac.h"
 #include "jaguar.h"
 #include "log.h"
 #include "file.h"
-#ifndef NEWMODELSBIOSHANDLER
 #include "jagbios.h"
 #include "jagbios2.h"
-#include "jagstub2bios.h"
-#else
-#include "modelsBIOS.h"
-#endif
 #include "jagcdbios.h"
+#include "jagstub2bios.h"
 #include "joystick.h"
 #include "m68000/m68kinterface.h"
-
-#include "debugger/DBGManager.h"
-#include "debugger/VideoWin.h"
-//#include "debugger/DasmWin.h"
-#include "debugger/SourcesWin.h"
-#include "debugger/m68kDasmWin.h"
-#include "debugger/GPUDasmWin.h"
-#include "debugger/DSPDasmWin.h"
-#include "debugger/memory1browser.h"
-#include "debugger/BreakpointsWin.h"
-#include "debugger/NewFnctBreakpointWin.h"
-#include "debugger/FilesrcListWin.h"
-#include "debugger/exceptionvectortablebrowser.h"
-#include "debugger/allwatchbrowser.h"
-#include "debugger/localbrowser.h"
-#include "debugger/heapallocatorbrowser.h"
-#include "debugger/callstackbrowser.h"
-#include "debugger/CartFilesListWin.h"
-#include "debugger/SaveDumpAsWin.h"
-
 
 // According to SebRmv, this header isn't seen on Arch Linux either... :-/
 //#ifdef __GCCWIN32__
 // Apparently on win32, usleep() is not pulled in by the usual suspects.
-#ifndef _MSC_VER
 #include <unistd.h>
-#else
-#include "_MSC_VER/unistd.h"
-#endif // !_MSC_VER
 //#endif
 
 // The way BSNES controls things is by setting a timer with a zero
@@ -139,8 +88,6 @@ MainWin::MainWin(bool autoRun): running(true), powerButtonOn(false),
 	showUntunedTankCircuit(true), cartridgeLoaded(false), CDActive(false),
 	pauseForFileSelector(false), loadAndGo(autoRun), scannedSoftwareFolder(false), plzDontKillMyComputer(false)
 {
-	ReadSettings();
-
 	debugbar = NULL;
 
 	for(int i=0; i<8; i++)
@@ -152,547 +99,218 @@ MainWin::MainWin(bool autoRun): running(true), powerButtonOn(false),
 
 	ringBufferPointer = RING_BUFFER_SIZE - 1;
 
-	// main window
-	//if (vjs.softTypeDebugger)
-	//{
-	//	mainWindowCentrale = new QMdiArea;
-	//	setCentralWidget(mainWindowCentrale);
-	//}
-
-	WriteLog("Window creation start\n");
-
-	// video output
 	videoWidget = new GLWidget(this);
-	videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-	// set central output window
-	if (!vjs.softTypeDebugger)
-	{
-		setCentralWidget(videoWidget);
-	}
-	else
-	{
-		mainWindowCentrale = new QMdiArea(this);
-		setCentralWidget(mainWindowCentrale);
-	}
-
+	setCentralWidget(videoWidget);
 	setWindowIcon(QIcon(":/res/vj-icon.png"));
 
-	QString title = QString(tr("Virtual Jaguar " VJ_RELEASE_VERSION " Rx"));
+	QString title = QString(tr("Virtual Jaguar " VJ_RELEASE_VERSION ));
 
 	if (vjs.hardwareTypeAlpine)
 		title += QString(tr(" - Alpine Mode"));
 
-	if (vjs.softTypeDebugger)
-		title += QString(tr(" - Debugger Mode"));
-
 	setWindowTitle(title);
 
-	// Windows common features
 	aboutWin = new AboutWindow(this);
 	helpWin = new HelpWindow(this);
 	filePickWin = new FilePickerWindow(this);
-	emuStatusWin = new EmuStatusWindow(this);
-	
-	// Windows alpine mode features
 	memBrowseWin = new MemoryBrowserWindow(this);
-	stackBrowseWin = new StackBrowserWindow(this);
 	cpuBrowseWin = new CPUBrowserWindow(this);
 	opBrowseWin = new OPBrowserWindow(this);
 	m68kDasmBrowseWin = new M68KDasmBrowserWindow(this);
 	riscDasmBrowseWin = new RISCDasmBrowserWindow(this);
-	hwRegsBrowseWin = new HWRegsBrowserWindow(this);
 
-	// Windows debugger mode features
-	if (vjs.softTypeDebugger)
-	{
-		VideoOutputWin = new VideoOutputWindow(this);
-		//VideoOutputWin->show();
-		//VideoOutputWin->setCentralWidget()
-		//DasmWin = new DasmWindow();
-		//DasmWin = new DasmWindow(this);
-		allWatchBrowseWin = new AllWatchBrowserWindow(this);
-		LocalBrowseWin = new LocalBrowserWindow(this);
-		heapallocatorBrowseWin = new HeapAllocatorBrowserWindow(this);
-		BreakpointsWin = new BreakpointsWindow(this);
-		NewFunctionBreakpointWin = new NewFnctBreakpointWindow(this);
-		SaveDumpAsWin = new SaveDumpAsWindow(this);
-		exceptionvectortableBrowseWin = new ExceptionVectorTableBrowserWindow(this);
-		CallStackBrowseWin = new CallStackBrowserWindow(this);
-		CartFilesListWin = new CartFilesListWindow(this);
-
-		mem1BrowseWin = (Memory1BrowserWindow **)calloc(vjs.nbrmemory1browserwindow, sizeof(Memory1BrowserWindow));
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to do the memory desalocation for mem1BrowseWin !!!")
-#else
-		#warning "!!! Need to do the memory desalocation for mem1BrowseWin !!!"
-#endif // _MSC_VER
-		for (size_t i = 0; i < vjs.nbrmemory1browserwindow; i++)
-		{
-			mem1BrowseWin[i] = new Memory1BrowserWindow(this);
-		}
-
-		// Setup dock to display source code filenames tree
-		QDockWidget *dockFiles = new QDockWidget(tr("Files"), this);
-		dockFiles->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-		dockFiles->hide();
-		addDockWidget(Qt::LeftDockWidgetArea, dockFiles);
-		mainWindowCentrale->addAction(dockFiles->toggleViewAction());
-		dockFiles->setWidget(FilesrcListWin = new FilesrcListWindow(this));
-#if 0
-		// Setup dock to display disassembly
-		QDockWidget *dockDisasm = new QDockWidget(tr("Disassembly"), this);
-		dockDisasm->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-		addDockWidget(Qt::RightDockWidgetArea, dockDisasm);
-		mainWindowCentrale->addAction(dockDisasm->toggleViewAction());
-		dockDisasm->setWidget(dasmtabWidget = new QTabWidget(this));
-#else
-		dasmtabWidget = new QTabWidget(this);
-#endif
-		// Setup disasm tabs
-		dasmtabWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-		dasmtabWidget->addTab(SourcesWin = new SourcesWindow(this), tr("Sources"));
-		dasmtabWidget->setCurrentIndex(dasmtabWidget->addTab(m68kDasmWin = new m68KDasmWindow(this), tr("M68000")));
-		dasmtabWidget->addTab(GPUDasmWin = new GPUDasmWindow(this), tr("GPU"));
-		dasmtabWidget->addTab(DSPDasmWin = new DSPDasmWindow(this), tr("DSP"));
-		connect(dasmtabWidget, SIGNAL(currentChanged(const int)), this, SLOT(SelectdasmtabWidget(const int)));
-#if 1
-		setCentralWidget(dasmtabWidget);
-#endif
-	}
-
-//	videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	videoWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 	setUnifiedTitleAndToolBarOnMac(true);
 
-	// Quit actions
-	quitAppAct = new QAction(QIcon(":/res/exit.png"), tr("E&xit"), this);
-	quitAppAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBQUIT].KBSettingValue)));
+	// Create actions
+
+	quitAppAct = new QAction(tr("E&xit"), this);
+//	quitAppAct->setShortcuts(QKeySequence::Quit);
+//	quitAppAct->setShortcut(QKeySequence(tr("Alt+x")));
+	quitAppAct->setShortcut(QKeySequence(tr("Ctrl+q")));
 	quitAppAct->setShortcutContext(Qt::ApplicationShortcut);
 	quitAppAct->setStatusTip(tr("Quit Virtual Jaguar"));
 	connect(quitAppAct, SIGNAL(triggered()), this, SLOT(close()));
 
-	// Power action
 	powerGreen.addFile(":/res/power-off.png", QSize(), QIcon::Normal, QIcon::Off);
 	powerGreen.addFile(":/res/power-on-green.png", QSize(), QIcon::Normal, QIcon::On);
 	powerRed.addFile(":/res/power-off.png", QSize(), QIcon::Normal, QIcon::Off);
 	powerRed.addFile(":/res/power-on-red.png", QSize(), QIcon::Normal, QIcon::On);
+
 	powerAct = new QAction(powerGreen, tr("&Power"), this);
 	powerAct->setStatusTip(tr("Powers Jaguar on/off"));
 	powerAct->setCheckable(true);
 	powerAct->setChecked(false);
 	connect(powerAct, SIGNAL(triggered()), this, SLOT(TogglePowerState()));
 
-	// Pause action
 	QIcon pauseIcon;
-	pauseIcon.addFile(":/res/pause-off.png", QSize(), QIcon::Normal, QIcon::Off);
-	pauseIcon.addFile(":/res/pause-on.png", QSize(), QIcon::Normal, QIcon::On);
+	pauseIcon.addFile(":/res/pause-off", QSize(), QIcon::Normal, QIcon::Off);
+	pauseIcon.addFile(":/res/pause-on", QSize(), QIcon::Normal, QIcon::On);
 	pauseAct = new QAction(pauseIcon, tr("Pause"), this);
 	pauseAct->setStatusTip(tr("Toggles the running state"));
 	pauseAct->setCheckable(true);
 	pauseAct->setDisabled(true);
-	pauseAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBPAUSE].KBSettingValue)));
+	pauseAct->setShortcut(QKeySequence(tr("Esc")));
 	pauseAct->setShortcutContext(Qt::ApplicationShortcut);
 	connect(pauseAct, SIGNAL(triggered()), this, SLOT(ToggleRunState()));
 
-	// Screenshot action
-	screenshotAct = new QAction(QIcon(":/res/screenshot.png"), tr("&Screenshot"), this);
-	screenshotAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBSCREENSHOT].KBSettingValue)));
-	screenshotAct->setShortcutContext(Qt::ApplicationShortcut);
-	screenshotAct->setCheckable(false);
-	screenshotAct->setDisabled(false);
-	connect(screenshotAct, SIGNAL(triggered()), this, SLOT(MakeScreenshot()));
-
-	// Zoom actions
 	zoomActs = new QActionGroup(this);
+
 	x1Act = new QAction(QIcon(":/res/zoom100.png"), tr("Zoom 100%"), zoomActs);
 	x1Act->setStatusTip(tr("Set window zoom to 100%"));
 	x1Act->setCheckable(true);
 	connect(x1Act, SIGNAL(triggered()), this, SLOT(SetZoom100()));
+
 	x2Act = new QAction(QIcon(":/res/zoom200.png"), tr("Zoom 200%"), zoomActs);
 	x2Act->setStatusTip(tr("Set window zoom to 200%"));
 	x2Act->setCheckable(true);
 	connect(x2Act, SIGNAL(triggered()), this, SLOT(SetZoom200()));
+
 	x3Act = new QAction(QIcon(":/res/zoom300.png"), tr("Zoom 300%"), zoomActs);
 	x3Act->setStatusTip(tr("Set window zoom to 300%"));
 	x3Act->setCheckable(true);
 	connect(x3Act, SIGNAL(triggered()), this, SLOT(SetZoom300()));
 
-	// TV type actions
 	tvTypeActs = new QActionGroup(this);
+
 	ntscAct = new QAction(QIcon(":/res/ntsc.png"), tr("NTSC"), tvTypeActs);
 	ntscAct->setStatusTip(tr("Sets Jaguar to NTSC mode"));
 	ntscAct->setCheckable(true);
 	connect(ntscAct, SIGNAL(triggered()), this, SLOT(SetNTSC()));
+
 	palAct = new QAction(QIcon(":/res/pal.png"), tr("PAL"), tvTypeActs);
 	palAct->setStatusTip(tr("Sets Jaguar to PAL mode"));
 	palAct->setCheckable(true);
 	connect(palAct, SIGNAL(triggered()), this, SLOT(SetPAL()));
 
-	// Blur action
 	blur.addFile(":/res/blur-off.png", QSize(), QIcon::Normal, QIcon::Off);
 	blur.addFile(":/res/blur-on.png", QSize(), QIcon::Normal, QIcon::On);
+
 	blurAct = new QAction(blur, tr("Blur"), this);
 	blurAct->setStatusTip(tr("Sets OpenGL rendering to GL_NEAREST"));
 	blurAct->setCheckable(true);
 	connect(blurAct, SIGNAL(triggered()), this, SLOT(ToggleBlur()));
 
-	// About action
 	aboutAct = new QAction(QIcon(":/res/vj-icon.png"), tr("&About..."), this);
 	aboutAct->setStatusTip(tr("Blatant self-promotion"));
 	connect(aboutAct, SIGNAL(triggered()), this, SLOT(ShowAboutWin()));
 
-	// Help action
 	helpAct = new QAction(QIcon(":/res/vj-icon.png"), tr("&Contents..."), this);
 	helpAct->setStatusTip(tr("Help is available, if you should need it"));
 	connect(helpAct, SIGNAL(triggered()), this, SLOT(ShowHelpWin()));
 
-	// File pickup action
-	if (!vjs.softTypeDebugger)
-	{
-		filePickAct = new QAction(QIcon(":/res/software.png"), tr("&Insert Cartridge..."), this);
-		filePickAct->setStatusTip(tr("Insert a cartridge into Virtual Jaguar"));
-	}
-	else
-	{
-		filePickAct = new QAction(QIcon(":/res/software.png"), tr("&Insert executable file..."), this);
-		filePickAct->setStatusTip(tr("Insert an executable into Virtual Jaguar"));
-	}
-	filePickAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBPICKFILE].KBSettingValue)));
+	filePickAct = new QAction(QIcon(":/res/software.png"), tr("&Insert Cartridge..."), this);
+	filePickAct->setStatusTip(tr("Insert a cartridge into Virtual Jaguar"));
+	filePickAct->setShortcut(QKeySequence(tr("Ctrl+i")));
 	filePickAct->setShortcutContext(Qt::ApplicationShortcut);
 	connect(filePickAct, SIGNAL(triggered()), this, SLOT(InsertCart()));
 
-	// Configuration action
 	configAct = new QAction(QIcon(":/res/wrench.png"), tr("&Configure"), this);
 	configAct->setStatusTip(tr("Configure options for Virtual Jaguar"));
-	configAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBCONFIGURE].KBSettingValue)));
+	configAct->setShortcut(QKeySequence(tr("Ctrl+c")));
 	configAct->setShortcutContext(Qt::ApplicationShortcut);
 	connect(configAct, SIGNAL(triggered()), this, SLOT(Configure()));
 
-	// Emulation status action
-	emustatusAct = new QAction(QIcon(":/res/status.png"), tr("&Status"), this);
-	emustatusAct->setStatusTip(tr("Emulator status"));
-	emustatusAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBEMUSTATUS].KBSettingValue)));
-	emustatusAct->setShortcutContext(Qt::ApplicationShortcut);
-	connect(emustatusAct, SIGNAL(triggered()), this, SLOT(ShowEmuStatusWin()));
-
-	// Use CD action
 	useCDAct = new QAction(QIcon(":/res/compact-disc.png"), tr("&Use CD Unit"), this);
 	useCDAct->setStatusTip(tr("Use Jaguar Virtual CD unit"));
+//	useCDAct->setShortcut(QKeySequence(tr("Ctrl+c")));
 	useCDAct->setCheckable(true);
 	connect(useCDAct, SIGNAL(triggered()), this, SLOT(ToggleCDUsage()));
 
-	// Frame advance action
 	frameAdvanceAct = new QAction(QIcon(":/res/frame-advance.png"), tr("&Frame Advance"), this);
-	frameAdvanceAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBFRAMEADVANCE].KBSettingValue)));
+	frameAdvanceAct->setShortcut(QKeySequence(tr("F7")));
 	frameAdvanceAct->setShortcutContext(Qt::ApplicationShortcut);
 	frameAdvanceAct->setDisabled(true);
 	connect(frameAdvanceAct, SIGNAL(triggered()), this, SLOT(FrameAdvance()));
 
-	// Fullscreen action
 	fullScreenAct = new QAction(QIcon(":/res/fullscreen.png"), tr("F&ull Screen"), this);
-	fullScreenAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBFULLSCREEN].KBSettingValue)));
+	fullScreenAct->setShortcut(QKeySequence(tr("F9")));
 	fullScreenAct->setShortcutContext(Qt::ApplicationShortcut);
 	fullScreenAct->setCheckable(true);
 	connect(fullScreenAct, SIGNAL(triggered()), this, SLOT(ToggleFullScreen()));
 
-	// Actions dedicated to debugger mode
-	if (vjs.softTypeDebugger)
-	{
-		// Restart
-		restartAct = new QAction(QIcon(":/res/debug-restart.png"), tr("&Restart"), this);
-		restartAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBRESTART].KBSettingValue)));
-		restartAct->setShortcutContext(Qt::ApplicationShortcut);
-		restartAct->setCheckable(false);
-		restartAct->setDisabled(true);
-		connect(restartAct, SIGNAL(triggered()), this, SLOT(DebuggerRestart()));
-
-		// Step over trace
-		traceStepOverAct = new QAction(QIcon(":/res/debug-stepover.png"), tr("&Step Over"), this);
-		traceStepOverAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBSTEPOVER].KBSettingValue)));
-		traceStepOverAct->setShortcutContext(Qt::ApplicationShortcut);
-		traceStepOverAct->setCheckable(false);
-		traceStepOverAct->setDisabled(true);
-		connect(traceStepOverAct, SIGNAL(triggered()), this, SLOT(DebuggerTraceStepOver()));
-
-		// Trace into tracing
-		traceStepIntoAct = new QAction(QIcon(":/res/debug-stepinto.png"), tr("&Step Into"), this);
-		traceStepIntoAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBSTEPINTO].KBSettingValue)));
-		traceStepIntoAct->setShortcutContext(Qt::ApplicationShortcut);
-		traceStepIntoAct->setCheckable(false);
-		traceStepIntoAct->setDisabled(true);
-		connect(traceStepIntoAct, SIGNAL(triggered()), this, SLOT(DebuggerTraceStepInto()));
-
-		// Function breakpoint
-		newFunctionBreakpointAct = new QAction(QIcon(""), tr("&Function Breakpoint"), this);
-		newFunctionBreakpointAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBFUNCTIONBREAKPOINT].KBSettingValue)));
-		connect(newFunctionBreakpointAct, SIGNAL(triggered()), this, SLOT(ShowNewFunctionBreakpointWin()));
-		BreakpointsAct = new QAction(QIcon(":/res/debug-breakpoints.png"), tr("&Breakpoints"), this);
-		BreakpointsAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBBREAKPOINTS].KBSettingValue)));
-		connect(BreakpointsAct, SIGNAL(triggered()), this, SLOT(ShowBreakpointsWin()));
-		deleteAllBreakpointsAct = new QAction(QIcon(":/res/debug-deleteallbreakpoints.png"), tr("&Delete All Breakpoints"), this);
-		deleteAllBreakpointsAct->setShortcut(QKeySequence(tr(vjs.KBContent[KBDELETEALLBREAKPOINTS].KBSettingValue)));
-		connect(deleteAllBreakpointsAct, SIGNAL(triggered()), this, SLOT(DeleteAllBreakpoints()));
-		disableAllBreakpointsAct = new QAction(QIcon(":/res/debug-disableallbreakpoints.png"), tr("&Disable All Breakpoints"), this);
-		connect(disableAllBreakpointsAct, SIGNAL(triggered()), this, SLOT(DisableAllBreakpoints()));
-
-		// Save dump
-		saveDumpAsAct = new QAction(tr("&Save Dump As..."), this);
-		saveDumpAsAct->setCheckable(false);
-		saveDumpAsAct->setDisabled(false);
-		connect(saveDumpAsAct, SIGNAL(triggered()), this, SLOT(ShowSaveDumpAsWin()));
-
-		VideoOutputAct = new QAction(tr("Output Video"), this);
-		VideoOutputAct->setStatusTip(tr("Shows the output video window"));
-		connect(VideoOutputAct, SIGNAL(triggered()), this, SLOT(ShowVideoOutputWin()));
-
-		//DasmAct = new QAction(tr("Disassembly"), this);
-		//DasmAct->setStatusTip(tr("Shows the disassembly window"));
-		//connect(DasmAct, SIGNAL(triggered()), this, SLOT(ShowDasmWin()));
-
-		// Exception vector table window
-		exceptionVectorTableBrowseAct = new QAction(QIcon(""), tr("Exception Vector Table"), this);
-		exceptionVectorTableBrowseAct->setStatusTip(tr("Shows all Exception Vector Table browser window"));
-		connect(exceptionVectorTableBrowseAct, SIGNAL(triggered()), this, SLOT(ShowExceptionVectorTableBrowserWin()));
-
-		// All watch variables window
-		allWatchBrowseAct = new QAction(QIcon(":/res/debug-watch.png"), tr("All Watch"), this);
-		allWatchBrowseAct->setStatusTip(tr("Shows all Watch browser window"));
-		connect(allWatchBrowseAct, SIGNAL(triggered()), this, SLOT(ShowAllWatchBrowserWin()));
-
-		// Local variables window
-		LocalBrowseAct = new QAction(QIcon(":/res/debug-local.png"), tr("Locals"), this);
-		LocalBrowseAct->setStatusTip(tr("Shows Locals browser window"));
-		connect(LocalBrowseAct, SIGNAL(triggered()), this, SLOT(ShowLocalBrowserWin()));
-
-		// Heap (memory) allocation window
-		heapallocatorBrowseAct = new QAction(QIcon(""), tr("Heap allocator"), this);
-		heapallocatorBrowseAct->setStatusTip(tr("Shows the heap allocator browser window"));
-		connect(heapallocatorBrowseAct, SIGNAL(triggered()), this, SLOT(ShowHeapAllocatorBrowserWin()));
-
-		// Call stack window
-		CallStackBrowseAct = new QAction(QIcon(":/res/debug-callstack.png"), tr("Call Stack"), this);
-		CallStackBrowseAct->setStatusTip(tr("Shows Call Stack browser window"));
-		connect(CallStackBrowseAct, SIGNAL(triggered()), this, SLOT(ShowCallStackBrowserWin()));
-
-		// Cart files list
-		CartFilesListAct = new QAction(QIcon(""), tr("Directory and files"), this);
-		CartFilesListAct->setStatusTip(tr("List of the files in the cartridge's directory structure"));
-		connect(CartFilesListAct, SIGNAL(triggered()), this, SLOT(ShowCartFilesListWin()));
-
-		// Memory windows
-		mem1BrowseAct = (QAction **)calloc(vjs.nbrmemory1browserwindow, sizeof(QAction));
-		QSignalMapper *signalMapper = new QSignalMapper(this);
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to do the memory desalocation for mem1BrowseAct !!!")
-#else
-#warning "!!! Need to do the memory desalocation for mem1BrowseAct !!!"
-#endif // _MSC_VER
-		for (int i = 0; i < vjs.nbrmemory1browserwindow; i++)
-		{
-			char MB[100];
-			sprintf(MB, "Memory %i", (unsigned int)(i+1));
-			mem1BrowseAct[i] = new QAction(QIcon(":/res/debug-memory.png"), tr(MB), this);
-			mem1BrowseAct[i]->setStatusTip(tr("Shows a Jaguar memory browser window"));
-			connect(mem1BrowseAct[i], SIGNAL(triggered()), signalMapper, SLOT(map()));
-			signalMapper->setMapping(mem1BrowseAct[i], (int)i);
-			connect(signalMapper, SIGNAL(mapped(int)), this, SLOT(ShowMemory1BrowserWin(int)));
-		}
-	}
-
-	// Memory browser window action
+	// Debugger Actions
 	memBrowseAct = new QAction(QIcon(":/res/tool-memory.png"), tr("Memory Browser"), this);
 	memBrowseAct->setStatusTip(tr("Shows the Jaguar memory browser window"));
+//	memBrowseAct->setCheckable(true);
 	connect(memBrowseAct, SIGNAL(triggered()), this, SLOT(ShowMemoryBrowserWin()));
 
-	// Stack browser window action
-	stackBrowseAct = new QAction(QIcon(":/res/tool-stack.png"), tr("Stack Browser"), this);
-	stackBrowseAct->setStatusTip(tr("Shows the Jaguar stack browser window"));
-	connect(stackBrowseAct, SIGNAL(triggered()), this, SLOT(ShowStackBrowserWin()));
-
-	// CPUs (M68000, GPU & DSP browser window action
 	cpuBrowseAct = new QAction(QIcon(":/res/tool-cpu.png"), tr("CPU Browser"), this);
 	cpuBrowseAct->setStatusTip(tr("Shows the Jaguar CPU browser window"));
+//	memBrowseAct->setCheckable(true);
 	connect(cpuBrowseAct, SIGNAL(triggered()), this, SLOT(ShowCPUBrowserWin()));
 
-	// OP browser window action
 	opBrowseAct = new QAction(QIcon(":/res/tool-op.png"), tr("OP Browser"), this);
 	opBrowseAct->setStatusTip(tr("Shows the Jaguar OP browser window"));
+//	memBrowseAct->setCheckable(true);
 	connect(opBrowseAct, SIGNAL(triggered()), this, SLOT(ShowOPBrowserWin()));
 
-	// M68000 disassembly browser window
 	m68kDasmBrowseAct = new QAction(QIcon(":/res/tool-68k-dis.png"), tr("68K Listing Browser"), this);
 	m68kDasmBrowseAct->setStatusTip(tr("Shows the 68K disassembly browser window"));
+//	memBrowseAct->setCheckable(true);
 	connect(m68kDasmBrowseAct, SIGNAL(triggered()), this, SLOT(ShowM68KDasmBrowserWin()));
 
-	// HW registers browser window
-	hwRegsBrowseAct = new QAction(QIcon(":/res/tool-hw-regs.png"), tr("HW Registers Browser"), this);
-	hwRegsBrowseAct->setStatusTip(tr("Shows the HW registers browser window"));
-	connect(hwRegsBrowseAct, SIGNAL(triggered()), this, SLOT(ShowHWRegsBrowserWin()));
-
-	// Risc (DSP / GPU) disassembly browser window
 	riscDasmBrowseAct = new QAction(QIcon(":/res/tool-risc-dis.png"), tr("RISC Listing Browser"), this);
 	riscDasmBrowseAct->setStatusTip(tr("Shows the RISC disassembly browser window"));
+//	memBrowseAct->setCheckable(true);
 	connect(riscDasmBrowseAct, SIGNAL(triggered()), this, SLOT(ShowRISCDasmBrowserWin()));
 
 	// Misc. connections...
 	connect(filePickWin, SIGNAL(RequestLoad(QString)), this, SLOT(LoadSoftware(QString)));
 	connect(filePickWin, SIGNAL(FilePickerHiding()), this, SLOT(Unpause()));
 
-	// Create menus
+	// Create menus & toolbars
 
 	fileMenu = menuBar()->addMenu(tr("&Jaguar"));
 	fileMenu->addAction(powerAct);
-	if (!vjs.softTypeDebugger)
-	{
-		fileMenu->addAction(pauseAct);
-		//	fileMenu->addAction(frameAdvanceAct);
-	}
+	fileMenu->addAction(pauseAct);
+//	fileMenu->addAction(frameAdvanceAct);
 	fileMenu->addAction(filePickAct);
 	fileMenu->addAction(useCDAct);
 	fileMenu->addAction(configAct);
-	fileMenu->addAction(emustatusAct);
-	fileMenu->addSeparator();
 	fileMenu->addAction(quitAppAct);
 
-	// Alpine and debugger menus
-	if (vjs.hardwareTypeAlpine || vjs.softTypeDebugger)
+	if (vjs.hardwareTypeAlpine)
 	{
-		// Create debug menu
 		debugMenu = menuBar()->addMenu(tr("&Debug"));
-
-		// Create debugger menu
-		if (vjs.softTypeDebugger)
-		{
-			// Create view menu
-			viewMenu = menuBar()->addMenu(tr("&View"));
-
-			// Cart menu
-			viewCartMenu = viewMenu->addMenu(tr("&Cartridge"));
-			viewCartMenu->addAction(CartFilesListAct);
-#if 0
-			viewCartMenu->addSeparator();
-			viewCartMenu->addAction(CartStreamsAct);
-#endif
-
-			// Windows menu
-			debugWindowsMenu = debugMenu->addMenu(tr("&Windows"));
-			debugWindowsMenu->addAction(BreakpointsAct);
-			debugWindowExceptionMenu = debugWindowsMenu->addMenu(tr("&Exception"));
-			debugWindowExceptionMenu->addAction(exceptionVectorTableBrowseAct);
-			debugWindowsMenu->addSeparator();
-			debugWindowOutputMenu = debugWindowsMenu->addMenu(tr("&Output"));
-			debugWindowOutputMenu->addAction(VideoOutputAct);
-			debugWindowsMenu->addSeparator();
-			debugWindowsWatchMenu = debugWindowsMenu->addMenu(tr("&Watch"));
-			debugWindowsWatchMenu->addAction(allWatchBrowseAct);
-			debugWindowsMenu->addAction(LocalBrowseAct);
-			debugWindowsMenu->addSeparator();
-			debugWindowsMenu->addAction(CallStackBrowseAct);
-			debugWindowsMenu->addSeparator();
-			debugWindowsMemoryMenu = debugWindowsMenu->addMenu(tr("&Memory"));
-			debugWindowsMemoryMenu->addAction(heapallocatorBrowseAct);
-			debugWindowsMemoryMenu->addSeparator();
-			for (int i = 0; i < vjs.nbrmemory1browserwindow; i++)
-			{
-				debugWindowsMemoryMenu->addAction(mem1BrowseAct[i]);
-			}
-			debugWindowsMenu->addSeparator();
-			debugWindowsBrowsesMenu = debugWindowsMenu->addMenu(tr("&Browsers"));
-			debugWindowsBrowsesMenu->addAction(memBrowseAct);
-			debugWindowsBrowsesMenu->addAction(stackBrowseAct);
-			debugWindowsBrowsesMenu->addAction(cpuBrowseAct);
-			debugWindowsBrowsesMenu->addAction(opBrowseAct);
-			debugWindowsBrowsesMenu->addAction(m68kDasmBrowseAct);
-			debugWindowsBrowsesMenu->addAction(riscDasmBrowseAct);
-			debugWindowsBrowsesMenu->addAction(hwRegsBrowseAct);
-			debugMenu->addSeparator();
-			debugMenu->addAction(pauseAct);
-			debugMenu->addAction(frameAdvanceAct);
-			debugMenu->addAction(restartAct);
-			debugMenu->addSeparator();
-			debugMenu->addAction(traceStepIntoAct);
-			debugMenu->addAction(traceStepOverAct);
-			debugMenu->addSeparator();
-			debugNewBreakpointMenu = debugMenu->addMenu(tr("&New Breakpoint"));
-			debugNewBreakpointMenu->addAction(newFunctionBreakpointAct);
-			debugMenu->addAction(deleteAllBreakpointsAct);
-			debugMenu->addAction(disableAllBreakpointsAct);
-			debugMenu->addSeparator();
-			debugMenu->addAction(saveDumpAsAct);
-#if 0
-			debugMenu->addSeparator();
-			debugMenu->addAction(DasmAct);
-#endif
-		}
-		else
-		{
-			// Create alpine menu
-			debugMenu->addAction(memBrowseAct);
-			debugMenu->addAction(stackBrowseAct);
-			debugMenu->addAction(cpuBrowseAct);
-			debugMenu->addAction(opBrowseAct);
-			debugMenu->addAction(m68kDasmBrowseAct);
-			debugMenu->addAction(riscDasmBrowseAct);
-			debugMenu->addAction(hwRegsBrowseAct);
-		}
+		debugMenu->addAction(memBrowseAct);
+		debugMenu->addAction(cpuBrowseAct);
+		debugMenu->addAction(opBrowseAct);
+		debugMenu->addAction(m68kDasmBrowseAct);
+		debugMenu->addAction(riscDasmBrowseAct);
 	}
 
-	// Help menus
 	helpMenu = menuBar()->addMenu(tr("&Help"));
 	helpMenu->addAction(helpAct);
 	helpMenu->addAction(aboutAct);
 
-	// Create toolbars
-
-	toolbar = addToolBar(tr("System"));
+	toolbar = addToolBar(tr("Stuff"));
 	toolbar->addAction(powerAct);
-	if (!vjs.softTypeDebugger)
-	{
-		toolbar->addAction(pauseAct);
-		toolbar->addAction(frameAdvanceAct);
-	}
+	toolbar->addAction(pauseAct);
+	toolbar->addAction(frameAdvanceAct);
 	toolbar->addAction(filePickAct);
 	toolbar->addAction(useCDAct);
 	toolbar->addSeparator();
-	if (!vjs.softTypeDebugger)
-	{
-		toolbar->addAction(screenshotAct);
-		toolbar->addSeparator();
-		toolbar->addAction(x1Act);
-		toolbar->addAction(x2Act);
-		toolbar->addAction(x3Act);
-		toolbar->addSeparator();
-		toolbar->addAction(ntscAct);
-		toolbar->addAction(palAct);
-		toolbar->addSeparator();
-		toolbar->addAction(blurAct);
-		toolbar->addAction(fullScreenAct);
-	}
-	else
-	{
-		debuggerbar = addToolBar(tr("&Debugger"));
-		debuggerbar->addAction(pauseAct);
-		debuggerbar->addAction(frameAdvanceAct);
-		debuggerbar->addAction(restartAct);
-		debuggerbar->addSeparator();
-		debuggerbar->addAction(traceStepIntoAct);
-		debuggerbar->addAction(traceStepOverAct);
-		debuggerbar->addSeparator();
-		debuggerbar->addAction(BreakpointsAct);
-	}
+	toolbar->addAction(x1Act);
+	toolbar->addAction(x2Act);
+	toolbar->addAction(x3Act);
+	toolbar->addSeparator();
+	toolbar->addAction(ntscAct);
+	toolbar->addAction(palAct);
+	toolbar->addSeparator();
+	toolbar->addAction(blurAct);
+	toolbar->addAction(fullScreenAct);
 
 	if (vjs.hardwareTypeAlpine)
 	{
 		debugbar = addToolBar(tr("&Debug"));
 		debugbar->addAction(memBrowseAct);
-		debugbar->addAction(stackBrowseAct);
 		debugbar->addAction(cpuBrowseAct);
 		debugbar->addAction(opBrowseAct);
 		debugbar->addAction(m68kDasmBrowseAct);
 		debugbar->addAction(riscDasmBrowseAct);
-		debugbar->addAction(hwRegsBrowseAct);
 	}
 
 	// Add actions to the main window, as hiding widgets with them
@@ -700,22 +318,18 @@ MainWin::MainWin(bool autoRun): running(true), powerButtonOn(false),
 	addAction(fullScreenAct);
 	addAction(quitAppAct);
 	addAction(configAct);
-	addAction(emustatusAct);
 	addAction(pauseAct);
 	addAction(filePickAct);
 	addAction(frameAdvanceAct);
 
 	//	Create status bar
 	statusBar()->showMessage(tr("Ready"));
-	ReadUISettings();
-	// Do this in case original size isn't correct (mostly for the first-run case)
+	ReadSettings();
+	// Do this in case original size isn't correct (mostly for the first-run
+	// case)
 	ResizeMainWindow();
 
-	WriteLog("Window creation done\n");
-
-	// Create our test pattern NTSC bitmap
-	WriteLog("Test pattern 1 bitmap\n");
-
+	// Create our test pattern bitmaps
 	QImage tempImg(":/res/test-pattern.jpg");
 	QImage tempImgScaled = tempImg.scaled(VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT_PAL, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
@@ -730,10 +344,7 @@ MainWin::MainWin(bool autoRun): running(true), powerButtonOn(false),
 		}
 	}
 
-	// Create our test pattern PAL bitmap
-	WriteLog("Test pattern 2 bitmap\n");
-
-	QImage tempImg2(":/res/test-pattern-pal.jpg");
+	QImage tempImg2(":/res/test-pattern-pal");
 	QImage tempImgScaled2 = tempImg2.scaled(VIRTUAL_SCREEN_WIDTH, VIRTUAL_SCREEN_HEIGHT_PAL, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 
 	for(uint32_t y=0; y<VIRTUAL_SCREEN_HEIGHT_PAL; y++)
@@ -761,16 +372,11 @@ MainWin::MainWin(bool autoRun): running(true), powerButtonOn(false),
 	// We set this initially, to make VJ behave somewhat as it would if no
 	// cart were inserted and the BIOS was set as active...
 	jaguarCartInserted = true;
-	WriteLog("Virtual Jaguar %s Rx (Last full build was on %s %s)\n", VJ_RELEASE_VERSION, __DATE__, __TIME__);
+	WriteLog("Virtual Jaguar %s (Last full build was on %s %s)\n", VJ_RELEASE_VERSION, __DATE__, __TIME__);
 	WriteLog("VJ: Initializing jaguar subsystem...\n");
 	JaguarInit();
-
-#ifndef NEWMODELSBIOSHANDLER
-	//	memcpy(jagMemSpace + 0xE00000, jaguarBootROM, 0x20000);	// Use the stock BIOS
+//	memcpy(jagMemSpace + 0xE00000, jaguarBootROM, 0x20000);	// Use the stock BIOS
 	memcpy(jagMemSpace + 0xE00000, (vjs.biosType == BT_K_SERIES ? jaguarBootROM : jaguarBootROM2), 0x20000);	// Use the stock BIOS
-#else
-	SelectBIOS(vjs.biosType);
-#endif
 
 	// Prevent the file scanner from running if filename passed
 	// in on the command line...
@@ -794,38 +400,8 @@ MainWin::MainWin(bool autoRun): running(true), powerButtonOn(false),
 
 		// Attempt to load/run the ABS file...
 		LoadSoftware(vjs.absROMPath);
-#ifndef NEWMODELSBIOSHANDLER
 		memcpy(jagMemSpace + 0xE00000, jaguarDevBootROM2, 0x20000);	// Use the stub BIOS
-#else
-		SelectBIOS(vjs.biosType);
-#endif
 		// Prevent the scanner from running...
-		return;
-	}
-
-	// Load up the default ROM if in Debugger mode:
-	if (vjs.softTypeDebugger)
-	{
-		bool romLoaded = JaguarLoadFile(vjs.debuggerROMPath);
-
-		// If regular load failed, try just a straight file load
-		// (Dev only! I don't want people to start getting lazy with their releases again! :-P)
-		if (!romLoaded)
-			romLoaded = DebuggerLoadFile(vjs.debuggerROMPath);
-
-		if (romLoaded)
-			WriteLog("Debugger Mode: Successfully loaded file \"%s\".\n", vjs.debuggerROMPath);
-		else
-			WriteLog("Debugger Mode: Unable to load file \"%s\"!\n", vjs.debuggerROMPath);
-
-		// Attempt to load/run the ABS file...
-		LoadSoftware(vjs.absROMPath);
-#ifndef NEWMODELSBIOSHANDLER
-		memcpy(jagMemSpace + 0xE00000, jaguarDevBootROM2, 0x20000);	// Use the stub BIOS
-																	// Prevent the scanner from running...
-#else
-		SelectBIOS(vjs.biosType);
-#endif
 		return;
 	}
 
@@ -865,17 +441,6 @@ void MainWin::SyncUI(void)
 }
 
 
-// 
-void MainWin::SelectdasmtabWidget(const int Index)
-{
-	// check sources tab
-	if (Index == 0)
-	{
-		SourcesWin->RefreshContents();
-	}
-}
-
-
 void MainWin::closeEvent(QCloseEvent * event)
 {
 	JaguarDone();
@@ -890,7 +455,7 @@ void MainWin::keyPressEvent(QKeyEvent * e)
 {
 #ifndef VJ_REMOVE_DEV_CODE
 	// From jaguar.cpp
-	//extern bool startM68KTracing;		// moved to jaguar.h
+	extern bool startM68KTracing;
 	// From joystick.cpp
 	extern int blit_start_log;
 	// From blitter.cpp
@@ -1116,8 +681,6 @@ void MainWin::Configure(void)
 
 	// Just in case we crash before a clean exit...
 	WriteSettings();
-
-	RefreshWindows();
 }
 
 
@@ -1144,16 +707,14 @@ static uint32_t ntscTickCount;
 		// Some machines can't handle this, so we give them the option to disable it. :-)
 		if (!plzDontKillMyComputer)
 		{
-//			if (!vjs.softTypeDebugger)
+			// Random hash & trash
+			// We try to simulate an untuned tank circuit here... :-)
+			for(uint32_t x=0; x<videoWidget->rasterWidth; x++)
 			{
-				// Random hash & trash
-				// We try to simulate an untuned tank circuit here... :-)
-				for (uint32_t x = 0; x < videoWidget->rasterWidth; x++)
+				for(uint32_t y=0; y<videoWidget->rasterHeight; y++)
 				{
-					for (uint32_t y = 0; y < videoWidget->rasterHeight; y++)
-					{
-						videoWidget->buffer[(y * videoWidget->textureWidth) + x] = (rand() & 0xFF) << 8 | (rand() & 0xFF) << 16 | (rand() & 0xFF) << 24;
-					}
+					videoWidget->buffer[(y * videoWidget->textureWidth) + x]
+						= (rand() & 0xFF) << 8 | (rand() & 0xFF) << 16 | (rand() & 0xFF) << 24;
 				}
 			}
 		}
@@ -1163,32 +724,25 @@ static uint32_t ntscTickCount;
 		// Otherwise, run the Jaguar simulation
 		HandleGamepads();
 		JaguarExecuteNew();
-		//if (!vjs.softTypeDebugger)
-			videoWidget->HandleMouseHiding();
+		videoWidget->HandleMouseHiding();
 
 static uint32_t refresh = 0;
 		// Do autorefresh on debug windows
 		// Have to be careful, too much causes the emulator to slow way down!
-		if (refresh == vjs.refresh)
+		if (vjs.hardwareTypeAlpine)
 		{
-		if (vjs.hardwareTypeAlpine || vjs.softTypeDebugger)
-		{
-				AlpineRefreshWindows();
-				//memBrowseWin->RefreshContents();
-				//cpuBrowseWin->RefreshContents();
-			}
-			CommonRefreshWindows();
+			if (refresh == 60)
+			{
+				memBrowseWin->RefreshContents();
+				cpuBrowseWin->RefreshContents();
 				refresh = 0;
 			}
 			else
-		{
 				refresh++;
 		}
 	}
 
-	//if (!vjs.softTypeDebugger)
-		videoWidget->updateGL();
-		//vjs.softTypeDebugger ? VideoOutputWin->RefreshContents(videoWidget) : NULL;
+	videoWidget->updateGL();
 
 	// FPS handling
 	// Approach: We use a ring buffer to store times (in ms) over a given
@@ -1216,13 +770,9 @@ static uint32_t refresh = 0;
 	// so that it only updates every 10th frame or so
 	statusBar()->showMessage(QString("%1.%2 FPS").arg(fpsIntegerPart).arg(fpsDecimalPart));
 	oldTimestamp = timestamp;
-
-	if (M68KDebugHaltStatus())
-		ToggleRunState();
 }
 
 
-// Toggle the power state, it can be either on or off
 void MainWin::TogglePowerState(void)
 {
 	powerButtonOn = !powerButtonOn;
@@ -1232,35 +782,28 @@ void MainWin::TogglePowerState(void)
 	if (!powerButtonOn)
 	{
 		// Restore the mouse pointer, if hidden:
-		//if (!vjs.softTypeDebugger)
-		{
-			videoWidget->CheckAndRestoreMouseCursor();
-		}
-
+		videoWidget->CheckAndRestoreMouseCursor();
 		useCDAct->setDisabled(false);
 		palAct->setDisabled(false);
 		ntscAct->setDisabled(false);
 		pauseAct->setChecked(false);
 		pauseAct->setDisabled(true);
 		showUntunedTankCircuit = true;
-
 		DACPauseAudioThread();
-		// This is just in case the ROM we were playing was in a narrow or wide field mode, so the untuned tank sim doesn't look wrong. :-)
+		// This is just in case the ROM we were playing was in a narrow or wide
+		// field mode, so the untuned tank sim doesn't look wrong. :-)
 		TOMReset();
 
 		if (plzDontKillMyComputer)
 		{
-			// We have to do it line by line, because the texture pitch is not the same as the picture buffer's pitch.
-			for (uint32_t y = 0; y < videoWidget->rasterHeight; y++)
+			// We have to do it line by line, because the texture pitch is not
+			// the same as the picture buffer's pitch.
+			for(uint32_t y=0; y<videoWidget->rasterHeight; y++)
 			{
 				if (vjs.hardwareTypeNTSC)
-				{
 					memcpy(videoWidget->buffer + (y * videoWidget->textureWidth), testPattern + (y * VIRTUAL_SCREEN_WIDTH), VIRTUAL_SCREEN_WIDTH * sizeof(uint32_t));
-				}
 				else
-				{
 					memcpy(videoWidget->buffer + (y * videoWidget->textureWidth), testPattern2 + (y * VIRTUAL_SCREEN_WIDTH), VIRTUAL_SCREEN_WIDTH * sizeof(uint32_t));
-				}
 			}
 		}
 	}
@@ -1281,81 +824,40 @@ void MainWin::TogglePowerState(void)
 // does the expected thing. Otherwise, if we use the file picker to insert a
 // cart, we expect to run the cart! Maybe have a RemoveCart function that only
 // works if the CD unit is active?
-			setWindowTitle(QString("Virtual Jaguar " VJ_RELEASE_VERSION	" Rx - Now playing: Jaguar CD"));
+			setWindowTitle(QString("Virtual Jaguar " VJ_RELEASE_VERSION
+				" - Now playing: Jaguar CD"));
 		}
 
 		WriteLog("GUI: Resetting Jaguar...\n");
 		JaguarReset();
-		DebuggerReset();
-		CommonReset();
-		DebuggerResetWindows();
-		CommonResetWindows();
 		DACPauseAudioThread(false);
 	}
 }
 
 
-// Toggle the emulator state, it can be either on or off
 void MainWin::ToggleRunState(void)
 {
-	startM68KTracing = running;
 	running = !running;
 
-	// Pause mode
 	if (!running)
 	{
-		// Set action buttons for the pause mode
+		// Restore the mouse pointer, if hidden:
+		videoWidget->CheckAndRestoreMouseCursor();
 		frameAdvanceAct->setDisabled(false);
-		pauseAct->setChecked(true);
-		pauseAct->setDisabled(false);
-		if (vjs.softTypeDebugger)
+
+		for(uint32_t i=0; i<(uint32_t)(videoWidget->textureWidth * 256); i++)
 		{
-			traceStepIntoAct->setDisabled(false);
-			traceStepOverAct->setDisabled(false);
-			restartAct->setDisabled(false);
-			m68kDasmWin->Use68KPCAddress();
-			GPUDasmWin->UseGPUPCAddress();
-			DSPDasmWin->UseDSPPCAddress();
+			uint32_t pixel = videoWidget->buffer[i];
+			uint8_t r = (pixel >> 24) & 0xFF, g = (pixel >> 16) & 0xFF, b = (pixel >> 8) & 0xFF;
+			pixel = ((r + g + b) / 3) & 0x00FF;
+			videoWidget->buffer[i] = 0x000000FF | (pixel << 16) | (pixel << 8);
 		}
 
-		//if (!vjs.softTypeDebugger)
-		{
-			// Restore the mouse pointer, if hidden:
-			videoWidget->CheckAndRestoreMouseCursor();
-
-			for (uint32_t i = 0; i < (uint32_t)(videoWidget->textureWidth * 256); i++)
-			{
-				uint32_t pixel = videoWidget->buffer[i];
-				uint8_t r = (pixel >> 24) & 0xFF, g = (pixel >> 16) & 0xFF, b = (pixel >> 8) & 0xFF;
-				pixel = ((r + g + b) / 3) & 0x00FF;
-				videoWidget->buffer[i] = 0x000000FF | (pixel << 16) | (pixel << 8);
-			}
-
-			videoWidget->updateGL();
-			//vjs.softTypeDebugger ? VideoOutputWin->RefreshContents(videoWidget) : NULL;
-
-			cpuBrowseWin->HoldBPM();
-			cpuBrowseWin->HandleBPMContinue();
-			RefreshWindows();
-		}
+		videoWidget->updateGL();
 	}
 	else
-	{
 		frameAdvanceAct->setDisabled(true);
-		pauseAct->setChecked(false);
-		pauseAct->setDisabled(false);
-		if (vjs.softTypeDebugger)
-		{
-			traceStepIntoAct->setDisabled(true);
-			traceStepOverAct->setDisabled(true);
-			restartAct->setDisabled(true);
-			BreakpointsWin->RefreshContents();
-		}
 
-		cpuBrowseWin->UnholdBPM();
-	}
-
-	emuStatusWin->ResetM68KCycles();
 	// Pause/unpause any running/non-running threads...
 	DACPauseAudioThread(!running);
 }
@@ -1457,69 +959,37 @@ void MainWin::Unpause(void)
 }
 
 
-// Jaguar initialisation and load software file
 void MainWin::LoadSoftware(QString file)
 {
 	running = false;							// Prevent bad things(TM) from happening...
 	pauseForFileSelector = false;				// Reset the file selector pause flag
 
-	// Setup BIOS in his own dedicated Jaguar memory
-#ifndef NEWMODELSBIOSHANDLER
 	uint8_t * biosPointer = jaguarBootROM;
 
-	if (vjs.hardwareTypeAlpine || vjs.softTypeDebugger)
-	{
+	if (vjs.hardwareTypeAlpine)
 		biosPointer = jaguarDevBootROM2;
-	}
 
 	memcpy(jagMemSpace + 0xE00000, biosPointer, 0x20000);
-#else
-	SelectBIOS(vjs.biosType);
-#endif
 
-	// Turn 'on' the power to initialize the Jaguar
 	powerAct->setDisabled(false);
 	powerAct->setChecked(true);
 	powerButtonOn = false;
 	TogglePowerState();
-
 	// We have to load our software *after* the Jaguar RESET
 	cartridgeLoaded = JaguarLoadFile(file.toUtf8().data());
-	SET32(jaguarMainRAM, 0, vjs.DRAM_size);						// Set stack in the M68000's Reset SP
+	SET32(jaguarMainRAM, 0, 0x00200000);		// Set top of stack...
 
 	// This is icky because we've already done it
 // it gets worse :-P
-	if (!vjs.useJaguarBIOS)
-	{
-		SET32(jaguarMainRAM, 4, jaguarRunAddress);
-	}
+if (!vjs.useJaguarBIOS)
+	SET32(jaguarMainRAM, 4, jaguarRunAddress);
 
 	m68k_pulse_reset();
 
-// set the M68K in halt mode in case of a debug mode is used, so control is at user side
-	if (vjs.softTypeDebugger)
+	if (!vjs.hardwareTypeAlpine && !loadAndGo)
 	{
-		m68k_set_reg(M68K_REG_A6, 0);
-		m68kDasmWin->SetAddress(jaguarRunAddress);
-		SourcesWin->Init();
-		//pauseAct->setDisabled(false);
-		//pauseAct->setChecked(true);
-		ToggleRunState();
-		//RefreshWindows();
-	}
-	else
-	{
-		// Prevent the launch in case of software without a start address and without BIOS presence
-		if (!vjs.useJaguarBIOS && !jaguarRunAddress)
-		{
-			ToggleRunState();
-		}
-	}
-
-	// Display the Atari Jaguar software which is running
-	if ((!vjs.hardwareTypeAlpine || !vjs.softTypeDebugger) && !loadAndGo && jaguarRunAddress)
-	{
-		QString newTitle = QString("Virtual Jaguar " VJ_RELEASE_VERSION " Rx - Now playing: %1").arg(filePickWin->GetSelectedPrettyName());
+		QString newTitle = QString("Virtual Jaguar " VJ_RELEASE_VERSION " - Now playing: %1")
+			.arg(filePickWin->GetSelectedPrettyName());
 		setWindowTitle(newTitle);
 	}
 }
@@ -1537,205 +1007,64 @@ void MainWin::ToggleCDUsage(void)
 }
 
 
-// Open, or display, the breakpoints list window
-void MainWin::ShowBreakpointsWin(void)
-{
-	BreakpointsWin->show();
-	BreakpointsWin->RefreshContents();
-}
-
-
-// Delete all breakpoints
-void MainWin::DeleteAllBreakpoints(void)
-{
-	cpuBrowseWin->ResetBPM();
-	m68k_brk_reset();
-	ShowBreakpointsWin();
-}
-
-
-// Disable all breakpoints
-void MainWin::DisableAllBreakpoints(void)
-{
-	cpuBrowseWin->DisableBPM();
-	m68k_brk_disable();
-	ShowBreakpointsWin();
-}
-
-
-// Open, or display, the new breakpoint function window
-void MainWin::ShowNewFunctionBreakpointWin(void)
-{
-	NewFunctionBreakpointWin->SetFnctBreakpointWin(BreakpointsWin);
-	NewFunctionBreakpointWin->show();
-	ShowBreakpointsWin();
-}
-
-
-// Display list of files found in cartridge
-void MainWin::ShowCartFilesListWin(void)
-{
-	CartFilesListWin->show();
-	CartFilesListWin->RefreshContents();
-}
-
-
-// Display the save dump pickup file
-void MainWin::ShowSaveDumpAsWin(void)
-{
-	SaveDumpAsWin->show();
-}
-
-
-// Step Into trace
-void MainWin::DebuggerTraceStepInto(void)
-{
-	if (SourcesWin->isVisible() && SourcesWin->GetTraceStatus())
-	{
-		while (!SourcesWin->CheckChangeLine())
-		{
-			emuStatusWin->UpdateM68KCycles(JaguarStepInto());
-		}
-	}
-	else
-	{
-		emuStatusWin->UpdateM68KCycles(JaguarStepInto());
-	}
-
-	videoWidget->updateGL();
-	RefreshWindows();
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to verify the Step Into function !!!")
-#else
-	#warning "!!! Need to verify the Step Into function !!!"
-#endif // _MSC_VER
-}
-
-
-// Restart the Jaguar executable
-void MainWin::DebuggerRestart(void)
-{
-#if 1
-	m68k_pulse_reset();
-#else
-	m68k_set_reg(M68K_REG_PC, jaguarRunAddress);
-	m68k_set_reg(M68K_REG_SP, vjs.DRAM_size);
-#endif
-	dasmtabWidget->setCurrentIndex(1);		// set focus on the disasm M68K tab
-	m68k_set_reg(M68K_REG_A6, 0);
-	m68k_brk_hitcounts_reset();
-	emuStatusWin->ResetM68KCycles();
-	bpmHitCounts = 0;
-	DebuggerResetWindows();
-	CommonResetWindows();
-	SourcesWin->Init();
-	RefreshWindows();
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to verify the Restart function !!!")
-#else
-	#warning "!!! Need to verify the Restart function !!!"
-#endif // _MSC_VER
-}
-
-
-// Step Over trace
-void MainWin::DebuggerTraceStepOver(void)
-{
-	if (SourcesWin->isVisible() && SourcesWin->GetTraceStatus())
-	{
-		while (!SourcesWin->CheckChangeLine())
-		{
-			emuStatusWin->UpdateM68KCycles(JaguarStepOver(0));
-		}
-	}
-	else
-	{
-		emuStatusWin->UpdateM68KCycles(JaguarStepOver(0));
-	}
-
-	videoWidget->updateGL();
-	RefreshWindows();
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to verify the Step Over function !!!")
-#else
-	#warning "!!! Need to verify the Step Over function !!!"
-#endif // _MSC_VER
-}
-
-
-// Advance / Execute for one frame
 void MainWin::FrameAdvance(void)
 {
 //printf("Frame Advance...\n");
-	ToggleRunState();
 	// Execute 1 frame, then exit (only useful in Pause mode)
 	JaguarExecuteNew();
-	//if (!vjs.softTypeDebugger)
-		videoWidget->updateGL();
-		//vjs.softTypeDebugger ? VideoOutputWin->RefreshContents(videoWidget) : NULL;
-	ToggleRunState();
+	videoWidget->updateGL();
 	// Need to execute 1 frames' worth of DSP thread as well :-/
-
-	//m68kDasmWin->Use68KPCAddress();
-	//RefreshWindows();
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to execute the DSP thread for 1 frame too !!!")
-#else
 #warning "!!! Need to execute the DSP thread for 1 frame too !!!"
-#endif // _MSC_VER
 }
 
 
 void MainWin::SetFullScreen(bool state/*= true*/)
 {
-	if (!vjs.softTypeDebugger)
+	if (state)
 	{
-		if (state)
-		{
-			mainWinPosition = pos();
-			menuBar()->hide();
-			statusBar()->hide();
-			toolbar->hide();
+		mainWinPosition = pos();
+		menuBar()->hide();
+		statusBar()->hide();
+		toolbar->hide();
 
-			if (debugbar)
-				debugbar->hide();
+		if (debugbar)
+			debugbar->hide();
 
-			// This is needed because the fullscreen may happen on a different
-			// screen than screen 0:
-			int screenNum = QApplication::desktop()->screenNumber(videoWidget);
-			QRect r = QApplication::desktop()->screenGeometry(screenNum);
-			double targetWidth = (double)VIRTUAL_SCREEN_WIDTH,
-				targetHeight = (double)(vjs.hardwareTypeNTSC ? VIRTUAL_SCREEN_HEIGHT_NTSC : VIRTUAL_SCREEN_HEIGHT_PAL);
-			double aspectRatio = targetWidth / targetHeight;
-			// NOTE: Really should check here to see which dimension constrains the
-			//       other. Right now, we assume that height is the constraint.
-			int newWidth = (int)(aspectRatio * (double)r.height());
-			videoWidget->offset = (r.width() - newWidth) / 2;
-			videoWidget->fullscreen = true;
-			videoWidget->outputWidth = newWidth;
-			videoWidget->setFixedSize(r.width(), r.height());
-			showFullScreen();
-		}
-		else
-		{
-			// Seems Qt is fussy about this: showNormal() has to go first, or it
-			// will keep the window stuck in a psuedo-fullscreen mode with no way
-			// to get out of it (except closing the app).
-			showNormal();
+		// This is needed because the fullscreen may happen on a different
+		// screen than screen 0:
+		int screenNum = QApplication::desktop()->screenNumber(videoWidget);
+		QRect r = QApplication::desktop()->screenGeometry(screenNum);
+		double targetWidth = (double)VIRTUAL_SCREEN_WIDTH,
+			targetHeight = (double)(vjs.hardwareTypeNTSC ? VIRTUAL_SCREEN_HEIGHT_NTSC : VIRTUAL_SCREEN_HEIGHT_PAL);
+		double aspectRatio = targetWidth / targetHeight;
+		// NOTE: Really should check here to see which dimension constrains the
+		//       other. Right now, we assume that height is the constraint.
+		int newWidth = (int)(aspectRatio * (double)r.height());
+		videoWidget->offset = (r.width() - newWidth) / 2;
+		videoWidget->fullscreen = true;
+		videoWidget->outputWidth = newWidth;
+		videoWidget->setFixedSize(r.width(), r.height());
+		showFullScreen();
+	}
+	else
+	{
+		// Seems Qt is fussy about this: showNormal() has to go first, or it
+		// will keep the window stuck in a psuedo-fullscreen mode with no way
+		// to get out of it (except closing the app).
+		showNormal();
 
-			// Reset the video widget to windowed mode
-			videoWidget->offset = 0;
-			videoWidget->fullscreen = false;
-			menuBar()->show();
-			statusBar()->show();
-			toolbar->show();
+		// Reset the video widget to windowed mode
+		videoWidget->offset = 0;
+		videoWidget->fullscreen = false;
+		menuBar()->show();
+		statusBar()->show();
+		toolbar->show();
 
-			if (debugbar)
-				debugbar->show();
+		if (debugbar)
+			debugbar->show();
 
-			ResizeMainWindow();
-			move(mainWinPosition);
-		}
+		ResizeMainWindow();
+		move(mainWinPosition);
 	}
 }
 
@@ -1747,72 +1076,10 @@ void MainWin::ToggleFullScreen(void)
 }
 
 
-// 
-void MainWin::ShowExceptionVectorTableBrowserWin(void)
-{
-	exceptionvectortableBrowseWin->show();
-	exceptionvectortableBrowseWin->RefreshContents();
-}
-
-
-// 
-void MainWin::ShowLocalBrowserWin(void)
-{
-	LocalBrowseWin->show();
-	LocalBrowseWin->RefreshContents();
-}
-
-
-// 
-void MainWin::ShowCallStackBrowserWin(void)
-{
-	CallStackBrowseWin->show();
-	CallStackBrowseWin->RefreshContents();
-}
-
-
-void MainWin::ShowAllWatchBrowserWin(void)
-{
-	allWatchBrowseWin->show();
-	allWatchBrowseWin->RefreshContents();
-}
-
-
-void MainWin::ShowHeapAllocatorBrowserWin(void)
-{
-	heapallocatorBrowseWin->show();
-	heapallocatorBrowseWin->RefreshContents();
-}
-
-
 void MainWin::ShowMemoryBrowserWin(void)
 {
 	memBrowseWin->show();
 	memBrowseWin->RefreshContents();
-}
-
-
-void MainWin::ShowMemory1BrowserWin(int NumWin)
-{
-//	for (int i = 0; i < vjs.nbrmemory1browserwindow; i++)
-	{
-		mem1BrowseWin[NumWin]->show();
-		mem1BrowseWin[NumWin]->RefreshContents(NumWin);
-	}
-}
-
-
-void MainWin::ShowEmuStatusWin(void)
-{
-	emuStatusWin->show();
-	emuStatusWin->RefreshContents();
-}
-
-
-void MainWin::ShowStackBrowserWin(void)
-{
-	stackBrowseWin->show();
-	stackBrowseWin->RefreshContents();
 }
 
 
@@ -1823,7 +1090,6 @@ void MainWin::ShowCPUBrowserWin(void)
 }
 
 
-// Show the OP browser window
 void MainWin::ShowOPBrowserWin(void)
 {
 	opBrowseWin->show();
@@ -1831,15 +1097,6 @@ void MainWin::ShowOPBrowserWin(void)
 }
 
 
-// Show the HW registers browser window
-void MainWin::ShowHWRegsBrowserWin(void)
-{
-	hwRegsBrowseWin->show();
-	hwRegsBrowseWin->RefreshContents();
-}
-
-
-// Show the M68K browser window
 void MainWin::ShowM68KDasmBrowserWin(void)
 {
 	m68kDasmBrowseWin->show();
@@ -1854,132 +1111,70 @@ void MainWin::ShowRISCDasmBrowserWin(void)
 }
 
 
-//
-#if 0
-void	MainWin::ShowDasmWin(void)
-{
-//	DasmWin->show();
-//	DasmWin->RefreshContents();
-}
-#endif
-
-
-// 
-void MainWin::ShowVideoOutputWin(void)
-{
-	//VideoOutputWindowCentrale = mainWindowCentrale->addSubWindow(videoWidget);
-	//VideoOutputWindowCentrale->setWindowTitle(QString(tr("Video output")));
-	//VideoOutputWindowCentrale->show();
-	//memBrowseWin->show();
-	VideoOutputWin->show();
-	VideoOutputWin->SetupVideo(videoWidget);
-	//VideoOutputWin->adjustSize();
-	//VideoOutputWin->RefreshContents(videoWidget);
-}
-
-
-// Resize video window based on zoom factor
-// It doesn't apply in debugger mode as we use this window to display disassembly
 void MainWin::ResizeMainWindow(void)
 {
-	if (!vjs.softTypeDebugger)
+	videoWidget->setFixedSize(zoomLevel * VIRTUAL_SCREEN_WIDTH,
+		zoomLevel * (vjs.hardwareTypeNTSC ? VIRTUAL_SCREEN_HEIGHT_NTSC : VIRTUAL_SCREEN_HEIGHT_PAL));
+
+	// Show the test pattern if user requested plzDontKillMyComputer mode
+	if (!powerButtonOn && plzDontKillMyComputer)
 	{
-		videoWidget->setFixedSize(zoomLevel * VIRTUAL_SCREEN_WIDTH,	zoomLevel * (vjs.hardwareTypeNTSC ? VIRTUAL_SCREEN_HEIGHT_NTSC : VIRTUAL_SCREEN_HEIGHT_PAL));
-
-		// Show the test pattern if user requested plzDontKillMyComputer mode
-		if (!powerButtonOn && plzDontKillMyComputer)
+		for(uint32_t y=0; y<videoWidget->rasterHeight; y++)
 		{
-			for (uint32_t y = 0; y < videoWidget->rasterHeight; y++)
-			{
-				if (vjs.hardwareTypeNTSC)
-				{
-					memcpy(videoWidget->buffer + (y * videoWidget->textureWidth), testPattern + (y * VIRTUAL_SCREEN_WIDTH), VIRTUAL_SCREEN_WIDTH * sizeof(uint32_t));
-				}
-				else
-				{
-					memcpy(videoWidget->buffer + (y * videoWidget->textureWidth), testPattern2 + (y * VIRTUAL_SCREEN_WIDTH), VIRTUAL_SCREEN_WIDTH * sizeof(uint32_t));
-				}
-			}
+			if (vjs.hardwareTypeNTSC)
+				memcpy(videoWidget->buffer + (y * videoWidget->textureWidth), testPattern + (y * VIRTUAL_SCREEN_WIDTH), VIRTUAL_SCREEN_WIDTH * sizeof(uint32_t));
+			else
+				memcpy(videoWidget->buffer + (y * videoWidget->textureWidth), testPattern2 + (y * VIRTUAL_SCREEN_WIDTH), VIRTUAL_SCREEN_WIDTH * sizeof(uint32_t));
 		}
-
-		adjustSize();
 	}
+
+	adjustSize();
 }
 
 
-// Read settings
+#warning "!!! Need to check the window geometry to see if the positions are legal !!!"
+// i.e., someone could drag it to another screen, close it, then disconnect that screen
 void MainWin::ReadSettings(void)
 {
-	size_t i;
-
 	QSettings settings("Underground Software", "Virtual Jaguar");
+	mainWinPosition = settings.value("pos", QPoint(200, 200)).toPoint();
+	QSize size = settings.value("size", QSize(400, 400)).toSize();
+	resize(size);
+	move(mainWinPosition);
+	QPoint pos = settings.value("cartLoadPos", QPoint(200, 200)).toPoint();
+	filePickWin->move(pos);
 
-	//zoomLevel = settings.value("zoom", 2).toInt();
+	zoomLevel = settings.value("zoom", 2).toInt();
 	allowUnknownSoftware = settings.value("showUnknownSoftware", false).toBool();
 	lastEditedProfile = settings.value("lastEditedProfile", 0).toInt();
 
-	vjs.useJoystick = settings.value("useJoystick", false).toBool();
-	vjs.joyport = settings.value("joyport", 0).toInt();
+	vjs.useJoystick      = settings.value("useJoystick", false).toBool();
+	vjs.joyport          = settings.value("joyport", 0).toInt();
 	vjs.hardwareTypeNTSC = settings.value("hardwareTypeNTSC", true).toBool();
-	vjs.frameSkip = settings.value("frameSkip", 0).toInt();
-	vjs.useJaguarBIOS = settings.value("useJaguarBIOS", false).toBool();
-	vjs.useRetailBIOS = settings.value("useRetailBIOS", false).toBool();
-	vjs.useDevBIOS = settings.value("useDevBIOS", false).toBool();
-	vjs.GPUEnabled = settings.value("GPUEnabled", true).toBool();
-	vjs.DSPEnabled = settings.value("DSPEnabled", true).toBool();
-	vjs.audioEnabled = settings.value("audioEnabled", true).toBool();
-	vjs.usePipelinedDSP = settings.value("usePipelinedDSP", false).toBool();
-	vjs.fullscreen = settings.value("fullscreen", false).toBool();
-	vjs.useOpenGL = settings.value("useOpenGL", true).toBool();
-	vjs.glFilter = settings.value("glFilterType", 1).toInt();
-	vjs.renderType = settings.value("renderType", 0).toInt();
-	vjs.biosType = settings.value("biosType", BT_M_SERIES).toInt();
-	vjs.jaguarModel = settings.value("jaguarModel", JAG_M_SERIES).toInt();
-	vjs.useFastBlitter = settings.value("useFastBlitter", false).toBool();
+	vjs.frameSkip        = settings.value("frameSkip", 0).toInt();
+	vjs.useJaguarBIOS    = settings.value("useJaguarBIOS", false).toBool();
+	vjs.GPUEnabled       = settings.value("GPUEnabled", true).toBool();
+	vjs.DSPEnabled       = settings.value("DSPEnabled", true).toBool();
+	vjs.audioEnabled     = settings.value("audioEnabled", true).toBool();
+	vjs.usePipelinedDSP  = settings.value("usePipelinedDSP", false).toBool();
+	vjs.fullscreen       = settings.value("fullscreen", false).toBool();
+	vjs.useOpenGL        = settings.value("useOpenGL", true).toBool();
+	vjs.glFilter         = settings.value("glFilterType", 1).toInt();
+	vjs.renderType       = settings.value("renderType", 0).toInt();
+	vjs.allowWritesToROM = settings.value("writeROM", false).toBool();
+	vjs.biosType         = settings.value("biosType", BT_M_SERIES).toInt();
+	vjs.useFastBlitter   = settings.value("useFastBlitter", false).toBool();
 	strcpy(vjs.EEPROMPath, settings.value("EEPROMs", QStandardPaths::writableLocation(QStandardPaths::DataLocation).append("/eeproms/")).toString().toUtf8().data());
 	strcpy(vjs.ROMPath, settings.value("ROMs", QStandardPaths::writableLocation(QStandardPaths::DataLocation).append("/software/")).toString().toUtf8().data());
-	strcpy(vjs.screenshotPath, settings.value("Screenshots", QStandardPaths::writableLocation(QStandardPaths::DataLocation).append("/screenshots/")).toString().toUtf8().data());
-
-	// Read settings from the Debugger mode
-	settings.beginGroup("debugger");
-	strcpy(vjs.debuggerROMPath, settings.value("DefaultROM", "").toString().toUtf8().data());
-	strcpy(vjs.sourcefilesearchPaths, settings.value("SourceFileSearchPaths", "").toString().toUtf8().data());
-	vjs.nbrdisasmlines = settings.value("NbrDisasmLines", 32).toUInt();
-	vjs.disasmopcodes = settings.value("DisasmOpcodes", true).toBool();
-	vjs.displayHWlabels = settings.value("DisplayHWLabels", true).toBool();
-	vjs.displayFullSourceFilename = settings.value("displayFullSourceFilename", true).toBool();
-	vjs.ELFSectionsCheck = settings.value("ELFSectionsCheck", false).toBool();
-	vjs.nbrmemory1browserwindow = settings.value("NbrMemory1BrowserWindow", MaxMemory1BrowserWindow).toUInt();
-	settings.endGroup();
-
-	// Read settings from the Alpine mode
-	settings.beginGroup("alpine");
 	strcpy(vjs.alpineROMPath, settings.value("DefaultROM", "").toString().toUtf8().data());
 	strcpy(vjs.absROMPath, settings.value("DefaultABS", "").toString().toUtf8().data());
-	vjs.refresh = settings.value("refresh", 60).toUInt();
-	vjs.allowWritesToROM = settings.value("writeROM", false).toBool();
-	vjs.allowM68KExceptionCatch = settings.value("M68KExceptionCatch", false).toBool();
-	settings.endGroup();
 
-	// Read settings from the Keybindings
-	settings.beginGroup("keybindings");
-	for (i = 0; i < KB_END; i++)
-	{
-		strcpy(vjs.KBContent[i].KBSettingValue, settings.value(KeyBindingsTable[i].KBNameSetting, KeyBindingsTable[i].KBDefaultValue).toString().toUtf8().data());
-	}
-	settings.endGroup();
-
-	// Write important settings to the log file
-	WriteLog("MainWin: Paths\n");
-	WriteLog("           EEPROMPath = \"%s\"\n", vjs.EEPROMPath);
-	WriteLog("              ROMPath = \"%s\"\n", vjs.ROMPath);
-	WriteLog("        AlpineROMPath = \"%s\"\n", vjs.alpineROMPath);
-	WriteLog("      DebuggerROMPath = \"%s\"\n", vjs.debuggerROMPath);
-	WriteLog("           absROMPath = \"%s\"\n", vjs.absROMPath);
-	WriteLog("      ScreenshotsPath = \"%s\"\n", vjs.screenshotPath);
-	WriteLog("SourceFileSearchPaths = \"%s\"\n", vjs.sourcefilesearchPaths);
-	WriteLog("MainWin: Misc.\n");
-	WriteLog("   Pipelined DSP = %s\n", (vjs.usePipelinedDSP ? "ON" : "off"));
+WriteLog("MainWin: Paths\n");
+WriteLog("   EEPROMPath = \"%s\"\n", vjs.EEPROMPath);
+WriteLog("      ROMPath = \"%s\"\n", vjs.ROMPath);
+WriteLog("AlpineROMPath = \"%s\"\n", vjs.alpineROMPath);
+WriteLog("   absROMPath = \"%s\"\n", vjs.absROMPath);
+WriteLog("Pipelined DSP = %s\n", (vjs.usePipelinedDSP ? "ON" : "off"));
 
 #if 0
 	// Keybindings in order of U, D, L, R, C, B, A, Op, Pa, 0-9, #, *
@@ -2028,211 +1223,18 @@ void MainWin::ReadSettings(void)
 	vjs.p2KeyBindings[BUTTON_s] = settings.value("p2k_star", Qt::Key_Asterisk).toInt();
 #endif
 
-	WriteLog("Read setting = Done\n");
-
 	ReadProfiles(&settings);
-	DBGManager_SourceFileSearchPathsSet(vjs.sourcefilesearchPaths);
 }
 
-
-// Read UI settings
-// Default values will be used in case of no settings can be found
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to check the window geometry to see if the positions are legal !!!")
-#else
-#warning "!!! Need to check the window geometry to see if the positions are legal !!!"
-#endif // _MSC_VER
-// i.e., someone could drag it to another screen, close it, then disconnect that screen
-void MainWin::ReadUISettings(void)
-{
-	QPoint pos;
-	char mem1Name[100];
-	size_t i;
-	QSize size;
-
-	// Point on the emulator settings
-	QSettings settings("Underground Software", "Virtual Jaguar");
-	settings.beginGroup("ui");
-
-	// Emulator main window UI information
-	mainWinPosition = settings.value("pos", QPoint(200, 200)).toPoint();
-	size = settings.value("size", QSize(400, 400)).toSize();
-	resize(size);
-	move(mainWinPosition);
-	pos = settings.value("cartLoadPos", QPoint(200, 200)).toPoint();
-	filePickWin->move(pos);
-
-	// Video output information
-	zoomLevel = settings.value("zoom", 2).toInt();
-
-// Emulator status UI information
-	pos = settings.value("emuStatusWinPos", QPoint(200, 200)).toPoint();
-	emuStatusWin->move(pos);
-	settings.value("emuStatusWinIsVisible", false).toBool() ? ShowEmuStatusWin() : void();
-	
-	// Alpine debug UI information (also needed by the Debugger)
-	if (vjs.hardwareTypeAlpine || vjs.softTypeDebugger)
-	{
-		// CPU registers UI information
-		pos = settings.value("cpuBrowseWinPos", QPoint(200, 200)).toPoint();
-		cpuBrowseWin->move(pos);
-		settings.value("cpuBrowseWinIsVisible", false).toBool() ? ShowCPUBrowserWin() : void();
-
-		// Memory browser UI information
-		pos = settings.value("memBrowseWinPos", QPoint(200, 200)).toPoint();
-		memBrowseWin->move(pos);
-		settings.value("memBrowseWinIsVisible", false).toBool() ? ShowMemoryBrowserWin() : void();
-
-		// Stack browser UI information
-		pos = settings.value("stackBrowseWinPos", QPoint(200, 200)).toPoint();
-		stackBrowseWin->move(pos);
-		settings.value("stackBrowseWinIsVisible", false).toBool() ? ShowStackBrowserWin() : void();
-		size = settings.value("stackBrowseWinSize", QSize(400, 400)).toSize();
-		stackBrowseWin->resize(size);
-
-		// OP (Object Processor) UI information
-		pos = settings.value("opBrowseWinPos", QPoint(200, 200)).toPoint();
-		opBrowseWin->move(pos);
-		settings.value("opBrowseWinIsVisible", false).toBool() ? ShowOPBrowserWin() : void();
-		size = settings.value("opBrowseWinSize", QSize(400, 400)).toSize();
-		opBrowseWin->resize(size);
-
-		// HW registers UI information
-		pos = settings.value("hwRegsBrowseWinPos", QPoint(200, 200)).toPoint();
-		hwRegsBrowseWin->move(pos);
-		settings.value("hwRegsBrowseWinIsVisible", false).toBool() ? ShowHWRegsBrowserWin() : void();
-		size = settings.value("hwRegsBrowseWinSize", QSize(400, 400)).toSize();
-		hwRegsBrowseWin->resize(size);
-
-		// RISC disassembly UI information
-		pos = settings.value("riscDasmBrowseWinPos", QPoint(200, 200)).toPoint();
-		riscDasmBrowseWin->move(pos);
-		settings.value("riscDasmBrowseWinIsVisible", false).toBool() ? ShowRISCDasmBrowserWin() : void();
-
-		// M68k disassembly UI information
-		pos = settings.value("m68kDasmBrowseWinPos", QPoint(200, 200)).toPoint();
-		m68kDasmBrowseWin->move(pos);
-		//settings.value("m68kDasmBrowseWinIsVisible", false).toBool() ? ShowM68KDasmBrowserWin() : void();
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to check the M68k disassembly window position crashing !!!")
-#else
-		#warning "!!! Need to check the M68k disassembly window position crashing !!!"
-#endif // _MSC_VER
-	}
-
-	// Debugger UI information
-	if (vjs.softTypeDebugger)
-	{
-#if 0
-		pos = settings.value("m68kDasmWinPos", QPoint(200, 200)).toPoint();
-		m68kDasmWin->move(pos);
-		//settings.value("m68kDasmWinIsVisible", false).toBool() ? m68kDasmWin->show() : m68kDasmWin->hide();
-		pos = settings.value("GPUDasmWinPos", QPoint(200, 200)).toPoint();
-		GPUDasmWin->move(pos);
-		pos = settings.value("DSPDasmWinPos", QPoint(200, 200)).toPoint();
-		DSPDasmWin->move(pos);
-#endif
-		// All watch browser UI information
-		pos = settings.value("allWatchBrowseWinPos", QPoint(200, 200)).toPoint();
-		allWatchBrowseWin->move(pos);
-		settings.value("allWatchBrowseWinIsVisible", false).toBool() ? ShowAllWatchBrowserWin() : void();
-		size = settings.value("allWatchBrowseWinSize", QSize(400, 400)).toSize();
-		allWatchBrowseWin->resize(size);
-
-		// Local browser UI information
-		pos = settings.value("LocalBrowseWinPos", QPoint(200, 200)).toPoint();
-		LocalBrowseWin->move(pos);
-		settings.value("LocalBrowseWinIsVisible", false).toBool() ? ShowLocalBrowserWin() : void();
-		size = settings.value("LocalBrowseWinSize", QSize(400, 400)).toSize();
-		LocalBrowseWin->resize(size);
-
-		// Heap memory allocation browser UI information
-		pos = settings.value("heapallocatorBrowseWinPos", QPoint(200, 200)).toPoint();
-		heapallocatorBrowseWin->move(pos);
-		settings.value("heapallocatorBrowseWinIsVisible", false).toBool() ? ShowHeapAllocatorBrowserWin() : void();
-		size = settings.value("heapallocatorBrowseWinSize", QSize(400, 400)).toSize();
-		heapallocatorBrowseWin->resize(size);
-
-		// Exception Vector Table UI Information
-		pos = settings.value("exceptionVectorTableBrowseWinPos", QPoint(200, 200)).toPoint();
-		exceptionvectortableBrowseWin->move(pos);
-		settings.value("exceptionVectorTableBrowseWinIsVisible", false).toBool() ? ShowExceptionVectorTableBrowserWin() : void();
-		size = settings.value("exceptionVectorTableBrowseWinSize", QSize(400, 400)).toSize();
-		exceptionvectortableBrowseWin->resize(size);
-
-		// Call Stack browser UI information
-		pos = settings.value("CallStackBrowseWinPos", QPoint(200, 200)).toPoint();
-		CallStackBrowseWin->move(pos);
-		settings.value("CallStackBrowseWinIsVisible", false).toBool() ? ShowCallStackBrowserWin() : void();
-		size = settings.value("CallStackBrowseWinSize", QSize(400, 400)).toSize();
-		CallStackBrowseWin->resize(size);
-
-		// cartridge directory and files UI information
-		pos = settings.value("CartFilesListWinPos", QPoint(200, 200)).toPoint();
-		CartFilesListWin->move(pos);
-		settings.value("CartFilesListWinIsVisible", false).toBool() ? ShowCartFilesListWin() : void();
-		size = settings.value("CartFilesListWinSize", QSize(400, 400)).toSize();
-		CartFilesListWin->resize(size);
-
-		// Save dump UI information
-		pos = settings.value("SaveDumpAsWinPos", QPoint(200, 200)).toPoint();
-		SaveDumpAsWin->move(pos);
-		settings.value("SaveDumpAsWinIsVisible", false).toBool() ? ShowSaveDumpAsWin() : void();
-		size = settings.value("SaveDumpAsWinSize", QSize(400, 400)).toSize();
-		SaveDumpAsWin->resize(size);
-
-		// save output video UI information
-		pos = settings.value("VideoOutputWinPos", QPoint(200, 200)).toPoint();
-		VideoOutputWin->move(pos);
-		settings.value("VideoOutputWinIsVisible", false).toBool() ? ShowVideoOutputWin() : void();
-		size = settings.value("VideoOutputWinSize", QSize(400, 400)).toSize();
-		VideoOutputWin->resize(size);
-
-		// Breakpoints UI information
-		pos = settings.value("BreakpointsWinPos", QPoint(200, 200)).toPoint();
-		BreakpointsWin->move(pos);
-		settings.value("BreakpointsWinIsVisible", false).toBool() ? ShowBreakpointsWin() : void();
-		size = settings.value("BreakpointsWinSize", QSize(400, 400)).toSize();
-		BreakpointsWin->resize(size);
-		// New function breakpoint UI information
-		pos = settings.value("NewFunctionBreakpointWinPos", QPoint(200, 200)).toPoint();
-		NewFunctionBreakpointWin->move(pos);
-		settings.value("NewFunctionBreakpointWinIsVisible", false).toBool() ? ShowNewFunctionBreakpointWin() : void();
-		size = settings.value("NewFunctionBreakpointWinSize", QSize(400, 400)).toSize();
-		NewFunctionBreakpointWin->resize(size);
-
-		// Memories browser UI information
-		for (i = 0; i < vjs.nbrmemory1browserwindow; i++)
-		{
-			sprintf(mem1Name, "mem1BrowseWinPos[%i]", (unsigned int)i);
-			pos = settings.value(mem1Name, QPoint(200, 200)).toPoint();
-			mem1BrowseWin[i]->move(pos);
-			sprintf(mem1Name, "mem1BrowseWinIsVisible[%i]", (unsigned int)i);
-			settings.value(mem1Name, false).toBool() ? ShowMemory1BrowserWin((int)i) : void();
-			sprintf(mem1Name, "mem1BrowseWinSize[%i]", (unsigned int)i);
-			size = settings.value(mem1Name, QSize(400, 400)).toSize();
-			mem1BrowseWin[i]->resize(size);
-		}
-	}
-
-	settings.endGroup();
-
-	WriteLog("Read UI setting = Done\n");
-}
-
-
-// Save the settings
+  
 void MainWin::WriteSettings(void)
 {
-	size_t i;
-
-	// Point on the emulator settings
 	QSettings settings("Underground Software", "Virtual Jaguar");
-	//settings.setValue("pos", pos());
-	//settings.setValue("size", size());
-	//settings.setValue("cartLoadPos", filePickWin->pos());
+	settings.setValue("pos", pos());
+	settings.setValue("size", size());
+	settings.setValue("cartLoadPos", filePickWin->pos());
 
-	//settings.setValue("zoom", zoomLevel);
+	settings.setValue("zoom", zoomLevel);
 	settings.setValue("showUnknownSoftware", allowUnknownSoftware);
 	settings.setValue("lastEditedProfile", lastEditedProfile);
 
@@ -2241,8 +1243,6 @@ void MainWin::WriteSettings(void)
 	settings.setValue("hardwareTypeNTSC", vjs.hardwareTypeNTSC);
 	settings.setValue("frameSkip", vjs.frameSkip);
 	settings.setValue("useJaguarBIOS", vjs.useJaguarBIOS);
-	settings.setValue("useRetailBIOS", vjs.useRetailBIOS);
-	settings.setValue("useDevBIOS", vjs.useDevBIOS);
 	settings.setValue("GPUEnabled", vjs.GPUEnabled);
 	settings.setValue("DSPEnabled", vjs.DSPEnabled);
 	settings.setValue("audioEnabled", vjs.audioEnabled);
@@ -2251,43 +1251,15 @@ void MainWin::WriteSettings(void)
 	settings.setValue("useOpenGL", vjs.useOpenGL);
 	settings.setValue("glFilterType", vjs.glFilter);
 	settings.setValue("renderType", vjs.renderType);
-	settings.setValue("jaguarModel", vjs.jaguarModel);
+	settings.setValue("writeROM", vjs.allowWritesToROM);
 	settings.setValue("biosType", vjs.biosType);
 	settings.setValue("useFastBlitter", vjs.useFastBlitter);
-	//settings.setValue("JagBootROM", vjs.jagBootPath);
-	//settings.setValue("CDBootROM", vjs.CDBootPath);
+	settings.setValue("JagBootROM", vjs.jagBootPath);
+	settings.setValue("CDBootROM", vjs.CDBootPath);
 	settings.setValue("EEPROMs", vjs.EEPROMPath);
 	settings.setValue("ROMs", vjs.ROMPath);
-	settings.setValue("Screenshots", vjs.screenshotPath);
-
-	// Write settings from the Alpine mode
-	settings.beginGroup("alpine");
-	settings.setValue("refresh", vjs.refresh);
 	settings.setValue("DefaultROM", vjs.alpineROMPath);
 	settings.setValue("DefaultABS", vjs.absROMPath);
-	settings.setValue("writeROM", vjs.allowWritesToROM);
-	settings.setValue("M68KExceptionCatch", vjs.allowM68KExceptionCatch);
-	settings.endGroup();
-
-	// Write settings from the Debugger mode
-	settings.beginGroup("debugger");
-	settings.setValue("DisplayHWLabels", vjs.displayHWlabels);
-	settings.setValue("NbrDisasmLines", (qulonglong) vjs.nbrdisasmlines);
-	settings.setValue("DisasmOpcodes", vjs.disasmopcodes);
-	settings.setValue("displayFullSourceFilename", vjs.displayFullSourceFilename);
-	settings.setValue("ELFSectionsCheck", vjs.ELFSectionsCheck);
-	settings.setValue("NbrMemory1BrowserWindow", (unsigned int)vjs.nbrmemory1browserwindow);
-	settings.setValue("DefaultROM", vjs.debuggerROMPath);
-	settings.setValue("SourceFileSearchPaths", vjs.sourcefilesearchPaths);
-	settings.endGroup();
-
-	// Write settings from the Keybindings
-	settings.beginGroup("keybindings");
-	for (i = 0; i < KB_END; i++)
-	{
-		settings.setValue(KeyBindingsTable[i].KBNameSetting, vjs.KBContent[i].KBSettingValue);
-	}
-	settings.endGroup();
 
 #if 0
 	settings.setValue("p1k_up", vjs.p1KeyBindings[BUTTON_U]);
@@ -2336,223 +1308,16 @@ void MainWin::WriteSettings(void)
 #endif
 
 	WriteProfiles(&settings);
-	DBGManager_SourceFileSearchPathsSet(vjs.sourcefilesearchPaths);
 }
 
 
-// Save the UI settings
 void MainWin::WriteUISettings(void)
 {
-	char mem1Name[100];
-	size_t i;
-
-	// Point on the emulator settings
 	QSettings settings("Underground Software", "Virtual Jaguar");
-	settings.beginGroup("ui");
-	
-	// Emulator UI information
 	settings.setValue("pos", pos());
 	settings.setValue("size", size());
 	settings.setValue("cartLoadPos", filePickWin->pos());
 
-	// Video output information
 	settings.setValue("zoom", zoomLevel);
-
-	// Common UI information
-	settings.setValue("emuStatusWinPos", emuStatusWin->pos());
-	settings.setValue("emuStatusWinIsVisible", emuStatusWin->isVisible());
-	
-	// Alpine debug UI information (also needed by the Debugger)
-	if (vjs.hardwareTypeAlpine || vjs.softTypeDebugger)
-	{
-		settings.setValue("cpuBrowseWinPos", cpuBrowseWin->pos());
-		settings.setValue("cpuBrowseWinIsVisible", cpuBrowseWin->isVisible());
-		settings.setValue("memBrowseWinPos", memBrowseWin->pos());
-		settings.setValue("memBrowseWinIsVisible", memBrowseWin->isVisible());
-		settings.setValue("stackBrowseWinPos", stackBrowseWin->pos());
-		settings.setValue("stackBrowseWinIsVisible", stackBrowseWin->isVisible());
-		settings.setValue("stackBrowseWinSize", stackBrowseWin->size());
-		settings.setValue("opBrowseWinPos", opBrowseWin->pos());
-		settings.setValue("opBrowseWinIsVisible", opBrowseWin->isVisible());
-		settings.setValue("opBrowseWinSize", opBrowseWin->size());
-		settings.setValue("hwRegsBrowseWinPos", hwRegsBrowseWin->pos());
-		settings.setValue("hwRegsBrowseWinIsVisible", hwRegsBrowseWin->isVisible());
-		settings.setValue("hwRegsBrowseWinSize", hwRegsBrowseWin->size());
-		settings.setValue("riscDasmBrowseWinPos", riscDasmBrowseWin->pos());
-		settings.setValue("riscDasmBrowseWinIsVisible", riscDasmBrowseWin->isVisible());
-		settings.setValue("m68kDasmBrowseWinPos", m68kDasmBrowseWin->pos());
-		settings.setValue("m68kDasmBrowseWinIsVisible", m68kDasmBrowseWin->isVisible());
-	}
-
-	// Debugger UI information
-	if (vjs.softTypeDebugger)
-	{
-#if 0
-		settings.setValue("m68kDasmWinPos", m68kDasmWin->pos());
-		//settings.setValue("m68kDasmWinIsVisible", m68kDasmWin->isVisible());
-		settings.setValue("GPUDasmWinPos", GPUDasmWin->pos());
-		settings.setValue("DSPDasmWinPos", DSPDasmWin->pos());
-#endif
-		settings.setValue("allWatchBrowseWinPos", allWatchBrowseWin->pos());
-		settings.setValue("allWatchBrowseWinIsVisible", allWatchBrowseWin->isVisible());
-		settings.setValue("allWatchBrowseWinSize", allWatchBrowseWin->size());
-		settings.setValue("LocalBrowseWinPos", LocalBrowseWin->pos());
-		settings.setValue("LocalBrowseWinIsVisible", LocalBrowseWin->isVisible());
-		settings.setValue("LocalBrowseWinSize", LocalBrowseWin->size());
-		settings.setValue("heapallocatorBrowseWinPos", heapallocatorBrowseWin->pos());
-		settings.setValue("heapallocatorBrowseWinIsVisible", heapallocatorBrowseWin->isVisible());
-		settings.setValue("heapallocatorBrowseWinSize", heapallocatorBrowseWin->size());
-		settings.setValue("exceptionVectorTableBrowseWinPos", exceptionvectortableBrowseWin->pos());
-		settings.setValue("exceptionVectorTableBrowseWinIsVisible", exceptionvectortableBrowseWin->isVisible());
-		settings.setValue("exceptionVectorTableBrowseWinSize", exceptionvectortableBrowseWin->size());
-		settings.setValue("CallStackBrowseWinPos", CallStackBrowseWin->pos());
-		settings.setValue("CallStackBrowseWinIsVisible", CallStackBrowseWin->isVisible());
-		settings.setValue("CallStackBrowseWinSize", CallStackBrowseWin->size());
-		settings.setValue("BreakpointsWinPos", BreakpointsWin->pos());
-		settings.setValue("BreakpointsWinIsVisible", BreakpointsWin->isVisible());
-		settings.setValue("BreakpointsWinSize", BreakpointsWin->size());
-		settings.setValue("NewFunctionBreakpointWinPos", NewFunctionBreakpointWin->pos());
-		settings.setValue("NewFunctionBreakpointWinIsVisible", NewFunctionBreakpointWin->isVisible());
-		settings.setValue("NewFunctionBreakpointWinSize", NewFunctionBreakpointWin->size());
-		settings.setValue("CartFilesListWinPos", CartFilesListWin->pos());
-		settings.setValue("CartFilesListWinIsVisible", CartFilesListWin->isVisible());
-		settings.setValue("CartFilesListWinSize", CartFilesListWin->size());
-		settings.setValue("SaveDumpAsWinPos", SaveDumpAsWin->pos());
-		settings.setValue("SaveDumpAsWinIsVisible", SaveDumpAsWin->isVisible());
-		settings.setValue("SaveDumpAsWinSize", SaveDumpAsWin->size());
-		settings.setValue("VideoOutputWinPos", VideoOutputWin->pos());
-		settings.setValue("VideoOutputWinIsVisible", VideoOutputWin->isVisible());
-		settings.setValue("VideoOutputWinSize", VideoOutputWin->size());
-
-		for (i = 0; i < vjs.nbrmemory1browserwindow; i++)
-		{
-			sprintf(mem1Name, "mem1BrowseWinPos[%i]", (unsigned int)i);
-			settings.setValue(mem1Name, mem1BrowseWin[i]->pos());
-			sprintf(mem1Name, "mem1BrowseWinIsVisible[%i]", (unsigned int)i);
-			settings.setValue(mem1Name, mem1BrowseWin[i]->isVisible());
-			sprintf(mem1Name, "mem1BrowseWinSize[%i]", (unsigned int)i);
-			settings.setValue(mem1Name, mem1BrowseWin[i]->size());
-		}
-	}
-
-	settings.endGroup();
-}
-
-
-// Refresh alpine debug windows
-void MainWin::AlpineRefreshWindows(void)
-{
-	cpuBrowseWin->RefreshContents();
-	memBrowseWin->RefreshContents();
-	stackBrowseWin->RefreshContents();
-	opBrowseWin->RefreshContents();
-	riscDasmBrowseWin->RefreshContents();
-	m68kDasmBrowseWin->RefreshContents();
-	hwRegsBrowseWin->RefreshContents();
-}
-
-
-// 
-void MainWin::CommonResetWindows(void)
-{
-}
-
-
-// Reset common
-void MainWin::CommonReset(void)
-{
-}
-
-
-// Reset soft debugger
-void MainWin::DebuggerReset(void)
-{
-	if (vjs.softTypeDebugger)
-	{
-		DeleteAllBreakpoints();
-	}
-}
-
-
-// Reset soft debugger windows
-void MainWin::DebuggerResetWindows(void)
-{
-	if (vjs.softTypeDebugger)
-	{
-		FilesrcListWin->Reset();
-		allWatchBrowseWin->Reset();
-		heapallocatorBrowseWin->Reset();
-		BreakpointsWin->Reset();
-		CartFilesListWin->Reset();
-		SourcesWin->Reset();
-		//ResetAlpineWindows();
-	}
-}
-
-
-// Refresh common windows
-void MainWin::CommonRefreshWindows(void)
-{
-	emuStatusWin->RefreshContents();
-}
-
-
-// Refresh view windows
-void MainWin::ViewRefreshWindows(void)
-{
-	CartFilesListWin->RefreshContents();
-}
-
-
-// 
-void MainWin::RefreshWindows(void)
-{
-	DebuggerRefreshWindows();
-	CommonRefreshWindows();
-}
-
-
-// Refresh soft debugger & alpine debug windows
-void MainWin::DebuggerRefreshWindows(void)
-{
-	if (vjs.softTypeDebugger)
-	{
-		//VideoOutputWin->RefreshContents(videoWidget);
-		FilesrcListWin->RefreshContents();
-		SourcesWin->RefreshContents();
-		m68kDasmWin->RefreshContents();
-		GPUDasmWin->RefreshContents();
-		DSPDasmWin->RefreshContents();
-		allWatchBrowseWin->RefreshContents();
-		LocalBrowseWin->RefreshContents();
-		CallStackBrowseWin->RefreshContents();
-		heapallocatorBrowseWin->RefreshContents();
-		BreakpointsWin->RefreshContents();
-		for (size_t i = 0; i < vjs.nbrmemory1browserwindow; i++)
-		{
-			mem1BrowseWin[i]->RefreshContents(i);
-		}
-
-		AlpineRefreshWindows();
-		ViewRefreshWindows();
-	}
-}
-
-
-// Create and save screenshot
-void MainWin::MakeScreenshot(void)
-{
-	char Text[256];
-	QImage screenshot;
-	time_t now = time(0);
-	struct tm tstruct;
-
-	// Create filename
-	tstruct = *localtime(&now);
-	sprintf(Text, "%svj_%i%i%i_%i%i%i.jpg", vjs.screenshotPath, tstruct.tm_year, tstruct.tm_mon, tstruct.tm_mday, tstruct.tm_hour, tstruct.tm_min, tstruct.tm_sec);
-
-	// Create screenshot
-	screenshot = videoWidget->grabFrameBuffer();
-	screenshot.save((char *)Text, "JPG", 100);
 }
 

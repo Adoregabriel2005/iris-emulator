@@ -5,12 +5,10 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  -----------------------------------------------------------
 // JLH  01/16/2010  Created this log ;-)
-// JPM  06/06/2016  Visual Studio support
 //
 
 //
@@ -19,7 +17,6 @@
 // to Curt. ;-) Without that excellent documentation which shows *exactly*
 // what's going on inside the TOM chip, we'd all still be guessing as to how
 // the wily blitter and other pieces of the Jaguar puzzle actually work.
-// Now how about those JERRY ASIC nets gentlemen...? [We have those now!] ;-)
 //
 
 #include "blitter.h"
@@ -3589,11 +3586,7 @@ A2ptrldi	:= NAN2 (a2ptrldi, a2update\, a2pldt);*/
 // Some more from DCONTROL...
 // atick[] just MAY be important here! We're assuming it's true and dropping the term...
 // That will probably screw up some of the lower terms that seem to rely on the timing of it...
-#ifdef _MSC_VER
-#pragma message("Warning: srcdreadd is not properly initialized!")
-#else
-#warning "srcdreadd is not properly initialized!"
-#endif // _MSC_VER
+#warning srcdreadd is not properly initialized!
 bool srcdreadd = false;						// Set in INNER.NET
 //Shadeadd\	:= NAN2H (shadeadd\, dwrite, srcshade);
 //Shadeadd	:= INV2 (shadeadd, shadeadd\);

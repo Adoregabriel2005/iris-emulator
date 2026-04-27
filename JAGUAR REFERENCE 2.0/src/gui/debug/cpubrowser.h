@@ -8,7 +8,7 @@
 #ifndef __CPUBROWSER_H__
 #define __CPUBROWSER_H__
 
-#include <QtWidgets/QtWidgets>
+#include <QtWidgets>
 #include <stdint.h>
 
 class CPUBrowserWindow: public QWidget
@@ -17,19 +17,14 @@ class CPUBrowserWindow: public QWidget
 
 	public:
 		CPUBrowserWindow(QWidget * parent = 0);
-		void DisableBPM(void);
-		void ResetBPM(void);
-		void HoldBPM(void);
-		void UnholdBPM(void);
+
 
 	public slots:
-		void RefreshContents(void);
-		void HandleBPMContinue(void);
-
-	private slots:
 //		void DefineAllKeys(void);
+		void RefreshContents(void);
 		void HandleBPM(bool);
 		void HandleBPMAddress(const QString &);
+		void HandleBPMContinue(void);
 
 	protected:
 		void keyPressEvent(QKeyEvent *);

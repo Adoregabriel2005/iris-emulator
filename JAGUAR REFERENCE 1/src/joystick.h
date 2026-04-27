@@ -40,8 +40,8 @@ void JoystickWriteWord(uint32_t, uint16_t);
 uint16_t JoystickReadWord(uint32_t);
 void JoystickExec(void);
 
-extern uint8_t joypad0Buttons[];
-extern uint8_t joypad1Buttons[];
+extern "C" unsigned char* joypad0Buttons;
+extern "C" unsigned char* joypad1Buttons;
 extern bool audioEnabled;
 extern bool joysticksEnabled;
 

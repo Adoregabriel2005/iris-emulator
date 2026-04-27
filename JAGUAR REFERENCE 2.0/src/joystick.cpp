@@ -7,12 +7,10 @@
 // (C) 2013 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  -------------------------------------------------------------
 // JLH  01/16/2010  Created this log ;-)
-// JPM  06/06/2016  Visual Studio support
 //
 
 #include "joystick.h"
@@ -89,11 +87,7 @@ uint16_t JoystickReadWord(uint32_t offset)
 		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x04, 0xFF, 0x08, 0x0C, 0xFF
 	};
 
-#ifdef _MSC_VER
-#pragma message("Warning: No bounds checking done in JoystickReadByte!")
-#else
 #warning "No bounds checking done in JoystickReadByte!"
-#endif // _MSC_VER
 	offset &= 0x03;
 
 	if (offset == 0)
@@ -174,11 +168,7 @@ uint16_t JoystickReadWord(uint32_t offset)
 
 void JoystickWriteWord(uint32_t offset, uint16_t data)
 {
-#ifdef _MSC_VER
-#pragma message("Warning: No bounds checking done for JoystickWriteWord!")
-#else
 #warning "No bounds checking done for JoystickWriteWord!"
-#endif // _MSC_VER
 	offset &= 0x03;
 	joystick_ram[offset + 0] = (data >> 8) & 0xFF;
 	joystick_ram[offset + 1] = data & 0xFF;

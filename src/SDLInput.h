@@ -36,12 +36,30 @@ enum class InputAction : int {
     LynxLeftShoulder,
     LynxRightShoulder,
     LynxStart,
+    // Atari Jaguar actions
+    JagUp,
+    JagDown,
+    JagLeft,
+    JagRight,
+    JagA,
+    JagB,
+    JagC,
+    JagOption,
+    JagPause,
+    Jag1, Jag2, Jag3,
+    Jag4, Jag5, Jag6,
+    Jag7, Jag8, Jag9,
+    JagStar, Jag0, JagHash,
     Count
 };
 
 // Helpers to identify action groups
 inline bool isLynxAction(InputAction a) {
-    return static_cast<int>(a) >= static_cast<int>(InputAction::LynxUp);
+    return static_cast<int>(a) >= static_cast<int>(InputAction::LynxUp)
+        && static_cast<int>(a) < static_cast<int>(InputAction::JagUp);
+}
+inline bool isJaguarAction(InputAction a) {
+    return static_cast<int>(a) >= static_cast<int>(InputAction::JagUp);
 }
 inline bool is2600Action(InputAction a) {
     return static_cast<int>(a) < static_cast<int>(InputAction::LynxUp);
@@ -78,6 +96,16 @@ struct LynxInputState {
     bool start = false;
 };
 
+struct JaguarInputState {
+    bool up = false, down = false, left = false, right = false;
+    bool a = false, b = false, c = false;
+    bool option = false, pause = false;
+    bool n1=false,n2=false,n3=false;
+    bool n4=false,n5=false,n6=false;
+    bool n7=false,n8=false,n9=false;
+    bool star=false,n0=false,hash=false;
+};
+
 // A binding is either a keyboard scancode or a gamepad button/axis
 struct InputBinding {
     enum class Type { None, Keyboard, GamepadButton, GamepadAxis };
@@ -98,6 +126,8 @@ public:
 
     JoystickState poll();
     LynxInputState pollLynx();
+    JaguarInputState pollJaguar();
+    JaguarInputState pollJaguarKeyboard() const; // inline keyboard-only poll
 
     // Qt keyboard integration (SDL_GetKeyboardState doesn't work without an SDL window)
     void setQtKeyState(int qtKey, bool pressed);

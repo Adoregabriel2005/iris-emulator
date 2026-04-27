@@ -64,36 +64,33 @@ void M68KDasmBrowserWindow::RefreshContents(void)
 	char buffer[2048];
 	int pc = memBase, oldpc;
 
-	if (isVisible())
+	for(uint32_t i=0; i<32; i++)
 	{
-		for (uint32_t i = 0; i < 32; i++)
+		oldpc = pc;
+		pc += m68k_disassemble(buffer, pc, 0);
+//		WriteLog("%06X: %s\n", oldpc, buffer);
+		sprintf(string, "%06X: %s<br>", oldpc, buffer);
+
+		buffer[0] = 0;	// Clear string
+		char singleCharString[2] = { 0, 0 };
+
+		for(int j=0; j<strlen(string); j++)
 		{
-			oldpc = pc;
-			pc += m68k_disassemble(buffer, pc, 0, 1);
-			//		WriteLog("%06X: %s\n", oldpc, buffer);
-			sprintf(string, "%06X: %s<br>", oldpc, buffer);
-
-			buffer[0] = 0;	// Clear string
-			char singleCharString[2] = { 0, 0 };
-
-			for (int j = 0; j < strlen(string); j++)
+			if (string[j] == 32)
+				strcat(buffer, "&nbsp;");
+			else
 			{
-				if (string[j] == 32)
-					strcat(buffer, "&nbsp;");
-				else
-				{
-					singleCharString[0] = string[j];
-					strcat(buffer, singleCharString);
-				}
+				singleCharString[0] = string[j];
+				strcat(buffer, singleCharString);
 			}
-
-			//		s += QString(string);
-			s += QString(buffer);
 		}
 
-		text->clear();
-		text->setText(s);
+//		s += QString(string);
+		s += QString(buffer);
 	}
+
+	text->clear();
+	text->setText(s);
 }
 
 

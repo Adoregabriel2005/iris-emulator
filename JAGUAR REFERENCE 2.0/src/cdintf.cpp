@@ -5,12 +5,10 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  ------------------------------------------------------------
 // JLH  01/16/2010  Created this log ;-)
-// JPM  06/15/2016  Visual Studio support
 //
 
 //
@@ -95,11 +93,7 @@ void CDIntfDone(void)
 
 bool CDIntfReadBlock(uint32_t sector, uint8_t * buffer)
 {
-#ifdef _MSC_VER
-#pragma message("Warning: !!! FIX !!! CDIntfReadBlock not implemented!")
-#else
 #warning "!!! FIX !!! CDIntfReadBlock not implemented!"
-#endif // _MSC_VER
 	// !!! FIX !!!
 	WriteLog("CDINTF: ReadBlock unimplemented!\n");
 	return false;
@@ -108,11 +102,7 @@ bool CDIntfReadBlock(uint32_t sector, uint8_t * buffer)
 
 uint32_t CDIntfGetNumSessions(void)
 {
-#ifdef _MSC_VER
-#pragma message("Warning: !!! FIX !!! CDIntfGetNumSessions not implemented!")
-#else
 #warning "!!! FIX !!! CDIntfGetNumSessions not implemented!"
-#endif // _MSC_VER
 	// !!! FIX !!!
 	// Still need relevant code here... !!! FIX !!!
 	return 2;
@@ -121,11 +111,7 @@ uint32_t CDIntfGetNumSessions(void)
 
 void CDIntfSelectDrive(uint32_t driveNum)
 {
-#ifdef _MSC_VER
-#pragma message("Warning: !!! FIX !!! CDIntfSelectDrive not implemented!")
-#else
 #warning "!!! FIX !!! CDIntfSelectDrive not implemented!"
-#endif // _MSC_VER
 	// !!! FIX !!!
 	WriteLog("CDINTF: SelectDrive unimplemented!\n");
 }
@@ -133,11 +119,7 @@ void CDIntfSelectDrive(uint32_t driveNum)
 
 uint32_t CDIntfGetCurrentDrive(void)
 {
-#ifdef _MSC_VER
-#pragma message("Warning: !!! FIX !!! CDIntfGetCurrentDrive not implemented!")
-#else
 #warning "!!! FIX !!! CDIntfGetCurrentDrive not implemented!"
-#endif // _MSC_VER
 	// !!! FIX !!!
 	WriteLog("CDINTF: GetCurrentDrive unimplemented!\n");
 	return 0;
@@ -146,11 +128,7 @@ uint32_t CDIntfGetCurrentDrive(void)
 
 const uint8_t * CDIntfGetDriveName(uint32_t driveNum)
 {
-#ifdef _MSC_VER
-#pragma message("Warning: !!! FIX !!! CDIntfGetDriveName driveNum is currently ignored!")
-#else
 #warning "!!! FIX !!! CDIntfGetDriveName driveNum is currently ignored!"
-#endif // _MSC_VER
 	// driveNum is currently ignored... !!! FIX !!!
 
 #ifdef HAVE_LIB_CDIO
@@ -166,11 +144,7 @@ const uint8_t * CDIntfGetDriveName(uint32_t driveNum)
 
 uint8_t CDIntfGetSessionInfo(uint32_t session, uint32_t offset)
 {
-#ifdef _MSC_VER
-#pragma message("Warning: !!! FIX !!! CDIntfGetSessionInfo not implemented!")
-#else
 #warning "!!! FIX !!! CDIntfGetSessionInfo not implemented!"
-#endif // _MSC_VER
 	// !!! FIX !!!
 	WriteLog("CDINTF: GetSessionInfo unimplemented!\n");
 	return 0xFF;
@@ -179,11 +153,7 @@ uint8_t CDIntfGetSessionInfo(uint32_t session, uint32_t offset)
 
 uint8_t CDIntfGetTrackInfo(uint32_t track, uint32_t offset)
 {
-#ifdef _MSC_VER
-#pragma message("Warning: !!! FIX !!! CDIntfTrackInfo not implemented!")
-#else
 #warning "!!! FIX !!! CDIntfTrackInfo not implemented!"
-#endif // _MSC_VER
 	// !!! FIX !!!
 	WriteLog("CDINTF: GetTrackInfo unimplemented!\n");
 	return 0xFF;

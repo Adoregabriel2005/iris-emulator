@@ -1,7 +1,9 @@
 #pragma once
 
 #include "IEmulatorCore.h"
+
 #include "JaguarPatchDB.h"
+#include "tom_utils.h"
 
 #include <QImage>
 #include <QString>

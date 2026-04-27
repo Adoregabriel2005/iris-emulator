@@ -5,8 +5,8 @@
 #ifndef __FILETHREAD_H__
 #define __FILETHREAD_H__
 
-#include <QtCore/QtCore>
-#include <QtGui/QImage>
+#include <QtCore>
+#include <QImage>
 #include <stdint.h>
 
 class FileThread: public QThread
@@ -19,8 +19,8 @@ class FileThread: public QThread
 		void Go(bool allowUnknown = false);
 
 	signals:
-//		void FoundAFile(unsigned long index);														// JPM: Not used
-//		void FoundAFile2(unsigned long index, QString filename, QImage * label, unsigned long);		// JPM: Not used
+		void FoundAFile(unsigned long index);
+		void FoundAFile2(unsigned long index, QString filename, QImage * label, unsigned long);
 		void FoundAFile3(unsigned long index, QString filename, QImage * label, unsigned long, bool, unsigned long, unsigned long);
 
 	protected:

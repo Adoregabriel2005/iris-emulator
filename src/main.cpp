@@ -9,6 +9,7 @@ bool g_mcp_stdio_mode = false;
 #include <QTranslator>
 #include "ui/MainWindow.h"
 #include "ui/Themes.h"
+#include "ui/EmulatorLogWindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -43,6 +44,8 @@ int main(int argc, char *argv[])
 
     // Apply default dark theme (PCSX2 pattern)
     Themes::UpdateApplicationTheme();
+
+    EmulatorLogWindow::installHandler();
 
     MainWindow w;
     w.initialize();

@@ -103,7 +103,7 @@ void Dasm(uint32_t offset, uint32_t qt)
 		pc += Dasm68000((char *)mem, buffer, 0);
 		WriteLog("%08X: %s\n", oldpc, buffer);//*/
 		oldpc = pc;
-		pc += m68k_disassemble(buffer, pc, 0, 1);//M68K_CPU_TYPE_68000);
+		pc += m68k_disassemble(buffer, pc, 0);//M68K_CPU_TYPE_68000);
 //		WriteLog("%08X: %s\n", oldpc, buffer);//*/
 		printf("%08X: %s\n", oldpc, buffer);//*/
 	}
@@ -127,27 +127,12 @@ void DumpRegisters(void)
 #endif
 
 
-int M68KGetCurrentOpcodeFamily(void)
+void M68KDebugHalt(void)
 {
-	return (OpcodeFamily);
+	regs.spcflags |= SPCFLAG_DEBUGGER;
 }
 
 
-// Get M68K debug halt status
-int M68KDebugHaltStatus(void)
-{
-	return (regs.spcflags & SPCFLAG_DEBUGGER);
-}
-
-
-// Halt M68k
-int M68KDebugHalt(void)
-{
-	return (regs.spcflags |= SPCFLAG_DEBUGGER);
-}
-
-
-// Resume M68k
 void M68KDebugResume(void)
 {
 	regs.spcflags &= ~SPCFLAG_DEBUGGER;
@@ -361,15 +346,7 @@ if (inRoutine)
 //{
 //	printf("MOVE.W D%i, EA\n", opcode & 0x07);
 //}
-		int32_t cycles;
-		if (regs.spcflags & SPCFLAG_DEBUGGER)
-		{
-			 cycles = 0;
-		}
-		else
-		{
-			cycles = (int32_t)(*cpuFunctionTable[opcode])(opcode);
-		}
+		int32_t cycles = (int32_t)(*cpuFunctionTable[opcode])(opcode);
 		regs.remainingCycles -= cycles;
 //		pthread_mutex_unlock(&executionLock);
 

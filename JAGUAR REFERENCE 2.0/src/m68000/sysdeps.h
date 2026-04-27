@@ -18,12 +18,6 @@
  * your option any later version. Read the file GPLv3 for details.
  *
  */
- //
- // JPM = Jean-Paul Mari <djipi.mari@gmail.com>
- //
- // Who  When        What
- // ---  ----------  ------------------------------------------------------------
- // JPM  06/06/2016  Visual Studio support
 
 #ifndef UAE_SYSDEPS_H
 #define UAE_SYSDEPS_H
@@ -33,11 +27,9 @@
 #include <assert.h>
 #include <limits.h>
 
-#ifndef _MSC_VER
 #ifndef __STDC__
 #error "Your compiler is not ANSI. Get a real one."
 #endif
-#endif // !_MSC_VER
 
 #include <stdarg.h>
 #include <stdint.h>
@@ -112,11 +104,7 @@ extern void * q_memcpy(void *, const void *, size_t);
 #endif
 
 #ifndef STATIC_INLINE
-#ifdef _MSC_VER
-#define STATIC_INLINE static __inline
-#else
 #define STATIC_INLINE static __inline__
-#endif // _MSC_VER
 #endif
 
 /*

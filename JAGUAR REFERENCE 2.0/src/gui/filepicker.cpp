@@ -5,14 +5,12 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  -------------------------------------------------------------
 // JLH  01/22/2010  Created this file
 // JLH  02/06/2010  Modified to use Qt model/view framework
 // JLH  03/08/2010  Added large cart view and info text
-// JPM  06/16/2016  ELF format support
 //
 
 #include "filepicker.h"
@@ -22,7 +20,7 @@
 #include "filelistmodel.h"
 #include "filethread.h"
 #include "imagedelegate.h"
-#include "settings.h"
+//#include "settings.h"
 //#include "types.h"
 
 /*
@@ -59,14 +57,7 @@ Data strategy:
 FilePickerWindow::FilePickerWindow(QWidget * parent/*= 0*/): QWidget(parent, Qt::Window),
 	currentFile("")
 {
-	if (!vjs.softTypeDebugger)
-	{
-		setWindowTitle(tr("Insert Cartridge..."));
-	}
-	else
-	{
-		setWindowTitle(tr("Load executable file..."));
-	}
+	setWindowTitle(tr("Insert Cartridge..."));
 
 //is there any reason why this must be cast as a QAbstractListModel? No
 //Also, need to think about data structure for the model...
@@ -378,10 +369,6 @@ void FilePickerWindow::UpdateSelection(const QModelIndex & current, const QModel
 			else
 				cart = QImage(":/res/alpine-file.png");
 		}
-		else if (haveUnknown && (fileType == JST_ELF32))
-		{
-			cart = QImage(":/res/ELF-file.png");
-		}
 		else if (haveUnknown && (fileType == JST_ABS_TYPE1 || fileType == JST_ABS_TYPE2
 			|| fileType == JST_JAGSERVER) || fileType == JST_WTFOMGBBQ)
 		{
@@ -443,8 +430,6 @@ void FilePickerWindow::UpdateSelection(const QModelIndex & current, const QModel
 
 		fileTypeString = fileTypeString.arg((fileSize + 8192) / 1048576);
 	}
-	else if (haveUnknown && (fileType == JST_ELF32))
-		fileTypeString = QString(tr("ELF 32bits Executable (%1 bytes)")).arg(fileSize);
 	else if (haveUnknown && (fileType == JST_ABS_TYPE1 || fileType == JST_ABS_TYPE2))
 		fileTypeString = QString(tr("ABS/COF Executable (%1 bytes)")).arg(fileSize);
 	else if (haveUnknown && (fileType == JST_JAGSERVER))

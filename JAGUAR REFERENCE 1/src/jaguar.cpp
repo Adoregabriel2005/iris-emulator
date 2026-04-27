@@ -1,4 +1,4 @@
-﻿//
+//
 // JAGUAR.CPP
 //
 // Originally by David Raingeard (Cal2)
@@ -1430,9 +1430,9 @@ bool m68k_read_exception_vector(unsigned int address, char *text)
 	QMessageBox msgBox;
 
 #if 0
-	msg.sprintf("68000 exception\n%s at $%06x", text, pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF]);
+	msg = QString::asprintf("68000 exception\n%s at $%06x", text, pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF]);
 #else
-	msg.sprintf("68000 exception\n$%06x: %s", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], text);
+	msg = QString::asprintf("68000 exception\n$%06x: %s", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], text);
 #endif
 	msgBox.setText(msg);
 	msgBox.setStandardButtons(QMessageBox::Abort);
@@ -1519,15 +1519,11 @@ unsigned int m68k_read_memory_32(unsigned int address)
 // Alert message in case of writing to unknown memory location
 bool m68k_write_unknown_alert(unsigned int address, char *bits, unsigned int value)
 {
-	QString msg;
-	QMessageBox msgBox;
-
-	msg.sprintf("$%06x: Writing at this unknown memory location $%06x with a (%s bits) value of $%0x", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], address, bits, value);
-	msgBox.setText(msg);
-	msgBox.setStandardButtons(QMessageBox::Abort);
-	msgBox.setDefaultButton(QMessageBox::Abort);
-	msgBox.exec();
-	return M68KDebugHalt();
+#ifdef LOG_UNMAPPED_MEMORY_ACCESSES
+	WriteLog("$%06x: Writing at this unknown memory location $%06x with a (%s bits) value of $%0x\n", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], address, bits, value);
+#endif
+	// Não alerta, não interrompe, apenas loga se ativado
+	return false;
 }
 
 
@@ -1539,7 +1535,7 @@ bool m68k_write_cartridge_alert(unsigned int address, char *bits, unsigned int v
 		QString msg;
 		QMessageBox msgBox;
 
-		msg.sprintf("$%06x: Writing at this ROM cartridge location $%06x with a (%s bits) value of $%0x", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], address, bits, value);
+		msg = QString::asprintf("$%06x: Writing at this ROM cartridge location $%06x with a (%s bits) value of $%0x", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], address, bits, value);
 		msgBox.setText(msg);
 
 		msgBox.setInformativeText("Do you want to continue?");
@@ -1680,7 +1676,16 @@ void m68k_write_memory_8(unsigned int address, unsigned int value)
 						}
 						else
 						{
-							jaguar_unknown_writebyte(address, value, M68K);
+							// Handle unmapped memory addresses by mapping to jagMemSpace
+							// This covers addresses like $200000-$7FFFFF and $E00000-$DFFEFF
+							if (address < 0xF20000)
+							{
+								jagMemSpace[address] = (uint8_t)value;
+							}
+							else
+							{
+								jaguar_unknown_writebyte(address, value, M68K);
+							}
 						}
 					}
 				}
@@ -1801,10 +1806,19 @@ void m68k_write_memory_16(unsigned int address, unsigned int value)
 						}
 						else
 						{
-							jaguar_unknown_writeword(address, value, M68K);
+							// Handle unmapped memory addresses by mapping to jagMemSpace
+							// This covers addresses like $200000-$7FFFFF and $E00000-$DFFEFE
+							if (address < 0xF20000 - 1)
+							{
+								SET16(jagMemSpace, address, value);
+							}
+							else
+							{
+								jaguar_unknown_writeword(address, value, M68K);
 #ifdef LOG_UNMAPPED_MEMORY_ACCESSES
-							WriteLog("\tA0=%08X, A1=%08X, D0=%08X, D1=%08X\n", m68k_get_reg(NULL, M68K_REG_A0), m68k_get_reg(NULL, M68K_REG_A1), m68k_get_reg(NULL, M68K_REG_D0), m68k_get_reg(NULL, M68K_REG_D1));
+								WriteLog("\tA0=%08X, A1=%08X, D0=%08X, D1=%08X\n", m68k_get_reg(NULL, M68K_REG_A0), m68k_get_reg(NULL, M68K_REG_A1), m68k_get_reg(NULL, M68K_REG_D0), m68k_get_reg(NULL, M68K_REG_D1));
 #endif
+							}
 						}
 					}
 				}
@@ -2734,7 +2748,7 @@ int	JaguarStepInto(void)
 // HALF lines, we double this number and we're back at 525 for NTSC, 625 for
 // PAL.
 //
-// Scanline times are 63.5555... μs in NTSC and 64 μs in PAL
+// Scanline times are 63.5555... �s in NTSC and 64 �s in PAL
 // Half line times are, naturally, half of this. :-P
 //
 void HalflineCallback(void)

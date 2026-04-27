@@ -9,13 +9,11 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  -------------------------------------------------------------
 // JLH  01/16/2010  Created this log ;-)
 // JLH  11/26/2011  Added fixes for LOAD/STORE alignment issues
-// JPM  06/06/2016  Visual Studio support
 
 //
 // Note: Endian wrongness probably stems from the MAME origins of this emu and
@@ -396,11 +394,6 @@ static uint32_t gpu_releaseTimeSlice_flag = 0;
 void GPUReleaseTimeslice(void)
 {
 	gpu_releaseTimeSlice_flag = 1;
-}
-
-bool	GPUIsRunning(void)
-{
-	return	GPU_RUNNING;
 }
 
 uint32_t GPUGetPC(void)
@@ -2046,11 +2039,7 @@ static void gpu_opcode_loadw(void)
 // And it works!!! Need to fix all instances...
 // Also, Power Drive Rally seems to contradict the idea that only LOADs in
 // the $F03000-$F03FFF range are aligned...
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Alignment issues, need to find definitive final word on this !!!")
-#else
 #warning "!!! Alignment issues, need to find definitive final word on this !!!"
-#endif // _MSC_VER
 /*
 Preliminary testing on real hardware seems to confirm that something strange goes on
 with unaligned reads in main memory. When the address is off by 1, the result is the

@@ -66,34 +66,31 @@ void RISCDasmBrowserWindow::RefreshContents(void)
 	char buffer[2048];
 	int pc = memBase, oldpc;
 
-	if (isVisible())
+	for(uint32_t i=0; i<32; i++)
 	{
-		for (uint32_t i = 0; i < 32; i++)
+		oldpc = pc;
+		pc += dasmjag(JAGUAR_GPU, buffer, pc);
+		sprintf(string, "%06X: %s<br>", oldpc, buffer);
+
+		buffer[0] = 0;	// Clear string
+		char singleCharString[2] = { 0, 0 };
+
+		for(uint j=0; j<strlen(string); j++)
 		{
-			oldpc = pc;
-			pc += dasmjag(JAGUAR_GPU, buffer, pc);
-			sprintf(string, "%06X: %s<br>", oldpc, buffer);
-
-			buffer[0] = 0;	// Clear string
-			char singleCharString[2] = { 0, 0 };
-
-			for (uint j = 0; j < strlen(string); j++)
+			if (string[j] == 32)
+				strcat(buffer, "&nbsp;");
+			else
 			{
-				if (string[j] == 32)
-					strcat(buffer, "&nbsp;");
-				else
-				{
-					singleCharString[0] = string[j];
-					strcat(buffer, singleCharString);
-				}
+				singleCharString[0] = string[j];
+				strcat(buffer, singleCharString);
 			}
-
-			s += QString(buffer);
 		}
 
-		text->clear();
-		text->setText(s);
+		s += QString(buffer);
 	}
+
+	text->clear();
+	text->setText(s);
 }
 
 

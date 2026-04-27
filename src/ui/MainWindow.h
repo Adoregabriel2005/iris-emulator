@@ -24,6 +24,7 @@ class JaguarSystem;
 class SDLInput;
 class DiscordRPC;
 class DebugWindow;
+class JaguarDebugWindow;
 
 class MainWindow final : public QMainWindow
 {
@@ -138,8 +139,9 @@ private:
     QTimer* m_emulation_timer = nullptr;
     QAction* m_toggle_console_mode_action = nullptr;
     ConsoleMode m_console_mode = ConsoleMode::Auto;
-    DiscordRPC*  m_discord      = nullptr;
-    DebugWindow* m_debug_window = nullptr;
+    DiscordRPC*  m_discord           = nullptr;
+    DebugWindow* m_debug_window       = nullptr;
+    JaguarDebugWindow* m_jaguar_debug = nullptr;
 
     bool m_is_running = false;
     bool m_was_paused = false;

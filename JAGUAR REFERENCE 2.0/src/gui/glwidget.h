@@ -6,7 +6,7 @@
 #ifndef __GLWIDGET_H__
 #define __GLWIDGET_H__
 
-#include <QtOpenGL/QGLWidget>
+#include <QGLWidget>
 #include <stdint.h>
 
 class GLWidget: public QGLWidget

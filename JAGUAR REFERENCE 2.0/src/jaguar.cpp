@@ -1,4 +1,4 @@
-﻿//
+//
 // JAGUAR.CPP
 //
 // Originally by David Raingeard (Cal2)
@@ -8,26 +8,14 @@
 //       the braindead way in which MAME handled memory when this was written. :-)
 //
 // JLH = James Hammons
-// JPM = Jean-Paul Mari
 //
 // WHO  WHEN        WHAT
 // ---  ----------  -----------------------------------------------------------
 // JLH  11/25/2009  Major rewrite of memory subsystem and handlers
-// JPM  09/04/2018  Added the new Models and BIOS handler
-// JPM  10/13/2018  Added breakpoints features
-// JPM   Aug./2019  Fix specific breakpoint for ROM cartridge or unknown memory location writing; added a specific breakpoint for the M68K illegal & unimplemented instruction, unknown exceptions and address error exceptions
-// JPM   Aug./2019  Fix potential emulator freeze after an exception has occured
-// JPM   Feb./2021  Added a specific breakpoint for the M68K bus error exception, and a M68K exception catch detection
-// JPM   Apr./2021  Keep number of M68K cycles used in tracing mode
 //
 
-
-#define NEWMODELSBIOSHANDLER				// New Jaguar models and bios usage handler
-
-
 #include "jaguar.h"
-//#include <QApplication>
-#include <QtWidgets/QMessageBox>
+
 #include <time.h>
 #include <SDL.h>
 #include "SDL_opengl.h"
@@ -48,10 +36,6 @@
 #include "mmu.h"
 #include "settings.h"
 #include "tom.h"
-//#include "debugger/BreakpointsWin.h"
-#ifdef NEWMODELSBIOSHANDLER
-#include "modelsBIOS.h"
-#endif
 
 #define CPU_DEBUG
 //Do this in makefile??? Yes! Could, but it's easier to define here...
@@ -71,9 +55,6 @@ unsigned jaguar_unknown_readword(unsigned address, uint32_t who = UNKNOWN);
 void jaguar_unknown_writebyte(unsigned address, unsigned data, uint32_t who = UNKNOWN);
 void jaguar_unknown_writeword(unsigned address, unsigned data, uint32_t who = UNKNOWN);
 void M68K_show_context(void);
-#if 0
-void	M68K_Debughalt(void);
-#endif
 
 // External variables
 
@@ -123,13 +104,8 @@ bool startM68KTracing = false;
 
 // Breakpoint on memory access vars (exported)
 bool bpmActive = false;
-bool bpmSaveActive = false;
-size_t bpmHitCounts;
 uint32_t bpmAddress1;
-S_BrkInfo *brkInfo;
-size_t brkNbr;
 
-bool frameDone;
 
 //
 // Callback function to detect illegal instructions
@@ -179,7 +155,7 @@ if (inRoutine)
 	{
 		static char buffer[2048];
 
-		m68k_disassemble(buffer, m68kPC, 0, 1);
+		m68k_disassemble(buffer, m68kPC, 0);
 		WriteLog("%06X: %s\n", m68kPC, buffer);
 	}
 #endif
@@ -216,7 +192,7 @@ if (inRoutine)
 		{
 //			WriteLog("[A2=%08X, D0=%08X]\n", a2Queue[(pcQPtr + i) & 0x3FF], d0Queue[(pcQPtr + i) & 0x3FF]);
 			WriteLog("[A0=%08X, A1=%08X, A2=%08X, A3=%08X, A4=%08X, A5=%08X, A6=%08X, A7=%08X, D0=%08X, D1=%08X, D2=%08X, D3=%08X, D4=%08X, D5=%08X, D6=%08X, D7=%08X, SR=%04X]\n", a0Queue[(pcQPtr + i) & 0x3FF], a1Queue[(pcQPtr + i) & 0x3FF], a2Queue[(pcQPtr + i) & 0x3FF], a3Queue[(pcQPtr + i) & 0x3FF], a4Queue[(pcQPtr + i) & 0x3FF], a5Queue[(pcQPtr + i) & 0x3FF], a6Queue[(pcQPtr + i) & 0x3FF], a7Queue[(pcQPtr + i) & 0x3FF], d0Queue[(pcQPtr + i) & 0x3FF], d1Queue[(pcQPtr + i) & 0x3FF], d2Queue[(pcQPtr + i) & 0x3FF], d3Queue[(pcQPtr + i) & 0x3FF], d4Queue[(pcQPtr + i) & 0x3FF], d5Queue[(pcQPtr + i) & 0x3FF], d6Queue[(pcQPtr + i) & 0x3FF], d7Queue[(pcQPtr + i) & 0x3FF], srQueue[(pcQPtr + i) & 0x3FF]);
-			m68k_disassemble(buffer, pcQueue[(pcQPtr + i) & 0x3FF], 0, 1);//M68K_CPU_TYPE_68000);
+			m68k_disassemble(buffer, pcQueue[(pcQPtr + i) & 0x3FF], 0);//M68K_CPU_TYPE_68000);
 			WriteLog("\t%08X: %s\n", pcQueue[(pcQPtr + i) & 0x3FF], buffer);
 		}
 		WriteLog("\n");
@@ -947,7 +923,7 @@ void ShowM68KContext(void)
 	do
 	{
 		uint32_t oldpc = disPC;
-		disPC += m68k_disassemble(buffer, disPC, 0, 1);
+		disPC += m68k_disassemble(buffer, disPC, 0);
 		printf("%s%08X: %s\n", (oldpc == currpc ? ">" : " "), oldpc, buffer);
 	}
 	while (disPC < (currpc + 10));
@@ -1048,150 +1024,14 @@ int irq_ack_handler(int level)
 }
 
 
-#if 0
-void	M68K_Debughalt(void)
-{
-	 M68KDebugHalt();
-}
-#endif
+//#define USE_NEW_MMU
 
-
-// M68000 breakpoints initialisations
-void m68k_brk_init(void)
-{
-	brkNbr = 0;
-	brkInfo = NULL;
-}
-
-
-// Reset the M68000 breakpoints structures
-void m68k_brk_reset(void)
-{
-	// Reset the breakpoints
-	free(brkInfo);
-	brkInfo = NULL;
-	brkNbr = 0;
-}
-
-
-// Delete a M68000 breakpoint (starting from 1)
-void m68k_brk_del(unsigned int NumBrk)
-{
-	// Remove the breakpoint
-	memset((void *)(brkInfo + (NumBrk - 1)), 0, sizeof(S_BrkInfo));
-}
-
-
-// Add a M68000 breakpoint
-// return true if breakpoint has been added, and false if breakpoint already exists
-unsigned int m68k_brk_add(void *PtrInfo)
-{
-	S_BrkInfo *Ptr = NULL;
-
-	// Check if breakpoint already exists
-	for (size_t i = 0; i < brkNbr; i++)
-	{
-		if (brkInfo[i].Used)
-		{
-			if (brkInfo[i].Adr == ((S_BrkInfo *)PtrInfo)->Adr)
-			{
-				return false;
-			}
-		}
-	}
-
-	// Look for an available breakpoint
-	for (size_t i = 0; i < brkNbr, Ptr; i++)
-	{
-		if (!brkInfo[i].Used)
-		{
-			Ptr = &brkInfo[i];
-		}
-	}
-
-	// Add a breakpoint
-	if (!Ptr)
-	{
-		brkInfo = (S_BrkInfo *)realloc(brkInfo, (++brkNbr * sizeof(S_BrkInfo)));
-		Ptr = &brkInfo[brkNbr - 1];
-	}
-
-	// Transfert the breakpoint information and init the activities
-	memcpy((void *)Ptr, PtrInfo, sizeof(S_BrkInfo));
-	Ptr->HitCounts = 0;
-	return (Ptr->Active = Ptr->Used = true);
-}
-
-
-// Check if breakpoint has been reached
-unsigned int m68k_brk_check(unsigned int adr)
-{
-	// Check if BPM has been reached
-	if ((adr == bpmAddress1) && bpmActive)
-	{
-		bpmHitCounts++;
-		return true;
-	}
-	else
-	{
-		// Check user breakpoints
-		for (size_t i = 0; i < brkNbr; i++)
-		{
-			if (brkInfo[i].Used && brkInfo[i].Active)
-			{
-				if (brkInfo[i].Adr == adr)
-				{
-					brkInfo[i].HitCounts++;
-					return true;
-				}
-			}
-		}
-	}
-
-	// No breakpoint found
-	return false;
-}
-
-
-// Disable the M68000 breakpoints
-void m68k_brk_disable(void)
-{
-	// reset active for the breakpoints
-	for (size_t i = 0; i < brkNbr; i++)
-	{
-		brkInfo[i].Active = 0;
-	}
-}
-
-
-// Reset the M68000 breakpoints
-void m68k_brk_hitcounts_reset(void)
-{
-	// reset hit counts for the breakpoints
-	for (size_t i = 0; i < brkNbr; i++)
-	{
-		brkInfo[i].HitCounts = 0;
-	}
-}
-
-
-// Close the M68000 breakpoints structures
-void m68k_brk_close(void)
-{
-	free(brkInfo);
-}
-
-
-// Read 1 byte from address
-// Check if address reaches a breakpoint
 unsigned int m68k_read_memory_8(unsigned int address)
 {
 #ifdef ALPINE_FUNCTIONS
 	// Check if breakpoint on memory is active, and deal with it
-	if (!startM68KTracing && m68k_brk_check(address))
-	{
+	if (bpmActive && address == bpmAddress1)
 		M68KDebugHalt();
-	}
 #endif
 
 	// Musashi does this automagically for you, UAE core does not :-P
@@ -1213,52 +1053,23 @@ unsigned int m68k_read_memory_8(unsigned int address)
 	unsigned int retVal = 0;
 
 	// Note that the Jaguar only has 2M of RAM, not 4!
-	if ((address >= 0x000000) && (address <= (vjs.DRAM_size - 1)))
-	{
+	if ((address >= 0x000000) && (address <= 0x1FFFFF))
 		retVal = jaguarMainRAM[address];
-	}
 //	else if ((address >= 0x800000) && (address <= 0xDFFFFF))
+	else if ((address >= 0x800000) && (address <= 0xDFFEFF))
+		retVal = jaguarMainROM[address - 0x800000];
+	else if ((address >= 0xE00000) && (address <= 0xE3FFFF))
+//		retVal = jaguarBootROM[address - 0xE00000];
+//		retVal = jaguarDevBootROM1[address - 0xE00000];
+		retVal = jagMemSpace[address];
+	else if ((address >= 0xDFFF00) && (address <= 0xDFFFFF))
+		retVal = CDROMReadByte(address);
+	else if ((address >= 0xF00000) && (address <= 0xF0FFFF))
+		retVal = TOMReadByte(address, M68K);
+	else if ((address >= 0xF10000) && (address <= 0xF1FFFF))
+		retVal = JERRYReadByte(address, M68K);
 	else
-	{
-		if ((address >= 0x800000) && (address <= 0xDFFEFF))
-		{
-			retVal = jaguarMainROM[address - 0x800000];
-		}
-		else
-		{
-			if ((address >= 0xE00000) && (address <= 0xE3FFFF))
-			{
-				//		retVal = jaguarBootROM[address - 0xE00000];
-				//		retVal = jaguarDevBootROM1[address - 0xE00000];
-				retVal = jagMemSpace[address];
-			}
-			else
-			{
-				if ((address >= 0xDFFF00) && (address <= 0xDFFFFF))
-				{
-					retVal = CDROMReadByte(address);
-				}
-				else
-				{
-					if ((address >= 0xF00000) && (address <= 0xF0FFFF))
-					{
-						retVal = TOMReadByte(address, M68K);
-					}
-					else
-					{
-						if ((address >= 0xF10000) && (address <= 0xF1FFFF))
-						{
-							retVal = JERRYReadByte(address, M68K);
-						}
-						else
-						{
-							retVal = jaguar_unknown_readbyte(address, M68K);
-						}
-					}
-				}
-			}
-		}
-	}
+		retVal = jaguar_unknown_readbyte(address, M68K);
 
 //if (address >= 0x2800 && address <= 0x281F)
 //	WriteLog("M68K: Read byte $%02X at $%08X [PC=%08X]\n", retVal, address, m68k_get_reg(NULL, M68K_REG_PC));
@@ -1271,19 +1082,15 @@ unsigned int m68k_read_memory_8(unsigned int address)
 }
 
 
-/*
 void gpu_dump_disassembly(void);
 void gpu_dump_registers(void);
-*/
 
 unsigned int m68k_read_memory_16(unsigned int address)
 {
 #ifdef ALPINE_FUNCTIONS
 	// Check if breakpoint on memory is active, and deal with it
-	if (!startM68KTracing && m68k_brk_check(address))
-	{
+	if (bpmActive && address == bpmAddress1)
 		M68KDebugHalt();
-	}
 #endif
 
 	// Musashi does this automagically for you, UAE core does not :-P
@@ -1352,61 +1159,33 @@ unsigned int m68k_read_memory_16(unsigned int address)
     unsigned int retVal = 0;
 
 	// Note that the Jaguar only has 2M of RAM, not 4!
-	if ((address >= 0x000000) && (address <= (vjs.DRAM_size - 2)))
-	{
-		//		retVal = (jaguar_mainRam[address] << 8) | jaguar_mainRam[address+1];
+	if ((address >= 0x000000) && (address <= 0x1FFFFE))
+//		retVal = (jaguar_mainRam[address] << 8) | jaguar_mainRam[address+1];
 		retVal = GET16(jaguarMainRAM, address);
-	}
 //	else if ((address >= 0x800000) && (address <= 0xDFFFFE))
-	else
+	else if ((address >= 0x800000) && (address <= 0xDFFEFE))
 	{
-		if ((address >= 0x800000) && (address <= 0xDFFEFE))
+		// Memory Track reading...
+		if (((TOMGetMEMCON1() & 0x0006) == (2 << 1)) && (jaguarMainROMCRC32 == 0xFDF37F47))
 		{
-			// Memory Track reading...
-			if (((TOMGetMEMCON1() & 0x0006) == (2 << 1)) && (jaguarMainROMCRC32 == 0xFDF37F47))
-			{
-				retVal = MTReadWord(address);
-			}
-			else
-			{
-				retVal = (jaguarMainROM[address - 0x800000] << 8) | jaguarMainROM[address - 0x800000 + 1];
-			}
+			retVal = MTReadWord(address);
 		}
 		else
-		{
-			if ((address >= 0xE00000) && (address <= 0xE3FFFE))
-			{
-				//		retVal = (jaguarBootROM[address - 0xE00000] << 8) | jaguarBootROM[address - 0xE00000 + 1];
-				//		retVal = (jaguarDevBootROM1[address - 0xE00000] << 8) | jaguarDevBootROM1[address - 0xE00000 + 1];
-				retVal = (jagMemSpace[address] << 8) | jagMemSpace[address + 1];
-			}
-			else
-			{
-				if ((address >= 0xDFFF00) && (address <= 0xDFFFFE))
-				{
-					retVal = CDROMReadWord(address, M68K);
-				}
-				else
-				{
-					if ((address >= 0xF00000) && (address <= 0xF0FFFE))
-					{
-						retVal = TOMReadWord(address, M68K);
-					}
-					else
-					{
-						if ((address >= 0xF10000) && (address <= 0xF1FFFE))
-						{
-							retVal = JERRYReadWord(address, M68K);
-						}
-						else
-						{
-							retVal = jaguar_unknown_readword(address, M68K);
-						}
-					}
-				}
-			}
-		}
+			retVal = (jaguarMainROM[address - 0x800000] << 8)
+				| jaguarMainROM[address - 0x800000 + 1];
 	}
+	else if ((address >= 0xE00000) && (address <= 0xE3FFFE))
+//		retVal = (jaguarBootROM[address - 0xE00000] << 8) | jaguarBootROM[address - 0xE00000 + 1];
+//		retVal = (jaguarDevBootROM1[address - 0xE00000] << 8) | jaguarDevBootROM1[address - 0xE00000 + 1];
+		retVal = (jagMemSpace[address] << 8) | jagMemSpace[address + 1];
+	else if ((address >= 0xDFFF00) && (address <= 0xDFFFFE))
+		retVal = CDROMReadWord(address, M68K);
+	else if ((address >= 0xF00000) && (address <= 0xF0FFFE))
+		retVal = TOMReadWord(address, M68K);
+	else if ((address >= 0xF10000) && (address <= 0xF1FFFE))
+		retVal = JERRYReadWord(address, M68K);
+	else
+		retVal = jaguar_unknown_readword(address, M68K);
 
 //if (address >= 0xF1B000 && address <= 0xF1CFFF)
 //	WriteLog("M68K: Read word $%04X at $%08X [PC=%08X]\n", retVal, address, m68k_get_reg(NULL, M68K_REG_PC));
@@ -1423,34 +1202,12 @@ unsigned int m68k_read_memory_16(unsigned int address)
 }
 
 
-// Alert message in case of exception vector request
-bool m68k_read_exception_vector(unsigned int address, char *text)
-{
-	QString msg;
-	QMessageBox msgBox;
-
-#if 0
-	msg.sprintf("68000 exception\n%s at $%06x", text, pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF]);
-#else
-	msg.sprintf("68000 exception\n$%06x: %s", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], text);
-#endif
-	msgBox.setText(msg);
-	msgBox.setStandardButtons(QMessageBox::Abort);
-	msgBox.setDefaultButton(QMessageBox::Abort);
-	msgBox.exec();
-	return M68KDebugHalt();
-}
-
-
-// Read 4 bytes from memory
 unsigned int m68k_read_memory_32(unsigned int address)
 {
 #ifdef ALPINE_FUNCTIONS
 	// Check if breakpoint on memory is active, and deal with it
-	if (!startM68KTracing && m68k_brk_check(address))
-	{
+	if (bpmActive && address == bpmAddress1)
 		M68KDebugHalt();
-	}
 #endif
 
 	// Musashi does this automagically for you, UAE core does not :-P
@@ -1461,54 +1218,19 @@ unsigned int m68k_read_memory_32(unsigned int address)
 
 //WriteLog("--> [RM32]\n");
 #ifndef USE_NEW_MMU
-	//uint32_t retVal = 0;
+	uint32_t retVal = 0;
 
-	// check exception vectors access
-	if (vjs.allowM68KExceptionCatch && (address >= 0x8) && (address <= 0x7c))
+	if ((address >= 0x800000) && (address <= 0xDFFEFE))
 	{
-		switch (address)
-		{
-		case 0x08:
-			m68k_read_exception_vector(address, "Bus error");
-			break;
+		// Memory Track reading...
+		if (((TOMGetMEMCON1() & 0x0006) == (2 << 1)) && (jaguarMainROMCRC32 == 0xFDF37F47))
+			retVal = MTReadLong(address);
+		else
+			retVal = GET32(jaguarMainROM, address - 0x800000);
 
-		case 0x0c:
-			m68k_read_exception_vector(address, "Address error");
-			break;
-
-		case 0x10:
-			m68k_read_exception_vector(address, "Illegal instruction");
-			break;
-
-		case 0x2c:
-			m68k_read_exception_vector(address, "Unimplemented instruction");
-			break;
-
-		default:
-			m68k_read_exception_vector(address, "Exception not referenced");
-			break;
-		}
-
-		frameDone = true;			// Hack to avoid the freeze of the emulator
-	}
-	else
-	{
-		// check ROM or Memory Track access
-		if ((address >= 0x800000) && (address <= 0xDFFEFE))
-		{
-			// Memory Track reading...
-			if (((TOMGetMEMCON1() & 0x0006) == (2 << 1)) && (jaguarMainROMCRC32 == 0xFDF37F47))
-			{
-				return MTReadLong(address);
-			}
-			else
-			{
-				return GET32(jaguarMainROM, address - 0x800000);
-			}
-		}
+		return retVal;
 	}
 
-	// return value from memory
 	return (m68k_read_memory_16(address) << 16) | m68k_read_memory_16(address + 2);
 #else
 	return MMURead32(address, M68K);
@@ -1516,344 +1238,202 @@ unsigned int m68k_read_memory_32(unsigned int address)
 }
 
 
-// Alert message in case of writing to unknown memory location
-bool m68k_write_unknown_alert(unsigned int address, char *bits, unsigned int value)
-{
-	QString msg;
-	QMessageBox msgBox;
-
-	msg.sprintf("$%06x: Writing at this unknown memory location $%06x with a (%s bits) value of $%0x", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], address, bits, value);
-	msgBox.setText(msg);
-	msgBox.setStandardButtons(QMessageBox::Abort);
-	msgBox.setDefaultButton(QMessageBox::Abort);
-	msgBox.exec();
-	return M68KDebugHalt();
-}
-
-
-// Alert message in case of writing to cartridge/ROM memory location
-bool m68k_write_cartridge_alert(unsigned int address, char *bits, unsigned int value)
-{
-	if (!M68KDebugHaltStatus())
-	{
-		QString msg;
-		QMessageBox msgBox;
-
-		msg.sprintf("$%06x: Writing at this ROM cartridge location $%06x with a (%s bits) value of $%0x", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], address, bits, value);
-		msgBox.setText(msg);
-
-		msgBox.setInformativeText("Do you want to continue?");
-		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-		msgBox.setDefaultButton(QMessageBox::No);
-
-		int retVal = msgBox.exec();
-
-		if (retVal == QMessageBox::Yes)
-		{
-			return false;
-		}
-		else
-		{
-			return M68KDebugHalt();
-		}
-	}
-	else
-	{
-		return 1;
-	}
-}
-
-
-// Check memory write location
-// BPM & cartridge/ROM detections
-bool m68k_write_memory_check(unsigned int address, char *bits, unsigned int value)
-{
-	unsigned int address1;
-
-#ifdef ALPINE_FUNCTIONS
-	// Check if breakpoint on memory is active, and deal with it
-	if (!M68KDebugHaltStatus() && bpmActive && (address == bpmAddress1))
-	{
-		return M68KDebugHalt();
-	}
-	else
-#endif
-	{
-		// Rom writing authorisation detection
-		if (!vjs.allowWritesToROM)
-		{
-			// Calcul the end address
-			if (strstr(bits, "32"))
-			{
-				address1 = address + 3;
-			}
-			else
-			{
-				if (strstr(bits, "16"))
-				{
-					address1 = address + 1;
-				}
-				else
-				{
-					address1 = address;
-				}
-			}
-
-			// Rom writing detection
-			if ((address >= 0x800000) && (address1 < 0xDFFF00))
-			{
-				return m68k_write_cartridge_alert(address, bits, value);
-			}
-		}
-
-		return false;
-	}
-}
-
-
-// Memory write location on 8 bits
 void m68k_write_memory_8(unsigned int address, unsigned int value)
 {
-	// Check memory write location on 8 bits
-	if (!m68k_write_memory_check(address, "8", value))
-	{
-		// Musashi does this automagically for you, UAE core does not :-P
-		//address &= 0x00FFFFFF;
+#ifdef ALPINE_FUNCTIONS
+	// Check if breakpoint on memory is active, and deal with it
+	if (bpmActive && address == bpmAddress1)
+		M68KDebugHalt();
+#endif
+
+	// Musashi does this automagically for you, UAE core does not :-P
+	address &= 0x00FFFFFF;
 #ifdef CPU_DEBUG_MEMORY
 	// Note that the Jaguar only has 2M of RAM, not 4!
-		if ((address >= 0x000000) && (address <= 0x1FFFFF))
+	if ((address >= 0x000000) && (address <= 0x1FFFFF))
+	{
+		if (startMemLog)
 		{
-			if (startMemLog)
-			{
-				if (value > writeMemMax[address])
-					writeMemMax[address] = value;
-				if (value < writeMemMin[address])
-					writeMemMin[address] = value;
-			}
+			if (value > writeMemMax[address])
+				writeMemMax[address] = value;
+			if (value < writeMemMin[address])
+				writeMemMin[address] = value;
 		}
+	}
 #endif
-		/*if (address == 0x4E00)
-			WriteLog("M68K: Writing %02X at %08X, PC=%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));//*/
-			//if ((address >= 0x1FF020 && address <= 0x1FF03F) || (address >= 0x1FF820 && address <= 0x1FF83F))
-			//	WriteLog("M68K: Writing %02X at %08X\n", value, address);
-			//WriteLog("[WM8  PC=%08X] Addr: %08X, val: %02X\n", m68k_get_reg(NULL, M68K_REG_PC), address, value);
-			/*if (effect_start)
-				if (address >= 0x18FA70 && address < (0x18FA70 + 8000))
-					WriteLog("M68K: Byte %02X written at %08X by 68K\n", value, address);//*/
-					//$53D0
-					/*if (address >= 0x53D0 && address <= 0x53FF)
-						printf("M68K: Writing byte $%02X at $%08X, PC=$%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));//*/
-						//Testing AvP on UAE core...
-						//000075A0: FFFFF80E B6320220 (BITMAP)
-						/*if (address == 0x75A0 && value == 0xFF)
-							printf("M68K: (8) Tripwire hit...\n");//*/
+/*if (address == 0x4E00)
+	WriteLog("M68K: Writing %02X at %08X, PC=%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));//*/
+//if ((address >= 0x1FF020 && address <= 0x1FF03F) || (address >= 0x1FF820 && address <= 0x1FF83F))
+//	WriteLog("M68K: Writing %02X at %08X\n", value, address);
+//WriteLog("[WM8  PC=%08X] Addr: %08X, val: %02X\n", m68k_get_reg(NULL, M68K_REG_PC), address, value);
+/*if (effect_start)
+	if (address >= 0x18FA70 && address < (0x18FA70 + 8000))
+		WriteLog("M68K: Byte %02X written at %08X by 68K\n", value, address);//*/
+//$53D0
+/*if (address >= 0x53D0 && address <= 0x53FF)
+	printf("M68K: Writing byte $%02X at $%08X, PC=$%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));//*/
+//Testing AvP on UAE core...
+//000075A0: FFFFF80E B6320220 (BITMAP)
+/*if (address == 0x75A0 && value == 0xFF)
+	printf("M68K: (8) Tripwire hit...\n");//*/
 
 #ifndef USE_NEW_MMU
-							// Note that the Jaguar only has 2M of RAM, not 4!
-		if ((address >= 0x000000) && (address <= (vjs.DRAM_size - 1)))
-		{
-			jaguarMainRAM[address] = value;
-		}
-		else
-		{
-			if ((address >= 0xDFFF00) && (address <= 0xDFFFFF))
-			{
-				CDROMWriteByte(address, value, M68K);
-			}
-			else
-			{
-				if ((address >= 0xF00000) && (address <= 0xF0FFFF))
-				{
-					TOMWriteByte(address, value, M68K);
-				}
-				else
-				{
-					if ((address >= 0xF10000) && (address <= 0xF1FFFF))
-					{
-						JERRYWriteByte(address, value, M68K);
-					}
-					else
-					{
-						if ((address >= 0x800000) && (address <= 0xDFFEFF))
-						{
-							jagMemSpace[address] = (uint8_t)value;
-						}
-						else
-						{
-							jaguar_unknown_writebyte(address, value, M68K);
-						}
-					}
-				}
-			}
-		}
+	// Note that the Jaguar only has 2M of RAM, not 4!
+	if ((address >= 0x000000) && (address <= 0x1FFFFF))
+		jaguarMainRAM[address] = value;
+	else if ((address >= 0xDFFF00) && (address <= 0xDFFFFF))
+		CDROMWriteByte(address, value, M68K);
+	else if ((address >= 0xF00000) && (address <= 0xF0FFFF))
+		TOMWriteByte(address, value, M68K);
+	else if ((address >= 0xF10000) && (address <= 0xF1FFFF))
+		JERRYWriteByte(address, value, M68K);
+	else
+		jaguar_unknown_writebyte(address, value, M68K);
 #else
-		MMUWrite8(address, value, M68K);
+	MMUWrite8(address, value, M68K);
 #endif
-	}
 }
 
 
-// Memory write location on 16 bits
 void m68k_write_memory_16(unsigned int address, unsigned int value)
 {
-	// Check memory write location on 16 bits
-	if (!m68k_write_memory_check(address, "16", value))
-	{
-		// Musashi does this automagically for you, UAE core does not :-P
-		//address &= 0x00FFFFFF;
+#ifdef ALPINE_FUNCTIONS
+	// Check if breakpoint on memory is active, and deal with it
+	if (bpmActive && address == bpmAddress1)
+		M68KDebugHalt();
+#endif
+
+	// Musashi does this automagically for you, UAE core does not :-P
+	address &= 0x00FFFFFF;
 #ifdef CPU_DEBUG_MEMORY
 	// Note that the Jaguar only has 2M of RAM, not 4!
-		if ((address >= 0x000000) && (address <= 0x1FFFFE))
+	if ((address >= 0x000000) && (address <= 0x1FFFFE))
+	{
+		if (startMemLog)
 		{
-			if (startMemLog)
-			{
-				uint8_t hi = value >> 8, lo = value & 0xFF;
+			uint8_t hi = value >> 8, lo = value & 0xFF;
 
-				if (hi > writeMemMax[address])
-					writeMemMax[address] = hi;
-				if (hi < writeMemMin[address])
-					writeMemMin[address] = hi;
+			if (hi > writeMemMax[address])
+				writeMemMax[address] = hi;
+			if (hi < writeMemMin[address])
+				writeMemMin[address] = hi;
 
-				if (lo > writeMemMax[address + 1])
-					writeMemMax[address + 1] = lo;
-				if (lo < writeMemMin[address + 1])
-					writeMemMin[address + 1] = lo;
-			}
+			if (lo > writeMemMax[address+1])
+				writeMemMax[address+1] = lo;
+			if (lo < writeMemMin[address+1])
+				writeMemMin[address+1] = lo;
 		}
+	}
 #endif
-		/*if (address == 0x4E00)
-			WriteLog("M68K: Writing %02X at %08X, PC=%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));//*/
-			//if ((address >= 0x1FF020 && address <= 0x1FF03F) || (address >= 0x1FF820 && address <= 0x1FF83F))
-			//	WriteLog("M68K: Writing %04X at %08X\n", value, address);
-			//WriteLog("[WM16 PC=%08X] Addr: %08X, val: %04X\n", m68k_get_reg(NULL, M68K_REG_PC), address, value);
-			//if (address >= 0xF02200 && address <= 0xF0229F)
-			//	WriteLog("M68K: Writing to blitter --> %04X at %08X\n", value, address);
-			//if (address >= 0x0E75D0 && address <= 0x0E75E7)
-			//	WriteLog("M68K: Writing %04X at %08X, M68K PC=%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));
-			/*extern uint32_t totalFrames;
-			if (address == 0xF02114)
-				WriteLog("M68K: Writing to GPU_CTRL (frame:%u)... [M68K PC:%08X]\n", totalFrames, m68k_get_reg(NULL, M68K_REG_PC));
-			if (address == 0xF02110)
-				WriteLog("M68K: Writing to GPU_PC (frame:%u)... [M68K PC:%08X]\n", totalFrames, m68k_get_reg(NULL, M68K_REG_PC));//*/
-				//if (address >= 0xF03B00 && address <= 0xF03DFF)
-				//	WriteLog("M68K: Writing %04X to %08X...\n", value, address);
+/*if (address == 0x4E00)
+	WriteLog("M68K: Writing %02X at %08X, PC=%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));//*/
+//if ((address >= 0x1FF020 && address <= 0x1FF03F) || (address >= 0x1FF820 && address <= 0x1FF83F))
+//	WriteLog("M68K: Writing %04X at %08X\n", value, address);
+//WriteLog("[WM16 PC=%08X] Addr: %08X, val: %04X\n", m68k_get_reg(NULL, M68K_REG_PC), address, value);
+//if (address >= 0xF02200 && address <= 0xF0229F)
+//	WriteLog("M68K: Writing to blitter --> %04X at %08X\n", value, address);
+//if (address >= 0x0E75D0 && address <= 0x0E75E7)
+//	WriteLog("M68K: Writing %04X at %08X, M68K PC=%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));
+/*extern uint32_t totalFrames;
+if (address == 0xF02114)
+	WriteLog("M68K: Writing to GPU_CTRL (frame:%u)... [M68K PC:%08X]\n", totalFrames, m68k_get_reg(NULL, M68K_REG_PC));
+if (address == 0xF02110)
+	WriteLog("M68K: Writing to GPU_PC (frame:%u)... [M68K PC:%08X]\n", totalFrames, m68k_get_reg(NULL, M68K_REG_PC));//*/
+//if (address >= 0xF03B00 && address <= 0xF03DFF)
+//	WriteLog("M68K: Writing %04X to %08X...\n", value, address);
 
-				/*if (address == 0x0100)//64*4)
-					WriteLog("M68K: Wrote word to VI vector value %04X...\n", value);//*/
-					/*if (effect_start)
-						if (address >= 0x18FA70 && address < (0x18FA70 + 8000))
-							WriteLog("M68K: Word %04X written at %08X by 68K\n", value, address);//*/
-							/*	if (address == 0x51136 || address == 0x51138 || address == 0xFB074 || address == 0xFB076
-									|| address == 0x1AF05E)
-									WriteLog("[WM16  PC=%08X] Addr: %08X, val: %04X\n", m68k_get_reg(NULL, M68K_REG_PC), address, value);//*/
-									//$53D0
-									/*if (address >= 0x53D0 && address <= 0x53FF)
-										printf("M68K: Writing word $%04X at $%08X, PC=$%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));//*/
-										//Testing AvP on UAE core...
-										//000075A0: FFFFF80E B6320220 (BITMAP)
-										/*if (address == 0x75A0 && value == 0xFFFF)
-										{
-											printf("\nM68K: (16) Tripwire hit...\n");
-											ShowM68KContext();
-										}//*/
+/*if (address == 0x0100)//64*4)
+	WriteLog("M68K: Wrote word to VI vector value %04X...\n", value);//*/
+/*if (effect_start)
+	if (address >= 0x18FA70 && address < (0x18FA70 + 8000))
+		WriteLog("M68K: Word %04X written at %08X by 68K\n", value, address);//*/
+/*	if (address == 0x51136 || address == 0x51138 || address == 0xFB074 || address == 0xFB076
+		|| address == 0x1AF05E)
+		WriteLog("[WM16  PC=%08X] Addr: %08X, val: %04X\n", m68k_get_reg(NULL, M68K_REG_PC), address, value);//*/
+//$53D0
+/*if (address >= 0x53D0 && address <= 0x53FF)
+	printf("M68K: Writing word $%04X at $%08X, PC=$%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));//*/
+//Testing AvP on UAE core...
+//000075A0: FFFFF80E B6320220 (BITMAP)
+/*if (address == 0x75A0 && value == 0xFFFF)
+{
+	printf("\nM68K: (16) Tripwire hit...\n");
+	ShowM68KContext();
+}//*/
 
 #ifndef USE_NEW_MMU
-										// Note that the Jaguar only has 2M of RAM, not 4!
-		if ((address >= 0x000000) && (address <= (vjs.DRAM_size - 2)))
-		{
-			/*		jaguar_mainRam[address] = value >> 8;
-					jaguar_mainRam[address + 1] = value & 0xFF;*/
-			SET16(jaguarMainRAM, address, value);
-		}
-		else
-		{
-			// Memory Track device writes....
-			if ((address >= 0x800000) && (address <= 0x87FFFE))
-			{
-				if (((TOMGetMEMCON1() & 0x0006) == (2 << 1)) && (jaguarMainROMCRC32 == 0xFDF37F47))
-				{
-					MTWriteWord(address, value);
-					return;
-				}
-			}
-
-			if ((address >= 0xDFFF00) && (address <= 0xDFFFFE))
-			{
-				CDROMWriteWord(address, value, M68K);
-			}
-			else
-			{
-				if ((address >= 0xF00000) && (address <= 0xF0FFFE))
-				{
-					TOMWriteWord(address, value, M68K);
-				}
-				else
-				{
-					if ((address >= 0xF10000) && (address <= 0xF1FFFE))
-					{
-						JERRYWriteWord(address, value, M68K);
-					}
-					else
-					{
-						if ((address >= 0x800000) && (address <= 0xDFFEFE))
-						{
-							SET16(jagMemSpace, address, value);
-						}
-						else
-						{
-							jaguar_unknown_writeword(address, value, M68K);
+	// Note that the Jaguar only has 2M of RAM, not 4!
+	if ((address >= 0x000000) && (address <= 0x1FFFFE))
+	{
+/*		jaguar_mainRam[address] = value >> 8;
+		jaguar_mainRam[address + 1] = value & 0xFF;*/
+		SET16(jaguarMainRAM, address, value);
+	}
+	// Memory Track device writes....
+	else if ((address >= 0x800000) && (address <= 0x87FFFE))
+	{
+		if (((TOMGetMEMCON1() & 0x0006) == (2 << 1)) && (jaguarMainROMCRC32 == 0xFDF37F47))
+			MTWriteWord(address, value);
+	}
+	else if ((address >= 0xDFFF00) && (address <= 0xDFFFFE))
+		CDROMWriteWord(address, value, M68K);
+	else if ((address >= 0xF00000) && (address <= 0xF0FFFE))
+		TOMWriteWord(address, value, M68K);
+	else if ((address >= 0xF10000) && (address <= 0xF1FFFE))
+		JERRYWriteWord(address, value, M68K);
+	else
+	{
+		jaguar_unknown_writeword(address, value, M68K);
 #ifdef LOG_UNMAPPED_MEMORY_ACCESSES
-							WriteLog("\tA0=%08X, A1=%08X, D0=%08X, D1=%08X\n", m68k_get_reg(NULL, M68K_REG_A0), m68k_get_reg(NULL, M68K_REG_A1), m68k_get_reg(NULL, M68K_REG_D0), m68k_get_reg(NULL, M68K_REG_D1));
-#endif
-						}
-					}
-				}
-			}
-		}
-#else
-		MMUWrite16(address, value, M68K);
+		WriteLog("\tA0=%08X, A1=%08X, D0=%08X, D1=%08X\n",
+			m68k_get_reg(NULL, M68K_REG_A0), m68k_get_reg(NULL, M68K_REG_A1),
+			m68k_get_reg(NULL, M68K_REG_D0), m68k_get_reg(NULL, M68K_REG_D1));
 #endif
 	}
+#else
+	MMUWrite16(address, value, M68K);
+#endif
 }
 
 
-// Memory write location on 32 bits
 void m68k_write_memory_32(unsigned int address, unsigned int value)
 {
-	// Check memory write location on 32 bits
-	if (!m68k_write_memory_check(address, "32", value))
-	{
-		// Musashi does this automagically for you, UAE core does not :-P
-		//address &= 0x00FFFFFF;
-	/*if (address == 0x4E00)
-		WriteLog("M68K: Writing %02X at %08X, PC=%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));//*/
-		//WriteLog("--> [WM32]\n");
-		/*if (address == 0x0100)//64*4)
-			WriteLog("M68K: Wrote dword to VI vector value %08X...\n", value);//*/
-			/*if (address >= 0xF03214 && address < 0xF0321F)
-				WriteLog("M68K: Writing DWORD (%08X) to GPU RAM (%08X)...\n", value, address);//*/
-				//M68K: Writing DWORD (88E30047) to GPU RAM (00F03214)...
-				/*extern bool doGPUDis;
-				if (address == 0xF03214 && value == 0x88E30047)
-				//	start = true;
-					doGPUDis = true;//*/
-					/*	if (address == 0x51136 || address == 0xFB074)
-							WriteLog("[WM32  PC=%08X] Addr: %08X, val: %02X\n", m68k_get_reg(NULL, M68K_REG_PC), address, value);//*/
-							//Testing AvP on UAE core...
-							//000075A0: FFFFF80E B6320220 (BITMAP)
-							/*if (address == 0x75A0 && (value & 0xFFFF0000) == 0xFFFF0000)
-							{
-								printf("\nM68K: (32) Tripwire hit...\n");
-								ShowM68KContext();
-							}//*/
+#ifdef ALPINE_FUNCTIONS
+	// Check if breakpoint on memory is active, and deal with it
+	if (bpmActive && address == bpmAddress1)
+		M68KDebugHalt();
+#endif
+
+	// Musashi does this automagically for you, UAE core does not :-P
+	address &= 0x00FFFFFF;
+/*if (address == 0x4E00)
+	WriteLog("M68K: Writing %02X at %08X, PC=%08X\n", value, address, m68k_get_reg(NULL, M68K_REG_PC));//*/
+//WriteLog("--> [WM32]\n");
+/*if (address == 0x0100)//64*4)
+	WriteLog("M68K: Wrote dword to VI vector value %08X...\n", value);//*/
+/*if (address >= 0xF03214 && address < 0xF0321F)
+	WriteLog("M68K: Writing DWORD (%08X) to GPU RAM (%08X)...\n", value, address);//*/
+//M68K: Writing DWORD (88E30047) to GPU RAM (00F03214)...
+/*extern bool doGPUDis;
+if (address == 0xF03214 && value == 0x88E30047)
+//	start = true;
+	doGPUDis = true;//*/
+/*	if (address == 0x51136 || address == 0xFB074)
+		WriteLog("[WM32  PC=%08X] Addr: %08X, val: %02X\n", m68k_get_reg(NULL, M68K_REG_PC), address, value);//*/
+//Testing AvP on UAE core...
+//000075A0: FFFFF80E B6320220 (BITMAP)
+/*if (address == 0x75A0 && (value & 0xFFFF0000) == 0xFFFF0000)
+{
+	printf("\nM68K: (32) Tripwire hit...\n");
+	ShowM68KContext();
+}//*/
 
 #ifndef USE_NEW_MMU
-		m68k_write_memory_16(address, value >> 16);
-		m68k_write_memory_16(address + 2, value & 0xFFFF);
+	m68k_write_memory_16(address, value >> 16);
+	m68k_write_memory_16(address + 2, value & 0xFFFF);
 #else
-		MMUWrite32(address, value, M68K);
+	MMUWrite32(address, value, M68K);
 #endif
-	}
 }
 
 
@@ -1947,7 +1527,6 @@ void M68K_show_context(void)
 
 void jaguar_unknown_writebyte(unsigned address, unsigned data, uint32_t who/*=UNKNOWN*/)
 {
-	m68k_write_unknown_alert(address, "8", data);
 #ifdef LOG_UNMAPPED_MEMORY_ACCESSES
 	WriteLog("Jaguar: Unknown byte %02X written at %08X by %s (M68K PC=%06X)\n", data, address, whoName[who], m68k_get_reg(NULL, M68K_REG_PC));
 #endif
@@ -1963,7 +1542,6 @@ void jaguar_unknown_writebyte(unsigned address, unsigned data, uint32_t who/*=UN
 
 void jaguar_unknown_writeword(unsigned address, unsigned data, uint32_t who/*=UNKNOWN*/)
 {
-	m68k_write_unknown_alert(address, "16", data);
 #ifdef LOG_UNMAPPED_MEMORY_ACCESSES
 	WriteLog("Jaguar: Unknown word %04X written at %08X by %s (M68K PC=%06X)\n", data, address, whoName[who], m68k_get_reg(NULL, M68K_REG_PC));
 #endif
@@ -2046,7 +1624,7 @@ void JaguarDasm(uint32_t offset, uint32_t qt)
 		pc += Dasm68000((char *)mem, buffer, 0);
 		WriteLog("%08X: %s\n", oldpc, buffer);//*/
 		oldpc = pc;
-		pc += m68k_disassemble(buffer, pc, 0, 1);//M68K_CPU_TYPE_68000);
+		pc += m68k_disassemble(buffer, pc, 0);//M68K_CPU_TYPE_68000);
 		WriteLog("%08X: %s\n", oldpc, buffer);//*/
 	}
 #endif
@@ -2060,7 +1638,7 @@ uint8_t JaguarReadByte(uint32_t offset, uint32_t who/*=UNKNOWN*/)
 
 	// First 2M is mirrored in the $0 - $7FFFFF range
 	if (offset < 0x800000)
-		data = jaguarMainRAM[offset & (vjs.DRAM_size - 1)];
+		data = jaguarMainRAM[offset & 0x1FFFFF];
 	else if ((offset >= 0x800000) && (offset < 0xDFFF00))
 		data = jaguarMainROM[offset - 0x800000];
 	else if ((offset >= 0xDFFF00) && (offset <= 0xDFFFFF))
@@ -2087,7 +1665,7 @@ uint16_t JaguarReadWord(uint32_t offset, uint32_t who/*=UNKNOWN*/)
 	// First 2M is mirrored in the $0 - $7FFFFF range
 	if (offset < 0x800000)
 	{
-		return (jaguarMainRAM[(offset+0) & (vjs.DRAM_size - 1)] << 8) | jaguarMainRAM[(offset+1) & (vjs.DRAM_size - 1)];
+		return (jaguarMainRAM[(offset+0) & 0x1FFFFF] << 8) | jaguarMainRAM[(offset+1) & 0x1FFFFF];
 	}
 	else if ((offset >= 0x800000) && (offset < 0xDFFF00))
 	{
@@ -2128,7 +1706,7 @@ void JaguarWriteByte(uint32_t offset, uint8_t data, uint32_t who/*=UNKNOWN*/)
 	// First 2M is mirrored in the $0 - $7FFFFF range
 	if (offset < 0x800000)
 	{
-		jaguarMainRAM[offset & (vjs.DRAM_size - 1)] = data;
+		jaguarMainRAM[offset & 0x1FFFFF] = data;
 		return;
 	}
 	else if ((offset >= 0xDFFF00) && (offset <= 0xDFFFFF))
@@ -2265,8 +1843,8 @@ if (who == GPU && (gpu_pc == 0xF03604 || gpu_pc == 0xF03638))
 if (offset == 0x11D31A + 0x48000 || offset == 0x11D31A)
 	WriteLog("JWW: %s writing star %04X at %08X...\n", whoName[who], data, offset);//*/
 
-		jaguarMainRAM[(offset+0) & (vjs.DRAM_size - 1)] = data >> 8;
-		jaguarMainRAM[(offset+1) & (vjs.DRAM_size - 1)] = data & 0xFF;
+		jaguarMainRAM[(offset+0) & 0x1FFFFF] = data >> 8;
+		jaguarMainRAM[(offset+1) & 0x1FFFFF] = data & 0xFF;
 		return;
 	}
 	else if (offset >= 0xDFFF00 && offset <= 0xDFFFFE)
@@ -2336,10 +1914,10 @@ void JaguarSetScreenPitch(uint32_t pitch)
 void JaguarInit(void)
 {
 	// For randomizing RAM
-	srand((unsigned int)time(NULL));
+	srand(time(NULL));
 
 	// Contents of local RAM are quasi-stable; we simulate this by randomizing RAM contents
-	for(uint32_t i=0; i<vjs.DRAM_size; i+=4)
+	for(uint32_t i=0; i<0x200000; i+=4)
 		*((uint32_t *)(&jaguarMainRAM[i])) = rand();
 
 #ifdef CPU_DEBUG_MEMORY
@@ -2365,7 +1943,6 @@ memset(jaguarMainRAM + 0x804, 0xFF, 4);
 	TOMInit();
 	JERRYInit();
 	CDROMInit();
-	m68k_brk_init();
 }
 
 
@@ -2376,10 +1953,8 @@ void JaguarReset(void)
 {
 	// Only problem with this approach: It wipes out RAM loaded files...!
 	// Contents of local RAM are quasi-stable; we simulate this by randomizing RAM contents
-	for (uint32_t i = 8; i < vjs.DRAM_size; i += 4)
-	{
+	for(uint32_t i=8; i<0x200000; i+=4)
 		*((uint32_t *)(&jaguarMainRAM[i])) = rand();
-	}
 
 	// New timer base code stuffola...
 	InitializeEventList();
@@ -2388,20 +1963,10 @@ void JaguarReset(void)
 //Also, have to change this here and in JaguarReadXX() currently
 	// Only use the system BIOS if it's available...! (it's always available now!)
 	// AND only if a jaguar cartridge has been inserted.
-#ifndef NEWMODELSBIOSHANDLER
-	if (vjs.useJaguarBIOS && jaguarCartInserted && !vjs.hardwareTypeAlpine && !vjs.softTypeDebugger)
-	{
+	if (vjs.useJaguarBIOS && jaguarCartInserted && !vjs.hardwareTypeAlpine)
 		memcpy(jaguarMainRAM, jagMemSpace + 0xE00000, 8);
-#else
-	if (vjs.useJaguarBIOS && jaguarCartInserted)
-	{
-		SetBIOS();
-#endif
-	}
 	else
-	{
 		SET32(jaguarMainRAM, 4, jaguarRunAddress);
-	}
 
 //	WriteLog("jaguar_reset():\n");
 	TOMReset();
@@ -2411,6 +1976,7 @@ void JaguarReset(void)
 	CDROMReset();
     m68k_pulse_reset();								// Reset the 68000
 	WriteLog("Jaguar: 68K reset. PC=%06X SP=%08X\n", m68k_get_reg(NULL, M68K_REG_PC), m68k_get_reg(NULL, M68K_REG_A7));
+
 	lowerField = false;								// Reset the lower field flag
 //	SetCallbackTime(ScanlineCallback, 63.5555);
 //	SetCallbackTime(ScanlineCallback, 31.77775);
@@ -2520,7 +2086,6 @@ void JaguarDone(void)
 	DSPDone();
 	TOMDone();
 	JERRYDone();
-	m68k_brk_close();
 
 	// temp, until debugger is in place
 //00802016: jsr     $836F1A.l
@@ -2574,7 +2139,7 @@ void DumpMainMemory(void)
 	if (fp == NULL)
 		return;
 
-	fwrite(jaguarMainRAM, 1, vjs.DRAM_size, fp);
+	fwrite(jaguarMainRAM, 1, 0x200000, fp);
 	fclose(fp);
 }
 
@@ -2589,6 +2154,7 @@ uint8_t * GetRamPtr(void)
 // New Jaguar execution stack
 // This executes 1 frame's worth of code.
 //
+bool frameDone;
 void JaguarExecuteNew(void)
 {
 	frameDone = false;
@@ -2606,111 +2172,6 @@ void JaguarExecuteNew(void)
 		HandleNextEvent();
  	}
 	while (!frameDone);
-}
-
-
-// Step over function
-int JaguarStepOver(int depth)
-{
-	bool exit = !depth;
-	int cycles = 0;
-	//bool case55 = false;
-	//uint32_t m68kSR;
-
-//	if (!depth)
-//	{
-//		cycles = 0;
-//		exit = true;
-//	}
-//	else
-//	{
-//		exit = false;
-//	}
-
-	do
-	{
-		cycles += JaguarStepInto();
-
-		switch (M68KGetCurrentOpcodeFamily())
-		{
-			// rts
-		case 49:
-			//if (depth)
-			{
-				//if (!--depth)
-				{
-					exit = true;
-				}
-				//exit = false;
-			}
-			break;
-
-#if 0
-			// bcc
-		case 55:
-			if (!depth)
-			{
-				//m68kSR = m68k_get_reg(NULL, M68K_REG_SR);
-				if (m68k_get_reg(NULL, M68K_REG_SR) & 0x4)
-				{
-					exit = true;
-				}
-				else
-				{
-					exit = false;
-				}
-			}
-			break;
-#endif
-
-			// bsr & jsr
-		case 54:
-		case 52:
-			cycles += JaguarStepOver(depth+1);
-			//if (depth)
-			//{
-			//	exit = false;
-			//}
-			break;
-
-		default:
-			//if (case55)
-			//{
-			//	exit = true;
-			//}
-			break;
-		}
-	}
-	while (!exit && !M68KDebugHaltStatus());
-
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to verify the Jaguar Step Over function !!!")
-#else
-#warning "!!! Need to verify the Jaguar Step Over function !!!"
-#endif // _MSC_VER
-	return cycles;
-}
-
-
-// Step into function
-int	JaguarStepInto(void)
-{
-	int cycles;
-	//	double timeToNextEvent = GetTimeToNextEvent();
-
-	cycles = m68k_execute(USEC_TO_M68K_CYCLES(0));
-//	m68k_execute(USEC_TO_M68K_CYCLES(timeToNextEvent));
-
-	if (vjs.GPUEnabled)
-		GPUExec(USEC_TO_RISC_CYCLES(0));
-	
-//	HandleNextEvent();
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to verify the Jaguar Step Into function !!!")
-#else
-#warning "!!! Need to verify the Jaguar Step Into function !!!"
-#endif // _MSC_VER
-		return cycles;
 }
 
 

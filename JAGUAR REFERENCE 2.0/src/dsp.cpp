@@ -7,13 +7,11 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  -------------------------------------------------------------
 // JLH  01/16/2010  Created this log ;-)
 // JLH  11/26/2011  Added fixes for LOAD/STORE alignment issues
-// JPM  06/06/2016  Visual Studio support
 //
 
 #include "dsp.h"
@@ -805,11 +803,7 @@ WriteLog("Write to DSP CTRL by %s: %08X (DSP PC=$%08X)\n", whoName[who], data, d
 				WriteLog("DSP: DSP -> CPU interrupt\n");
 #endif
 
-#ifdef _MSC_VER
-#pragma message("Warning: !!! DSP IRQs that go to the 68K have to be routed thru TOM !!! FIX !!!")
-#else
 #warning "!!! DSP IRQs that go to the 68K have to be routed thru TOM !!! FIX !!!"
-#endif // _MSC_VER
 				if (JERRYIRQEnabled(IRQ2_DSP))
 				{
 					JERRYSetPendingIRQ(IRQ2_DSP);
@@ -1192,11 +1186,7 @@ ctrl1[8] = ctrl2[8] = dsp_control;
 	if (state)
 	{
 		dsp_control |= mask;						// Set the latch bit
-#ifdef _MSC_VER
-#pragma message("Warning: !!! No checking done to see if we're using pipelined DSP or not !!!")
-#else
-#warning "!!! No checking done to see if we're using pipelined DSP or not !!!"
-#endif // _MSC_VER
+#warning !!! No checking done to see if we're using pipelined DSP or not !!!
 //		DSPHandleIRQs();
 		DSPHandleIRQsNP();
 //CC only!

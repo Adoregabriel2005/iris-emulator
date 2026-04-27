@@ -1,7 +1,7 @@
 #ifndef __GENERALTAB_H__
 #define __GENERALTAB_H__
 
-#include <QtWidgets/QtWidgets>
+#include <QtWidgets>
 
 class GeneralTab: public QWidget
 {
@@ -10,27 +10,20 @@ class GeneralTab: public QWidget
 	public:
 		GeneralTab(QWidget * parent = 0);
 		~GeneralTab();
-		void SetSettings(void);
-		void GetSettings(void);
-
-	private:
-		QString CheckForTrailingSlash(QString s);
 
 	public:
-		QLineEdit *edit1;
-		QLineEdit *edit2;
-		QLineEdit *edit3;
-		QLineEdit *edit4;
-		QLineEdit *edit5;
-#ifndef NEWMODELSBIOSHANDLER
-		QCheckBox *useBIOS;
-#endif
-		QCheckBox *useGPU;
-		QCheckBox *useDSP;
-//		QCheckBox *useHostAudio;
-		QCheckBox *useFullScreen;
-		QCheckBox *useUnknownSoftware;
-		QCheckBox *useFastBlitter;
+		QLineEdit * edit1;
+		QLineEdit * edit2;
+		QLineEdit * edit3;
+		QLineEdit * edit4;
+
+		QCheckBox * useBIOS;
+		QCheckBox * useGPU;
+		QCheckBox * useDSP;
+//		QCheckBox * useHostAudio;
+		QCheckBox * useFullScreen;
+		QCheckBox * useUnknownSoftware;
+		QCheckBox * useFastBlitter;
 };
 
 #endif	// __GENERALTAB_H__

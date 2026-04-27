@@ -15,8 +15,9 @@ set(JAG_DIR "${CMAKE_SOURCE_DIR}/JAGUAR REFERENCE 1/src")
 file(GLOB JAG_SRC "${JAG_DIR}/*.cpp")
 list(FILTER JAG_SRC EXCLUDE REGEX ".*/debugger/.*")
 list(FILTER JAG_SRC EXCLUDE REGEX ".*/gui/.*")
+# file.cpp uses libelf/gelf which we don't have — replaced by jaguar_file_stub.cpp
+list(FILTER JAG_SRC EXCLUDE REGEX ".*/file\.cpp$")
 set(M68K_SRC
-    "${JAG_DIR}/m68000/m68kinterface.c"
     "${JAG_DIR}/m68000/cpuextra.c"
     "${JAG_DIR}/m68000/readcpu.c"
     "${JAG_DIR}/m68000/m68kdasm.c"
@@ -82,12 +83,17 @@ qt_add_executable(irisemulator
     src/ui/CoverDownloadDialog.h
     src/ui/DebugWindow.cpp
     src/ui/DebugWindow.h
+    src/ui/JaguarDebugWindow.cpp
+    src/ui/JaguarDebugWindow.h
+    src/ui/EmulatorLogWindow.cpp
+    src/ui/EmulatorLogWindow.h
     src/ui/WelcomeDialog.cpp
     src/ui/WelcomeDialog.h
     src/ui/AboutDialog.cpp
     src/ui/AboutDialog.h
     src/EmulatorCore.cpp
     src/SDLInput.cpp
+    src/SDLInput_Jaguar.cpp
     src/CPU6507.cpp
     src/TIA.cpp
     src/RIOT.cpp
@@ -107,14 +113,16 @@ qt_add_executable(irisemulator
     src/jaguar/JaguarSystem.cpp
     src/jaguar/JaguarSystem.h
     src/jaguar/jaguar_gui_stubs.cpp
+    src/jaguar/jaguar_file_stub.cpp
     src/jaguar/JaguarPatchDB.h
+    src/jaguar/tom_utils.cpp
+    src/jaguar/jaguarcore_link_stubs.cpp
     src/lynx/LynxSystem.cpp
     src/lynx/LynxSystem.h
     src/IEmulatorCore.h
     src/DiscordRPC.cpp
     src/DiscordRPC.h
     ${GEARLYNX_SRC}
-    ${JAG_SRC}
     ${M68K_SRC}
     src/resources/icons/resources.qrc
 )
@@ -148,18 +156,13 @@ if(EXISTS ${DISCORD_RPC_DLL})
     )
 endif()
 
-qt_add_executable(test_savestate
-    tools/test_savestate.cpp
-    src/EmulatorCore.cpp
-    src/IEmulatorCore.h
-    src/CPU6507.cpp
-    src/TIA.cpp
-    src/RIOT.cpp
-    src/mapper/MapperNone.cpp
-    src/mapper/MapperBanked.cpp
-    src/MapperFactory.cpp
-)
-target_include_directories(test_savestate PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/mapper)
-target_link_libraries(test_savestate PRIVATE Qt6::Widgets SDL2::SDL2)
+set(ZLIB_DLL "${VCPKG_INSTALLED_DIR}/bin/zlib1.dll")
+if(EXISTS ${ZLIB_DLL})
+    add_custom_command(TARGET irisemulator POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${ZLIB_DLL}"
+            "$<TARGET_FILE_DIR:irisemulator>"
+    )
+endif()
 
 install(TARGETS irisemulator RUNTIME DESTINATION bin)

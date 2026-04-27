@@ -5,13 +5,11 @@
 // (C) 2013 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  ------------------------------------------------------------
 // JLH  05/01/2013  Created this file
 // JLH  10/02/2014  Finally fixed stuff so it works the way it should
-// JPM  06/06/2016  Visual Studio support
 //
 // This is a profile database with two parts: One, a list of devices, and two,
 // a list of profiles each containing a pointer to the device list, and map
@@ -32,7 +30,7 @@
 //
 
 #include "profile.h"
-#include <QtWidgets/QtWidgets>
+#include <QtWidgets>
 #include "gamepad.h"
 #include "log.h"
 #include "settings.h"
@@ -147,8 +145,6 @@ printf("Setting up default profile...\n");
 		for(int i=0; i<21; i++)
 			profile[0].map[i] = defaultMap[i];
 	}
-
-	WriteLog("Read profiles = Done\n");
 }
 
 
@@ -379,11 +375,7 @@ void AutoConnectProfiles(void)
 printf("AutoConnect: Setting up keyboard...\n");
 #endif
 //NO!		ConnectProfileToDevice(0);
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to set up scanning for multiple keyboard profiles !!!")
-#else
 #warning "!!! Need to set up scanning for multiple keyboard profiles !!!"
-#endif // _MSC_VER
 		ConnectProfileToController(0, 0);
 		return;
 	}

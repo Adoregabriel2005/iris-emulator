@@ -166,15 +166,58 @@ void DebugWindow::refreshLynx()
     auto* lynx = qobject_cast<LynxSystem*>(m_core);
     if (!lynx) return;
 
-    m_cpu_pc->setText("(Gearlynx core)");
-    m_cpu_a->setText("--");
-    m_cpu_x->setText("--");
-    m_cpu_y->setText("--");
-    m_cpu_sp->setText("--");
-    m_cpu_p->setText("--");
-    m_cpu_flags->setText("NV-BDIZC");
+    // Get debug info from LynxSystem
+    LynxSystem::DebugInfo info = lynx->getDebugInfo();
 
-    m_chip_dump->setPlainText(
-        "Mikey/Suzy debug requires Gearlynx debug hooks.\n"
-        "Enable in a future build.");
+    if (info.isRunning && info.totalCycles > 0) {
+        // CPU is running - display real register values
+        m_cpu_pc->setText(QString("$%1").arg(info.pc, 4, 16, QChar('0')).toUpper());
+        m_cpu_a->setText(QString("$%1").arg(info.a, 2, 16, QChar('0')).toUpper());
+        m_cpu_x->setText(QString("$%1").arg(info.x, 2, 16, QChar('0')).toUpper());
+        m_cpu_y->setText(QString("$%1").arg(info.y, 2, 16, QChar('0')).toUpper());
+        m_cpu_sp->setText(QString("$%1").arg(info.sp, 2, 16, QChar('0')).toUpper());
+        m_cpu_p->setText(QString("$%1").arg(info.p, 2, 16, QChar('0')).toUpper());
+
+        // Format flags
+        QString flags;
+        flags += (info.p & 0x80) ? 'N' : '-';
+        flags += (info.p & 0x40) ? 'V' : '-';
+        flags += '-'; // unused
+        flags += (info.p & 0x08) ? 'D' : '-';
+        flags += (info.p & 0x10) ? 'B' : '-';
+        flags += (info.p & 0x04) ? 'I' : '-';
+        flags += (info.p & 0x02) ? 'Z' : '-';
+        flags += (info.p & 0x01) ? 'C' : '-';
+        m_cpu_flags->setText(flags);
+
+        // Chip dump - show some runtime info
+        QString chipInfo;
+        chipInfo += QString("Lynx CPU: WDC 65C02 @ 4 MHz\n");
+        chipInfo += QString("Total cycles: %1\n").arg(info.totalCycles);
+        chipInfo += QString("PC: $%1\n\n").arg(info.pc, 4, 16, QChar('0')).toUpper();
+        chipInfo += "Mikey/Suzy registers:\n";
+        chipInfo += "  Mikey: $FD00-$FDFF (timers, audio, display, palette)\n";
+        chipInfo += "  Suzy:  $FC00-$FCFF (sprite engine, math, input)\n\n";
+        chipInfo += "Display: 160x102, 4bpp, ~75 Hz\n";
+        chipInfo += "Audio: 4-channel LFSR, stereo (Lynx II)";
+
+        m_chip_dump->setPlainText(chipInfo);
+    } else {
+        // Not running yet
+        m_cpu_pc->setText("$----");
+        m_cpu_a->setText("--");
+        m_cpu_x->setText("--");
+        m_cpu_y->setText("--");
+        m_cpu_sp->setText("--");
+        m_cpu_p->setText("--");
+        m_cpu_flags->setText("NV-BDIZC");
+
+        m_chip_dump->setPlainText(
+            "Lynx system not running yet.\n"
+            "Load and start a ROM to see debug info.\n\n"
+            "CPU: WDC 65C02 @ 4 MHz\n"
+            "RAM: 64 KB\n"
+            "Display: 160x102, 4bpp, ~75 Hz\n"
+            "Audio: 4-channel LFSR, stereo");
+    }
 }

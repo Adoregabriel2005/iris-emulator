@@ -5,11 +5,13 @@
 #include "Themes.h"
 #include "EmulatorCore.h"
 #include "LynxSystem.h"
+#include "JaguarSystem.h"
 #include "SDLInput.h"
 #include "ControllerSettingsDialog.h"
 #include "SettingsDialog.h"
 #include "CoverDownloadDialog.h"
 #include "DebugWindow.h"
+#include "JaguarDebugWindow.h"
 #include "DiscordRPC.h"
 
 #include <QtCore/QDateTime>
@@ -31,9 +33,10 @@
 
 const char* MainWindow::ROM_FILE_FILTER =
     QT_TRANSLATE_NOOP("MainWindow",
-        "All Supported ROMs (*.bin *.a26 *.rom *.lnx *.lyx *.zip);;"
+        "All Supported ROMs (*.bin *.a26 *.rom *.lnx *.lyx *.j64 *.jag *.zip);;"
         "Atari 2600 ROMs (*.bin *.a26 *.rom);;"
         "Atari Lynx ROMs (*.lnx *.lyx);;"
+        "Atari Jaguar ROMs (*.j64 *.jag);;"
         "All Files (*.*)");
 
 MainWindow* g_main_window = nullptr;
@@ -248,11 +251,19 @@ void MainWindow::setupAdditionalUi()
     auto* debugAction = new QAction(QIcon::fromTheme("bug-line"), tr("Debug Window"), this);
     debugAction->setShortcut(QKeySequence(Qt::Key_F12));
     connect(debugAction, &QAction::triggered, this, [this]() {
-        if (!m_debug_window)
-            m_debug_window = new DebugWindow(this);
-        m_debug_window->setCore(m_active_core, m_active_core == m_lynx_core);
-        m_debug_window->show();
-        m_debug_window->raise();
+        if (m_jaguar_core && m_active_core == m_jaguar_core) {
+            if (!m_jaguar_debug)
+                m_jaguar_debug = new JaguarDebugWindow(this);
+            m_jaguar_debug->setCore(m_jaguar_core);
+            m_jaguar_debug->show();
+            m_jaguar_debug->raise();
+        } else {
+            if (!m_debug_window)
+                m_debug_window = new DebugWindow(this);
+            m_debug_window->setCore(m_active_core, m_active_core == m_lynx_core);
+            m_debug_window->show();
+            m_debug_window->raise();
+        }
     });
     gearMenu->addAction(debugAction);
     // Cover downloader
@@ -388,9 +399,17 @@ void MainWindow::connectSignals()
     connect(m_emulation_timer, &QTimer::timeout, this, [this]() {
         if (m_active_core && m_active_core->isRunning())
         {
-            // Poll SDL input
-            JoystickState js = m_sdl_input->poll();
-            m_active_core->setJoystickState(js);
+            // Poll SDL input — use system-specific input when available
+            if (m_jaguar_core && m_active_core == m_jaguar_core) {
+                JaguarInputState js = m_sdl_input->pollJaguar();
+                m_jaguar_core->setJaguarInputState(js);
+            } else if (m_lynx_core && m_active_core == m_lynx_core) {
+                LynxInputState js = m_sdl_input->pollLynx();
+                m_lynx_core->setLynxInputState(js);
+            } else {
+                JoystickState js = m_sdl_input->poll();
+                m_active_core->setJoystickState(js);
+            }
 
             // Step one frame
             m_active_core->step();
@@ -451,22 +470,25 @@ void MainWindow::onPauseActionToggled(bool checked)
     if (!m_is_running)
         return;
 
+    auto activeConsoleName = [this]() -> QString {
+        if (m_active_core == m_jaguar_core)    return QStringLiteral("Atari Jaguar");
+        if (m_active_core == m_lynx_core)      return QStringLiteral("Atari Lynx");
+        return QStringLiteral("Atari 2600");
+    };
+
     if (checked)
     {
         m_emulation_timer->stop();
         m_status_verbose_widget->setText(tr("Paused"));
         if (m_discord && m_is_running)
-            m_discord->updatePaused(m_current_game_title,
-                (m_active_core == m_lynx_core) ? "Atari Lynx" : "Atari 2600");
+            m_discord->updatePaused(m_current_game_title, activeConsoleName());
     }
     else
     {
         m_emulation_timer->start(16);
         m_status_verbose_widget->setText(tr("Running"));
-        if (m_discord && m_is_running) {
-            QString console = (m_active_core == m_lynx_core) ? "Atari Lynx" : "Atari 2600";
-            m_discord->updatePlaying(m_current_game_title, console, QString());
-        }
+        if (m_discord && m_is_running)
+            m_discord->updatePlaying(m_current_game_title, activeConsoleName(), QString());
     }
 
     // Sync both menu and toolbar pause actions
@@ -484,6 +506,8 @@ void MainWindow::onToggleConsoleModeTriggered()
         nextMode = ConsoleMode::Atari2600;
     else if (m_console_mode == ConsoleMode::Atari2600)
         nextMode = ConsoleMode::AtariLynx;
+    else if (m_console_mode == ConsoleMode::AtariLynx)
+        nextMode = ConsoleMode::AtariJaguar;
 
     setConsoleMode(nextMode);
 }
@@ -499,9 +523,10 @@ void MainWindow::setConsoleMode(MainWindow::ConsoleMode mode)
     QString modeName;
     switch (mode)
     {
-        case ConsoleMode::Auto: modeName = tr("Auto"); break;
-        case ConsoleMode::Atari2600: modeName = tr("Atari 2600"); break;
-        case ConsoleMode::AtariLynx: modeName = tr("Atari Lynx"); break;
+        case ConsoleMode::Auto:        modeName = tr("Auto");         break;
+        case ConsoleMode::Atari2600:   modeName = tr("Atari 2600");   break;
+        case ConsoleMode::AtariLynx:   modeName = tr("Atari Lynx");   break;
+        case ConsoleMode::AtariJaguar: modeName = tr("Atari Jaguar"); break;
     }
 
     if (m_status_verbose_widget)
@@ -525,15 +550,10 @@ void MainWindow::updateConsoleModeActionText()
     QString text;
     switch (m_console_mode)
     {
-        case ConsoleMode::Auto:
-            text = tr("Console Mode: Auto");
-            break;
-        case ConsoleMode::Atari2600:
-            text = tr("Console Mode: Atari 2600");
-            break;
-        case ConsoleMode::AtariLynx:
-            text = tr("Console Mode: Atari Lynx");
-            break;
+        case ConsoleMode::Auto:        text = tr("Console Mode: Auto");         break;
+        case ConsoleMode::Atari2600:   text = tr("Console Mode: Atari 2600");   break;
+        case ConsoleMode::AtariLynx:   text = tr("Console Mode: Atari Lynx");   break;
+        case ConsoleMode::AtariJaguar: text = tr("Console Mode: Atari Jaguar"); break;
     }
 
     m_toggle_console_mode_action->setText(text);
@@ -543,14 +563,11 @@ QString MainWindow::getConsoleModeName() const
 {
     switch (m_console_mode)
     {
-        case ConsoleMode::Auto:
-            return tr("Auto");
-        case ConsoleMode::Atari2600:
-            return tr("Atari 2600");
-        case ConsoleMode::AtariLynx:
-            return tr("Atari Lynx");
+        case ConsoleMode::Auto:        return tr("Auto");
+        case ConsoleMode::Atari2600:   return tr("Atari 2600");
+        case ConsoleMode::AtariLynx:   return tr("Atari Lynx");
+        case ConsoleMode::AtariJaguar: return tr("Atari Jaguar");
     }
-
     return tr("Auto");
 }
 
@@ -797,7 +814,10 @@ void MainWindow::onEmulationStarted()
     switchToEmulationView();
     updateWindowTitle();
     m_status_verbose_widget->setText(tr("Running"));
-    if (m_active_core == m_lynx_core) {
+
+    if (m_active_core == m_jaguar_core) {
+        m_status_resolution_widget->setText(QStringLiteral("326x240"));
+    } else if (m_active_core == m_lynx_core) {
         m_status_resolution_widget->setText(QStringLiteral("160x102"));
     } else {
         m_status_resolution_widget->setText(QStringLiteral("160x%1").arg(
@@ -807,7 +827,10 @@ void MainWindow::onEmulationStarted()
 
     // Discord RPC
     if (m_discord) {
-        QString console = (m_active_core == m_lynx_core) ? "Atari Lynx" : "Atari 2600";
+        QString console;
+        if (m_active_core == m_jaguar_core)    console = "Atari Jaguar";
+        else if (m_active_core == m_lynx_core) console = "Atari Lynx";
+        else                                   console = "Atari 2600";
         m_discord->updatePlaying(m_current_game_title, console, QString());
     }
 }
@@ -868,27 +891,31 @@ void MainWindow::startROM(const QString& path)
     stopEmulation();
 
     QString lower = path.toLower();
-    bool isLynxPath = lower.endsWith(".lnx") || lower.endsWith(".lyx");
+    bool isLynxPath   = lower.endsWith(".lnx") || lower.endsWith(".lyx");
+    bool isJaguarPath = lower.endsWith(".j64") || lower.endsWith(".jag");
     ConsoleMode actualConsole = m_console_mode;
 
-    if (actualConsole == ConsoleMode::Auto)
-        actualConsole = isLynxPath ? ConsoleMode::AtariLynx : ConsoleMode::Atari2600;
+    if (actualConsole == ConsoleMode::Auto) {
+        if (isJaguarPath)      actualConsole = ConsoleMode::AtariJaguar;
+        else if (isLynxPath)   actualConsole = ConsoleMode::AtariLynx;
+        else                   actualConsole = ConsoleMode::Atari2600;
+    }
 
-    if (actualConsole == ConsoleMode::AtariLynx) {
-        // Destruir core 2600 se estava ativo, evitar estado cruzado
-        if (m_active_core == m_emu_core) {
-            delete m_emu_core;
-            m_emu_core = new EmulatorCore(this);
-        }
+    if (actualConsole == ConsoleMode::AtariJaguar) {
+        if (m_active_core == m_emu_core) { delete m_emu_core; m_emu_core = new EmulatorCore(this); }
+        if (m_active_core == m_lynx_core) { delete m_lynx_core; m_lynx_core = nullptr; }
+        if (!m_jaguar_core)
+            m_jaguar_core = new JaguarSystem(this);
+        m_active_core = m_jaguar_core;
+    } else if (actualConsole == ConsoleMode::AtariLynx) {
+        if (m_active_core == m_emu_core) { delete m_emu_core; m_emu_core = new EmulatorCore(this); }
+        if (m_active_core == m_jaguar_core) { delete m_jaguar_core; m_jaguar_core = nullptr; }
         if (!m_lynx_core)
             m_lynx_core = new LynxSystem(this);
         m_active_core = m_lynx_core;
     } else {
-        // Destruir core Lynx se estava ativo, evitar estado cruzado
-        if (m_active_core == m_lynx_core) {
-            delete m_lynx_core;
-            m_lynx_core = nullptr;
-        }
+        if (m_active_core == m_lynx_core) { delete m_lynx_core; m_lynx_core = nullptr; }
+        if (m_active_core == m_jaguar_core) { delete m_jaguar_core; m_jaguar_core = nullptr; }
         m_active_core = m_emu_core;
     }
 
@@ -1213,7 +1240,8 @@ void MainWindow::dragEnterEvent(QDragEnterEvent* event)
         {
             QString path = url.toLocalFile().toLower();
             if (path.endsWith(".bin") || path.endsWith(".a26") || path.endsWith(".rom")
-                || path.endsWith(".lnx") || path.endsWith(".lyx"))
+                || path.endsWith(".lnx") || path.endsWith(".lyx")
+                || path.endsWith(".j64") || path.endsWith(".jag"))
             {
                 event->acceptProposedAction();
                 return;
@@ -1231,7 +1259,8 @@ void MainWindow::dropEvent(QDropEvent* event)
             QString path = url.toLocalFile();
             QString lower = path.toLower();
             if (lower.endsWith(".bin") || lower.endsWith(".a26") || lower.endsWith(".rom")
-                || lower.endsWith(".lnx") || lower.endsWith(".lyx"))
+                || lower.endsWith(".lnx") || lower.endsWith(".lyx")
+                || lower.endsWith(".j64") || lower.endsWith(".jag"))
             {
                 startROM(path);
                 return;

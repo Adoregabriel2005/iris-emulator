@@ -5,7 +5,6 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  -------------------------------------------------------------
@@ -15,7 +14,6 @@
 // JLH  06/28/2011  Cleanup in the file parsing/fishing code, to make it easier
 //                  to follow the flow of the logic
 //
-// JPM  06/06/2016  Visual Studio support
 
 #include "filethread.h"
 
@@ -95,11 +93,7 @@ void FileThread::HandleFile(QFileInfo fileInfo)
 {
 	// Really, need to come up with some kind of cacheing scheme here, so we don't
 	// fish through these files every time we run VJ :-P
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to come up with some kind of cacheing scheme here !!!")
-#else
 #warning "!!! Need to come up with some kind of cacheing scheme here !!!"
-#endif // _MSC_VER
 	bool haveZIPFile = (fileInfo.suffix().compare("zip", Qt::CaseInsensitive) == 0
 		? true : false);
 	uint32_t fileSize = 0;
@@ -195,11 +189,7 @@ uint32_t FileThread::FindCRCIndexInFileList(uint32_t crc)
 {
 	// Instead of a simple brute-force search, we should probably do a binary
 	// partition search instead, since the CRCs are sorted numerically.
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Should do binary partition search here !!!")
-#else
 #warning "!!! Should do binary partition search here !!!"
-#endif // _MSC_VER
 	for(int i=0; romList[i].crc32!=0xFFFFFFFF; i++)
 	{
 		if (romList[i].crc32 == crc)

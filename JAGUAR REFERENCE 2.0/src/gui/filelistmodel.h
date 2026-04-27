@@ -8,7 +8,7 @@
 #ifndef __FILELISTMODEL_H__
 #define __FILELISTMODEL_H__
 
-#include <QtWidgets/QtWidgets>
+#include <QtWidgets>
 #include <vector>
 #include <stdint.h>
 

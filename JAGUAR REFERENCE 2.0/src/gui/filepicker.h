@@ -2,7 +2,7 @@
 // filepicker.h - A ROM chooser
 //
 
-#include <QtWidgets/QtWidgets>
+#include <QtWidgets>
 
 // Forward declarations
 class QListWidget;

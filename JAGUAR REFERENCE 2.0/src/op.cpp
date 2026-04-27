@@ -7,12 +7,10 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  -----------------------------------------------------------
 // JLH  01/16/2010  Created this log ;-)
-// JPM  06/06/2016  Visual Studio support
 //
 
 #include "op.h"
@@ -446,18 +444,10 @@ void DumpBitmapCore(uint64_t p0, uint64_t p1)
 //
 // Object Processor main routine
 //
-#ifdef _MSC_VER
-#pragma message("Warning: Need to fix this so that when an GPU object IRQ happens, we can pick up OP processing where we left off. !!! FIX !!!")
-#else
 #warning "Need to fix this so that when an GPU object IRQ happens, we can pick up OP processing where we left off. !!! FIX !!!"
-#endif // _MSC_VER
 void OPProcessList(int halfline, bool render)
 {
-#ifdef _MSC_VER
-#pragma message("Warning: !!! NEED TO HANDLE MULTIPLE FIELDS PROPERLY !!!")
-#else
 #warning "!!! NEED TO HANDLE MULTIPLE FIELDS PROPERLY !!!"
-#endif // _MSC_VER
 // We ignore them, for now; not good D-:
 // N.B.: Half-lines are exactly that, half-lines. When in interlaced mode, it
 //       draws the screen exactly the same way as it does in non, one line at a
@@ -787,11 +777,7 @@ OP: Scaled bitmap 4x? 4bpp at 34,? hscale=80 fpix=0 data=000756E8 pitch 1 hflipp
 		case OBJECT_TYPE_GPU:
 		{
 //WriteLog("OP: Asserting GPU IRQ #3...\n");
-#ifdef _MSC_VER
-#pragma message("Warning: Need to fix OP GPU IRQ handling! !!! FIX !!!")
-#else
 #warning "Need to fix OP GPU IRQ handling! !!! FIX !!!"
-#endif // _MSC_VER
 			OPSetCurrentObject(p0);
 			GPUSetIRQLine(3, ASSERT_LINE);
 //Also, OP processing is suspended from this point until OBF (F00026) is written to...
@@ -860,11 +846,7 @@ OP: Scaled bitmap 4x? 4bpp at 34,? hscale=80 fpix=0 data=000756E8 pitch 1 hflipp
 		// machine when fed bad data. Better would be to count how many actual
 		// cycles it used and bail out/reenter to properly simulate an
 		// overloaded OP... !!! FIX !!!
-#ifdef _MSC_VER
-#pragma message("Warning: Better would be to count how many actual cycles it used and bail out/reenter to properly simulate an overloaded OP... !!! FIX !!!")
-#else
 #warning "Better would be to count how many actual cycles it used and bail out/reenter to properly simulate an overloaded OP... !!! FIX !!!"
-#endif // _MSC_VER
 		opCyclesToRun--;
 
 		if (!opCyclesToRun)
@@ -921,11 +903,7 @@ void OPProcessFixedBitmap(uint64_t p0, uint64_t p1, bool render)
 
 //kludge: Seems that the OP treats iwidth == 0 as iwidth == 1... Need to
 //        investigate on real hardware...
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to investigate iwidth == 0 behavior on real hardware !!!")
-#else
 #warning "!!! Need to investigate iwidth == 0 behavior on real hardware !!!"
-#endif // _MSC_VER
 if (iwidth == 0)
 	iwidth = 1;
 

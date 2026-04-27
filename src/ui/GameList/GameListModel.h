@@ -10,6 +10,7 @@ enum class ConsoleType
 {
     Atari2600,
     AtariLynx,
+    AtariJaguar,
     Unknown
 };
 
@@ -76,4 +77,5 @@ private:
     QPixmap m_placeholder_pixmap;
     QPixmap m_atari2600_logo;
     QPixmap m_atarilynx_logo;
+    QPixmap m_atarijaguar_logo;
 };

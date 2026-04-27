@@ -97,14 +97,9 @@ int irq_ack_handler(int);
 void M68KInstructionHook(void);
 #endif
 
-
-int M68KGetCurrentOpcodeFamily(void);
-
-
 // Functions to allow debugging
-int M68KDebugHalt(void);
+void M68KDebugHalt(void);
 void M68KDebugResume(void);
-int M68KDebugHaltStatus(void);
 
 /* Peek at the internals of a CPU context.  This can either be a context
  * retrieved using m68k_get_context() or the currently running context.
@@ -123,7 +118,7 @@ unsigned int m68k_is_valid_instruction(unsigned int instruction, unsigned int cp
 /* Disassemble 1 instruction using the epecified CPU type at pc.  Stores
  * disassembly in str_buff and returns the size of the instruction in bytes.
  */
-unsigned int m68k_disassemble(char * str_buff, unsigned int pc, unsigned int cpu_type, unsigned int OpCodes);
+unsigned int m68k_disassemble(char * str_buff, unsigned int pc, unsigned int cpu_type);
 
 /* These functions let you read/write/modify the number of cycles left to run
  * while m68k_execute() is running.
@@ -134,16 +129,6 @@ int m68k_cycles_run(void);              // Number of cycles run so far
 int m68k_cycles_remaining(void);        // Number of cycles left
 void m68k_modify_timeslice(int cycles); // Modify cycles left
 void m68k_end_timeslice(void);          // End timeslice now
-
-// Breakpoints functions
-extern void m68k_brk_init(void);
-extern void m68k_brk_hitcounts_reset(void);
-extern unsigned int m68k_brk_add(void *PtrInfo);
-extern void m68k_brk_del(unsigned int NumBrk);
-extern void m68k_brk_disable(void);
-extern void m68k_brk_reset(void);
-extern void m68k_brk_close(void);
-extern unsigned int m68k_brk_check(unsigned int adr);
 
 #ifdef __cplusplus
 }

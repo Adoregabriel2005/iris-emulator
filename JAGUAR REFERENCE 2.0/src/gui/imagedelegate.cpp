@@ -5,13 +5,10 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
-
 //
 // Who  When        What
 // ---  ----------  -------------------------------------------------------------
 // JLH  02/04/2010  Created this file
-// JPM  06/06/2016  Visual Studio support
 //
 
 // This class takes care of rendering items in our custom model in the ListView
@@ -91,11 +88,7 @@ The foreground of the item (the circle representing a pixel) must be rendered us
 	// This is crappy. We really should have a properly scaled image ready to go so we
 	// don't get Qt's default ugly looking fast scaling...
 
-#ifdef _MSC_VER
-#pragma message("Warning: !!! FIX !!! Need to create properly scaled down cart/label images!")
-#else
 #warning "!!! FIX !!! Need to create properly scaled down cart/label images!"
-#endif // _MSC_VER
 //We've got the carts, now just need to do the labels...
 
 	unsigned long i = index.model()->data(index, FLM_INDEX).toUInt();

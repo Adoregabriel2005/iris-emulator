@@ -58,41 +58,38 @@ void MemoryBrowserWindow::RefreshContents(void)
 	char string[1024], buf[64];
 	QString memDump;
 
-	if (isVisible())
+	for(uint32_t i=0; i<480; i+=16)
 	{
-		for (uint32_t i = 0; i < 480; i += 16)
+		sprintf(string, "%s%06X: ", (i != 0 ? "<br>" : ""), memBase + i);
+
+		for(uint32_t j=0; j<16; j++)
 		{
-			sprintf(string, "%s%06X: ", (i != 0 ? "<br>" : ""), memBase + i);
-
-			for (uint32_t j = 0; j < 16; j++)
-			{
-				sprintf(buf, "%02X ", jaguarMainRAM[memBase + i + j]);
-				strcat(string, buf);
-			}
-
-			sprintf(buf, "| ");
+			sprintf(buf, "%02X ", jaguarMainRAM[memBase + i + j]);
 			strcat(string, buf);
-
-			for (uint32_t j = 0; j < 16; j++)
-			{
-				uint8_t c = jaguarMainRAM[memBase + i + j];
-				sprintf(buf, "&#%i;", c);
-
-				if (c == 0x20)
-					sprintf(buf, "&nbsp;");
-
-				if ((c < 0x20) || (c > 0x7E))
-					sprintf(buf, ".");
-
-				strcat(string, buf);
-			}
-
-			memDump += QString(string);
 		}
 
-		text->clear();
-		text->setText(memDump);
+		sprintf(buf, "| ");
+		strcat(string, buf);
+
+		for(uint32_t j=0; j<16; j++)
+		{
+			uint8_t c = jaguarMainRAM[memBase + i + j];
+			sprintf(buf, "&#%i;", c);
+
+			if (c == 0x20)
+				sprintf(buf, "&nbsp;");
+
+			if ((c < 0x20) || (c > 0x7E))
+				sprintf(buf, ".");
+
+			strcat(string, buf);
+		}
+
+		memDump += QString(string);
 	}
+
+	text->clear();
+	text->setText(memDump);
 }
 
 

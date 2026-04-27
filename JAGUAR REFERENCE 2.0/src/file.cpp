@@ -6,30 +6,19 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
-//  RG = Richard Goedeken
 //
 // Who  When        What
 // ---  ----------  ------------------------------------------------------------
 // JLH  01/16/2010  Created this log ;-)
-// JLH  02/28/2010  Added functions to look inside .ZIP files and handle contents
+// JLH  02/28/2010  Added functions to look inside .ZIP files and handle
+//                  contents
 // JLH  06/01/2012  Added function to check ZIP file CRCs against file DB
-// JPM   June/2016  Visual Studio support, ELF format support and Soft debugger support
-// JPM  07/15/2016  DWARF format support
-// JPM  04/06/2019  Added ELF sections check
-// JPM  03/12/2020  Added ELF section types check and new error messages
-// JPM   Aug./2020  ELF executable file information
-//  RG   Jan./2021  Linux build fixes
 //
 
 #include "file.h"
-#if defined(_MSC_VER)
-#include "_MSC_VER/config.h"
-#endif // _MSC_VER
+
 #include <stdarg.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include "crc32.h"
 #include "filedb.h"
 #include "eeprom.h"
@@ -39,22 +28,11 @@
 #include "universalhdr.h"
 #include "unzip.h"
 #include "zlib.h"
-#include "libelf.h"
-#include "gelf.h"
-#include "libdwarf.h"
-#include "debugger/ELFManager.h"
-#include "debugger/DBGManager.h"
-#include "settings.h"
-
 
 // Private function prototypes
 
 static int gzfilelength(gzFile gd);
-//#if defined(_MSC_VER) || defined(__MINGW64__)|| defined(__MINGW32__) || defined(__CYGWIN__)
-static bool CheckExtension(const uint8_t *filename, const char *ext);
-//#else
-//static bool CheckExtension(const char * filename, const char * ext);
-//#endif // _MSC_VER
+static bool CheckExtension(const char * filename, const char * ext);
 //static int ParseFileType(uint8_t header1, uint8_t header2, uint32_t size);
 
 // Private variables/enums
@@ -67,11 +45,7 @@ uint32_t JaguarLoadROM(uint8_t * &rom, char * path)
 {
 // We really should have some kind of sanity checking for the ROM size here to prevent
 // a buffer overflow... !!! FIX !!!
-#if defined(_MSC_VER)
-#pragma message("Warning: !!! FIX !!! Should have sanity checking for ROM size to prevent buffer overflow!")
-#else
 #warning "!!! FIX !!! Should have sanity checking for ROM size to prevent buffer overflow!"
-#endif // _MSC_VER
 	uint32_t romSize = 0;
 
 	WriteLog("FILE: JaguarLoadROM attempting to load file '%s'...", path);
@@ -140,20 +114,7 @@ uint32_t JaguarLoadROM(uint8_t * &rom, char * path)
 //
 bool JaguarLoadFile(char * path)
 {
-	Elf *ElfMem;
-	GElf_Ehdr ElfEhdr, *PtrGElfEhdr;
-	Elf_Scn	*PtrElfScn;
-	Elf_Data	*PtrElfData;
-	GElf_Shdr GElfShdr, *PtrGElfShdr;
-	size_t NbrSect;
-	uint8_t *buffer = NULL;
-	char *NameSection;
-	size_t ElfSectionNameType;
-	int	DBGType = DBG_NO_TYPE;
-	bool error;
-	int err;
-	struct stat _statbuf;
-
+	uint8_t * buffer = NULL;
 	jaguarROMSize = JaguarLoadROM(buffer, path);
 
 	if (jaguarROMSize == 0)
@@ -171,7 +132,6 @@ bool JaguarLoadFile(char * path)
 	jaguarRunAddress = 0x802000;					// For non-BIOS runs, this is true
 	int fileType = ParseFileType(buffer, jaguarROMSize);
 	jaguarCartInserted = false;
-	DBGManager_Reset();
 
 	if (fileType == JST_ROM)
 	{
@@ -197,170 +157,6 @@ WriteLog("FILE: Cartridge run address is reported as $%X...\n", jaguarRunAddress
 		SET32(jaguarMainRAM, 0x10, 0x00001000);
 		SET16(jaguarMainRAM, 0x1000, 0x60FE);		// Here: bra Here
 		return true;
-	}
-	else if (fileType == JST_ELF32)
-	{
-		DBGType = DBG_ELF;
-
-		char *PtrELFExe = (char *)ELFManager_ExeCopy(buffer, jaguarROMSize);
-
-		if (PtrELFExe != NULL)
-		{
-			// check the ELF version
-			if ((elf_version(EV_CURRENT) != EV_NONE) && (ElfMem = ELFManager_MemOpen(PtrELFExe, jaguarROMSize)))
-			{
-				// get the file information
-				stat(path, &_statbuf);
-
-				if (ELFManager_DwarfInit(ElfMem, _statbuf))
-				{
-					DBGType |= DBG_ELFDWARF;
-				}
-
-				if (!elf_getshdrnum(ElfMem, &NbrSect))
-				{
-					if (((PtrGElfEhdr = gelf_getehdr(ElfMem, &ElfEhdr)) != NULL) && ((PtrElfScn = elf_getscn(ElfMem, 0)) != NULL))
-					{
-						for (error = false; (PtrElfScn != NULL) && (error == false); PtrElfScn = elf_nextscn(ElfMem, PtrElfScn))
-						{
-							PtrElfData = NULL;
-
-							if ((PtrGElfShdr = gelf_getshdr(PtrElfScn, &GElfShdr)) == NULL)
-							{
-								error = true;
-							}
-							else
-							{
-								NameSection = elf_strptr(ElfMem, PtrGElfEhdr->e_shstrndx, (size_t)PtrGElfShdr->sh_name);
-								WriteLog("FILE: ELF Section %s found\n", NameSection);
-
-								if (((ElfSectionNameType = ELFManager_GetSectionType(NameSection)) == ELF_NO_TYPE) && vjs.ELFSectionsCheck)
-								{
-									WriteLog("FILE: ELF Section %s not recognized\n", NameSection);
-									error = true;
-								}
-								else
-								{
-									switch (PtrGElfShdr->sh_type)
-									{
-									case SHT_NULL:
-										break;
-
-									case SHT_PROGBITS:
-										if ((PtrGElfShdr->sh_flags & (SHF_ALLOC | SHF_WRITE | SHF_EXECINSTR)))
-										{
-											if (PtrGElfShdr->sh_addr >= 0x800000)
-											{
-												memcpy(jagMemSpace + PtrGElfShdr->sh_addr, buffer + PtrGElfShdr->sh_offset, PtrGElfShdr->sh_size);
-												//error = false;
-											}
-											else
-											{
-												memcpy(jaguarMainRAM + PtrGElfShdr->sh_addr, buffer + PtrGElfShdr->sh_offset, PtrGElfShdr->sh_size);
-											}
-										}
-										else
-										{
-											switch (ElfSectionNameType)
-											{
-											case ELF_debug_TYPE:
-											case ELF_debug_abbrev_TYPE:
-											case ELF_debug_aranges_TYPE:
-											case ELF_debug_frame_TYPE:
-											case ELF_debug_info_TYPE:
-											case ELF_debug_line_TYPE:
-											case ELF_debug_loc_TYPE:
-											case ELF_debug_macinfo_TYPE:
-											case ELF_debug_pubnames_TYPE:
-											case ELF_debug_pubtypes_TYPE:
-											case ELF_debug_ranges_TYPE:
-											case ELF_debug_str_TYPE:
-											case ELF_debug_types_TYPE:						
-												break;
-
-											case ELF_heap_TYPE:
-												break;
-
-											case ELF_comment_TYPE:
-												break;
-
-											default:
-												WriteLog("FILE: ELF section %s is not recognized\n", NameSection);
-												error = true;
-												break;
-											}
-										}
-										break;
-
-									case SHT_NOBITS:
-										break;
-
-									case SHT_STRTAB:
-									case SHT_SYMTAB:
-										while ((error == false) && ((PtrElfData = elf_getdata(PtrElfScn, PtrElfData)) != NULL))
-										{
-											if (!ELFManager_AddTab(PtrElfData, ElfSectionNameType))
-											{
-												WriteLog("FILE: ELF tab cannot be allocated\n");
-												error = true;
-											}
-										}
-										break;
-
-									default:
-										WriteLog("FILE: ELF SHT type %i not recognized\n", PtrGElfShdr->sh_type);
-										error = true;
-										break;
-									}
-								}
-							}
-						}
-
-						// Set the executable address
-						jaguarRunAddress = (uint32_t)PtrGElfEhdr->e_entry;
-						WriteLog("FILE: Setting up ELF 32bits... Run address: %08X\n", jaguarRunAddress);
-					}
-					else
-					{
-						error = true;
-					}
-				}
-				else
-				{
-					WriteLog("FILE: Cannot get the number of the ELF sections\n");
-					error = true;
-				}
-			}
-			else
-			{
-				error = true;
-				WriteLog("FILE: libelf version is not recognized or libelf memory cannot be opened\n");
-			}
-		}
-		else
-		{
-			error = true;
-			WriteLog("FILE: ELFManager cannot allocate memory\n");
-		}
-
-		delete[] buffer;
-
-		if (error)
-		{
-			WriteLog("FILE: ELF parsing error\n");
-
-			if ((err = elf_errno()))
-			{
-				WriteLog("FILE: ELF error: %s\n", elf_errmsg(err));
-			}
-
-			return false;
-		}
-		else
-		{
-			DBGManager_SetType(DBGType);
-			return true;
-		}
 	}
 	else if (fileType == JST_ABS_TYPE1)
 	{
@@ -463,16 +259,6 @@ SET16(jaguarMainRAM, 0x1000, 0x60FE);		// Here: bra Here
 
 
 //
-// "Debugger" file loading
-// To keep the things separate between "Debugger" and "Alpine" loading until usage clarification has been done
-//
-bool DebuggerLoadFile(char * path)
-{
-	return (AlpineLoadFile(path));
-}
-
-
-//
 // "Alpine" file loading
 // Since the developers were coming after us with torches and pitchforks, we
 // decided to allow this kind of thing. ;-) But ONLY FOR THE DEVS, DAMMIT! >:-U
@@ -543,11 +329,7 @@ static int gzfilelength(gzFile gd)
 //
 // Compare extension to passed in filename. If equal, return true; otherwise false.
 //
-//#if defined(_MSC_VER) || defined(__MINGW64__)|| defined(__MINGW32__) || defined(__CYGWIN__)
-static bool CheckExtension(const uint8_t *filename, const char *ext)
-//#else
-//static bool CheckExtension(const char * filename, const char * ext)
-//#endif // _MSC_VER
+static bool CheckExtension(const uint8_t * filename, const char * ext)
 {
 	// Sanity checking...
 	if ((filename == NULL) || (ext == NULL))
@@ -572,11 +354,7 @@ uint32_t GetFileFromZIP(const char * zipFile, FileType type, uint8_t * &buffer)
 {
 // NOTE: We could easily check for this by discarding anything that's larger than the RAM/ROM
 //       size of the Jaguar console.
-#if defined(_MSC_VER)
-#pragma message("Warning: !!! FIX !!! Should have sanity checking for ROM size to prevent buffer overflow!")
-#else
 #warning "!!! FIX !!! Should have sanity checking for ROM size to prevent buffer overflow!"
-#endif // _MSC_VER
 	const char ftStrings[5][32] = { "Software", "EEPROM", "Label", "Box Art", "Controller Overlay" };
 //	ZIP * zip = openzip(0, 0, zipFile);
 	FILE * zip = fopen(zipFile, "rb");
@@ -601,11 +379,7 @@ uint32_t GetFileFromZIP(const char * zipFile, FileType type, uint8_t * &buffer)
 		// Here we simply rely on the file extension to tell the truth, but we know
 		// that extensions lie like sons-a-bitches. So this is naive, we need to do
 		// something a little more robust to keep bad things from happening here.
-#if defined(_MSC_VER)
-#pragma message("Warning: !!! Checking for image by extension can be fooled !!!")
-#else
 #warning "!!! Checking for image by extension can be fooled !!!"
-#endif // _MSC_VER
 		if ((type == FT_LABEL) && (CheckExtension(ze.filename, ".png") || CheckExtension(ze.filename, ".jpg") || CheckExtension(ze.filename, ".gif")))
 		{
 			found = true;
@@ -615,7 +389,7 @@ uint32_t GetFileFromZIP(const char * zipFile, FileType type, uint8_t * &buffer)
 		if ((type == FT_SOFTWARE) && (CheckExtension(ze.filename, ".j64")
 			|| CheckExtension(ze.filename, ".rom") || CheckExtension(ze.filename, ".abs")
 			|| CheckExtension(ze.filename, ".cof") || CheckExtension(ze.filename, ".coff")
-			|| CheckExtension(ze.filename, ".jag") || CheckExtension(ze.filename, ".elf")))
+			|| CheckExtension(ze.filename, ".jag")))
 		{
 			found = true;
 			WriteLog("FILE: Found software file '%s'.\n", ze.filename);
@@ -697,7 +471,7 @@ uint32_t GetFileDBIdentityFromZIP(const char * zipFile)
 	}
 
 	fclose(zip);
-	return (uint32_t )-1;
+	return -1;
 }
 
 
@@ -736,13 +510,6 @@ bool FindFileInZIPWithCRC32(const char * zipFile, uint32_t crc)
 uint32_t ParseFileType(uint8_t * buffer, uint32_t size)
 {
 	// Check headers first...
-
-	// ELF 32bits
-	if (buffer[EI_CLASS] == ELFCLASS32)
-	{
-		if (((BigToLittleEndian16(((Elf32_Ehdr *)buffer)->e_machine) & 0xFF) == EM_68K) && (BigToLittleEndian16(((Elf32_Ehdr *)buffer)->e_type) == ET_EXEC) && (buffer[0] == ELFMAG0) && (buffer[1] == ELFMAG1) && (buffer[2] == ELFMAG2) && (buffer[3] == ELFMAG3))
-			return JST_ELF32;
-	}
 
 	// ABS/COFF type 1
 	if (buffer[0] == 0x60 && buffer[1] == 0x1B)

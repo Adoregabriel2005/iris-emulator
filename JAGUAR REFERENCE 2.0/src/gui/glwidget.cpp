@@ -5,13 +5,11 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  -------------------------------------------------------------
 // JLH  01/14/2010  Created this file
 // JLH  02/03/2013  Added "centered" fullscreen mode with correct aspect ratio
-// JPM  06/06/2016  Visual Studio support
 //
 
 #include "glwidget.h"
@@ -20,10 +18,7 @@
 #include "settings.h"
 #include "tom.h"
 
-#if defined(__GCCWIN32__) || defined(_MSC_VER)
-#if defined(_MSC_VER)
-#include <GL/gl.h>
-#endif
+#ifdef __GCCWIN32__
 // Apparently on win32, various OpenGL constants aren't pulled in.
 #include <GL/glext.h>
 #endif

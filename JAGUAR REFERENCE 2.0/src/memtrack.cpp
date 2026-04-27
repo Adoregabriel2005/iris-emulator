@@ -15,20 +15,18 @@
 // adjust for that when reading from/writing to the NVRAM.
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  -----------------------------------------------------------
 // JLH  06/12/2016  Created this file ;-)
-// JPM  06/06/2016  Visual Studio support
 //
 
 #include "memtrack.h"
 
 #include <stdlib.h>
 #include <string.h>
-#include "log.h"		// JPM: changed <log.h> to "log.h"
-#include "settings.h"	// JPM: changed <settings.h> to "settings.h"
+#include <log.h>
+#include <settings.h>
 
 
 #define MEMTRACK_FILENAME	"memtrack.eeprom"

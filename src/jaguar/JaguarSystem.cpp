@@ -28,12 +28,17 @@
 #include <cstring>
 #include <algorithm>
 
+
 extern VJSettings  vjs;
 extern bool        jaguarCartInserted;
 extern uint8_t     jagMemSpace[];
 extern bool        frameDone;
 extern uint32_t    jaguarMainROMCRC32;
 extern uint32_t    jaguarRunAddress;
+extern unsigned char* joypad0Buttons;
+extern unsigned char* joypad1Buttons;
+
+#include "JaguarSafeWrite.h"
 
 JaguarSystem::JaguarSystem(QObject *parent)
     : IEmulatorCore(parent)

@@ -3,12 +3,6 @@
 //
 // All Jaguar related memory and I/O locations are contained in this file
 //
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
-//
-// Who  When        What
-// ---  ----------  -------------------------------------------------------------
-// JPM  06/16/2016  Added a Big to Little endian
-//
 
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
@@ -95,9 +89,6 @@ extern const char * whoName[10];
 #define GET32(r, a)		((r[(a)] << 24) | (r[(a)+1] << 16) | (r[(a)+2] << 8) | r[(a)+3])
 #define SET16(r, a, v)	r[(a)] = ((v) & 0xFF00) >> 8, r[(a)+1] = (v) & 0xFF
 #define GET16(r, a)		((r[(a)] << 8) | r[(a)+1])
-
-#define	BigToLittleEndian16(a)	(((a & 0xFF) << 8) | (a >> 8))
-#define	BigToLittleEndian32(a)	(((a & 0xFF) << 24) | ((a & 0xFF00) << 8) | ((a & 0xFF0000) >> 8) | ((a & 0xFF000000) >> 24))
 
 //This doesn't seem to work on OSX. So have to figure something else out. :-(
 //byteswap.h doesn't exist on OSX.

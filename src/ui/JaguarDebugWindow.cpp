@@ -59,6 +59,8 @@ JaguarDebugWindow::JaguarDebugWindow(QWidget* parent)
     m_tabs->addTab(buildTOMTab(),         tr("TOM Registers"));
     m_tabs->addTab(buildCPUTab(),         tr("68K CPU"));
     m_tabs->addTab(buildFramebufferTab(), tr("Framebuffer"));
+    m_tabs->addTab(buildBlitterTab(),     tr("Blitter"));
+    m_tabs->addTab(buildMemWatchTab(),    tr("Mem Watch"));
     m_tabs->addTab(buildVJLogTab(),       tr("VJ Log File"));
     m_tabs->addTab(buildDiagTab(),        tr("Diagnóstico"));
     layout->addWidget(m_tabs, 1);
@@ -356,7 +358,124 @@ QWidget* JaguarDebugWindow::buildVJLogTab()
     return w;
 }
 
-// ─── Refresh ─────────────────────────────────────────────────────────────────
+void JaguarDebugWindow::onMemoryWrite(uint32_t addr, uint32_t val, int who)
+{
+    if (!isVisible()) return;
+    const char* src = (who == 0) ? "68K" : (who == 1) ? "GPU" : "DSP";
+    m_mw_pending.append(QString("%1  $%2 = $%3")
+        .arg(src)
+        .arg(addr, 8, 16, QChar('0')).toUpper()
+        .arg(val,  8, 16, QChar('0')).toUpper());
+    if (m_mw_pending.size() > 500) m_mw_pending.removeFirst();
+}
+
+void JaguarDebugWindow::onBlitterOp(uint32_t dst, uint32_t src,
+                                     uint32_t w,   uint32_t h,
+                                     uint32_t cmd, uint32_t dstFlags, uint32_t srcFlags)
+{
+    if (!isVisible()) return;
+    m_blt_pending.append(QString("DST=$%1 SRC=$%2 %3x%4 CMD=$%5 df=$%6 sf=$%7")
+        .arg(dst,      8, 16, QChar('0')).toUpper()
+        .arg(src,      8, 16, QChar('0')).toUpper()
+        .arg(w).arg(h)
+        .arg(cmd,      8, 16, QChar('0')).toUpper()
+        .arg(dstFlags, 8, 16, QChar('0')).toUpper()
+        .arg(srcFlags, 8, 16, QChar('0')).toUpper());
+    if (m_blt_pending.size() > 200) m_blt_pending.removeFirst();
+}
+
+// ─── Blitter Tab ─────────────────────────────────────────────────────────────
+QWidget* JaguarDebugWindow::buildBlitterTab()
+{
+    auto* w = new QWidget();
+    auto* layout = new QVBoxLayout(w);
+
+    auto* grid = new QGridLayout();
+    grid->setSpacing(4);
+    int r = 0;
+    auto addRow = [&](const QString& name, QLabel*& lbl) {
+        grid->addWidget(new QLabel(name + ":", w), r, 0);
+        lbl = makeLabel(w);
+        grid->addWidget(lbl, r++, 1);
+    };
+    addRow("A1_BASE",  m_blt_a1base);
+    addRow("A2_BASE",  m_blt_a2base);
+    addRow("A1_FLAGS", m_blt_a1flags);
+    addRow("A2_FLAGS", m_blt_a2flags);
+    addRow("A1_PIXEL", m_blt_a1pixel);
+    addRow("A2_PIXEL", m_blt_a2pixel);
+    addRow("B_CMD",    m_blt_cmd);
+    addRow("B_COUNT",  m_blt_count);
+    addRow("Working",  m_blt_working);
+    layout->addLayout(grid);
+
+    m_blt_log = new QPlainTextEdit(w);
+    m_blt_log->setReadOnly(true);
+    m_blt_log->setMaximumBlockCount(300);
+    QFont f("Courier New", 8); f.setStyleHint(QFont::Monospace);
+    m_blt_log->setFont(f);
+    m_blt_log->setStyleSheet("QPlainTextEdit{background:#0a0a0a;color:#88ccff;}");
+    layout->addWidget(m_blt_log, 1);
+
+    auto* clrBtn = new QPushButton(tr("Clear Log"), w);
+    connect(clrBtn, &QPushButton::clicked, m_blt_log, &QPlainTextEdit::clear);
+    layout->addWidget(clrBtn);
+    return w;
+}
+
+// ─── Memory Watch Tab ────────────────────────────────────────────────────────
+QWidget* JaguarDebugWindow::buildMemWatchTab()
+{
+    auto* w = new QWidget();
+    auto* layout = new QVBoxLayout(w);
+
+    auto* info = new QLabel(tr(
+        "Monitora escritas em faixas de endereço.<br>"
+        "Endereços em hex (ex: <b>F02100</b>). Tamanho em bytes."), w);
+    info->setWordWrap(true);
+    layout->addWidget(info);
+
+    auto* row = new QHBoxLayout();
+    row->addWidget(new QLabel(tr("Addr:"), w));
+    m_mw_addr = new QLineEdit(w); m_mw_addr->setPlaceholderText("F02100");
+    m_mw_addr->setMaximumWidth(90);
+    row->addWidget(m_mw_addr);
+    row->addWidget(new QLabel(tr("Size:"), w));
+    m_mw_size = new QLineEdit(w); m_mw_size->setPlaceholderText("4");
+    m_mw_size->setMaximumWidth(60);
+    row->addWidget(m_mw_size);
+    m_mw_add   = new QPushButton(tr("Add"), w);
+    m_mw_clear = new QPushButton(tr("Clear All"), w);
+    row->addWidget(m_mw_add);
+    row->addWidget(m_mw_clear);
+    row->addStretch();
+    layout->addLayout(row);
+
+    m_mw_log = new QPlainTextEdit(w);
+    m_mw_log->setReadOnly(true);
+    m_mw_log->setMaximumBlockCount(1000);
+    QFont f("Courier New", 8); f.setStyleHint(QFont::Monospace);
+    m_mw_log->setFont(f);
+    m_mw_log->setStyleSheet("QPlainTextEdit{background:#0a0a0a;color:#ffaa44;}");
+    layout->addWidget(m_mw_log, 1);
+
+    connect(m_mw_add, &QPushButton::clicked, this, [this]() {
+        bool ok1, ok2;
+        uint32_t addr = m_mw_addr->text().toUInt(&ok1, 16);
+        uint32_t size = m_mw_size->text().toUInt(&ok2, 10);
+        if (!ok1 || !ok2 || size == 0) return;
+        m_watchpoints.append({addr, size});
+        m_mw_log->appendPlainText(QString("[Watch] $%1 size=%2")
+            .arg(addr, 8, 16, QChar('0')).toUpper().arg(size));
+    });
+    connect(m_mw_clear, &QPushButton::clicked, this, [this]() {
+        m_watchpoints.clear();
+        m_mw_log->clear();
+    });
+    return w;
+}
+
+// ─── Refresh (append pending) ─────────────────────────────────────────────────
 void JaguarDebugWindow::refresh()
 {
     // ── Flush pending diag lines to display ──────────────────────────────────
@@ -366,6 +485,22 @@ void JaguarDebugWindow::refresh()
         m_diagPending.clear();
         m_diagLog->verticalScrollBar()->setValue(
             m_diagLog->verticalScrollBar()->maximum());
+    }
+
+    // ── Flush blitter log ────────────────────────────────────────────────────
+    if (m_blt_log && !m_blt_pending.isEmpty()) {
+        for (const QString& l : m_blt_pending)
+            m_blt_log->appendPlainText(l);
+        m_blt_pending.clear();
+        m_blt_log->verticalScrollBar()->setValue(m_blt_log->verticalScrollBar()->maximum());
+    }
+
+    // ── Flush memory watch log ───────────────────────────────────────────────
+    if (m_mw_log && !m_mw_pending.isEmpty()) {
+        for (const QString& l : m_mw_pending)
+            m_mw_log->appendPlainText(l);
+        m_mw_pending.clear();
+        m_mw_log->verticalScrollBar()->setValue(m_mw_log->verticalScrollBar()->maximum());
     }
 
     if (!m_core || !m_core->isRunning()) return;
@@ -420,4 +555,31 @@ void JaguarDebugWindow::refresh()
     m_fb_visH   ->setText(QString::number(std::clamp(calcVisH, 100, 576)));
     m_fb_runAddr->setText(QString("$%1").arg(jaguarRunAddress, 8, 16, QChar('0')).toUpper());
     m_fb_crc    ->setText(QString("$%1").arg(jaguarMainROMCRC32, 8, 16, QChar('0')).toUpper());
+
+    // ── Blitter registers (TOM blitter at $F02200) ──────────────────────────────
+    if (m_blt_a1base) {
+        extern uint8_t tomRam8[];
+        // Blitter regs in TOM RAM at offsets 0x00-0x7F (relative to $F02200)
+        auto blt32 = [](int off) -> uint32_t {
+            extern uint8_t tomRam8[];
+            return ((uint32_t)tomRam8[off]<<24)|((uint32_t)tomRam8[off+1]<<16)
+                  |((uint32_t)tomRam8[off+2]<<8)|tomRam8[off+3];
+        };
+        auto blt16 = [](int off) -> uint16_t {
+            extern uint8_t tomRam8[];
+            return (uint16_t)((tomRam8[off]<<8)|tomRam8[off+1]);
+        };
+        // A1_BASE=$F02200+0x00, A2_BASE+0x10, A1_FLAGS+0x04, A2_FLAGS+0x14
+        // A1_PIXEL+0x0C, A2_PIXEL+0x1C, B_CMD+0x38, B_COUNT+0x28
+        m_blt_a1base ->setText(QString("$%1").arg(blt32(0x00), 8,16,QChar('0')).toUpper());
+        m_blt_a1flags->setText(QString("$%1").arg(blt32(0x04), 8,16,QChar('0')).toUpper());
+        m_blt_a1pixel->setText(QString("$%1").arg(blt32(0x0C), 8,16,QChar('0')).toUpper());
+        m_blt_a2base ->setText(QString("$%1").arg(blt32(0x10), 8,16,QChar('0')).toUpper());
+        m_blt_a2flags->setText(QString("$%1").arg(blt32(0x14), 8,16,QChar('0')).toUpper());
+        m_blt_a2pixel->setText(QString("$%1").arg(blt32(0x1C), 8,16,QChar('0')).toUpper());
+        m_blt_cmd    ->setText(QString("$%1").arg(blt32(0x38), 8,16,QChar('0')).toUpper());
+        m_blt_count  ->setText(QString("$%1").arg(blt32(0x28), 8,16,QChar('0')).toUpper());
+        // B_CMD bit 0 = SRCEN, working = cmd != 0
+        m_blt_working->setText(blt32(0x38) ? tr("YES") : tr("idle"));
+    }
 }

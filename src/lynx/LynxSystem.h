@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IEmulatorCore.h"
+#include "SDLInput.h"
 
 #include <SDL.h>
 #include <cstdint>
@@ -37,13 +38,23 @@ public:
     bool saveState(const QString &path) override;
     bool loadState(const QString &path) override;
 
-    void setJoystickState(const JoystickState &s) override;
+    void setJoystickState(const JoystickState &s) override;  // legacy — maps 2600 actions to Lynx
+    void setLynxInputState(const LynxInputState &s);         // native Lynx input with correct semantics
 
     void initAudio(const QString &deviceName = QString()) override;
     void closeAudio() override;
     void setAudioVolume(int percent) override;
     void setAudioEnabled(bool enabled) override;
     bool isAudioEnabled() const override { return m_audio_enabled; }
+
+    // Debug information access (for DebugWindow)
+    struct DebugInfo {
+        uint16_t pc = 0;
+        uint8_t a = 0, x = 0, y = 0, sp = 0, p = 0;
+        uint64_t totalCycles = 0;
+        bool isRunning = false;
+    };
+    DebugInfo getDebugInfo() const;
 
 private:
     bool m_running = false;

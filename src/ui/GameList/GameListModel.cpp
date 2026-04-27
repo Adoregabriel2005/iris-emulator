@@ -54,6 +54,7 @@ GameListModel::GameListModel(QObject* parent)
     };
     m_atari2600_logo = loadSvgPixmap(QStringLiteral(":/icons/white/svg/console-atari2600.svg"), 20);
     m_atarilynx_logo = loadSvgPixmap(QStringLiteral(":/icons/white/svg/console-atarilynx.svg"), 20);
+    m_atarijaguar_logo = loadSvgPixmap(QStringLiteral(":/icons/white/svg/console-atarijaguar.svg"), 20);
 }
 
 GameListModel::~GameListModel()
@@ -94,7 +95,9 @@ QVariant GameListModel::data(const QModelIndex& index, int role) const
             case Column_Mapper:
                 return entry.mapperType;
             case Column_Console:
-                return entry.consoleType == ConsoleType::AtariLynx ? QStringLiteral("Lynx") : QStringLiteral("2600");
+                if (entry.consoleType == ConsoleType::AtariLynx)    return QStringLiteral("Lynx");
+                if (entry.consoleType == ConsoleType::AtariJaguar)   return QStringLiteral("Jaguar");
+                return QStringLiteral("2600");
             default:
                 return {};
         }
@@ -109,8 +112,8 @@ QVariant GameListModel::data(const QModelIndex& index, int role) const
         }
         if (index.column() == Column_Console)
         {
-            if (entry.consoleType == ConsoleType::AtariLynx)
-                return m_atarilynx_logo;
+            if (entry.consoleType == ConsoleType::AtariLynx)   return m_atarilynx_logo;
+            if (entry.consoleType == ConsoleType::AtariJaguar) return m_atarijaguar_logo;
             return m_atari2600_logo;
         }
     }
@@ -212,7 +215,7 @@ void GameListModel::scanDirectories()
 
 void GameListModel::scanDirectory(const QString& dir)
 {
-    static const QStringList romExtensions = {"*.bin", "*.a26", "*.rom", "*.lnx", "*.lyx"};
+    static const QStringList romExtensions = {"*.bin", "*.a26", "*.rom", "*.lnx", "*.lyx", "*.j64", "*.jag"};
 
     QDirIterator it(dir, romExtensions, QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext())
@@ -232,6 +235,11 @@ void GameListModel::scanDirectory(const QString& dir)
         {
             entry.consoleType = ConsoleType::AtariLynx;
             entry.mapperType = QStringLiteral("Lynx");
+        }
+        else if (suffix == "j64" || suffix == "jag")
+        {
+            entry.consoleType = ConsoleType::AtariJaguar;
+            entry.mapperType = QStringLiteral("Jaguar");
         }
         else
         {

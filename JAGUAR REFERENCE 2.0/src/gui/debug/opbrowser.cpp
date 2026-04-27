@@ -51,19 +51,16 @@ void OPBrowserWindow::RefreshContents(void)
 	char string[1024];//, buf[64];
 	QString opDump;
 
-	if (isVisible())
-	{
-		uint32_t olp = OPGetListPointer();
-		sprintf(string, "OLP = $%X<br>", olp);
-		opDump += QString(string);
+	uint32_t olp = OPGetListPointer();
+	sprintf(string, "OLP = $%X<br>", olp);
+	opDump += QString(string);
 
-		numberOfObjects = 0;
-		DiscoverObjects(olp);
-		DumpObjectList(opDump);
+	numberOfObjects = 0;
+	DiscoverObjects(olp);
+	DumpObjectList(opDump);
 
-		text->clear();
-		text->setText(opDump);
-	}
+	text->clear();
+	text->setText(opDump);
 }
 
 

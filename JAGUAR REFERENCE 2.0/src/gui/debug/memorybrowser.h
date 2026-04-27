@@ -8,7 +8,7 @@
 #ifndef __MEMORYBROWSER_H__
 #define __MEMORYBROWSER_H__
 
-#include <QtWidgets/QtWidgets>
+#include <QtWidgets>
 #include <stdint.h>
 
 class MemoryBrowserWindow: public QWidget

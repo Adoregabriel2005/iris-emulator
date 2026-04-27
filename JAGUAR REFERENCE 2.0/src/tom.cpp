@@ -7,13 +7,11 @@
 // (C) 2010 Underground Software
 //
 // JLH = James Hammons <jlhamm@acm.org>
-// JPM = Jean-Paul Mari <djipi.mari@gmail.com>
 //
 // Who  When        What
 // ---  ----------  -----------------------------------------------------------
 // JLH  01/16/2010  Created this log ;-)
 // JLH  01/20/2011  Change rendering to RGBA, removed unnecessary code
-// JPM  06/06/2016  Visual Studio support
 //
 // Note: TOM has only a 16K memory space
 //
@@ -564,11 +562,7 @@ uint32_t CRY16ToRGB32[0x10000];
 uint32_t MIX16ToRGB32[0x10000];
 
 
-#ifdef _MSC_VER
-#pragma message("Warning: This is not endian-safe. !!! FIX !!!")
-#else
 #warning "This is not endian-safe. !!! FIX !!!"
-#endif // _MSC_VER
 void TOMFillLookupTables(void)
 {
 	// NOTE: Jaguar 16-bit (non-CRY) color is RBG 556 like so:
@@ -639,11 +633,7 @@ uint8_t TOMGetVideoMode(void)
 
 
 //Used in only one place (and for debug purposes): OBJECTP.CPP
-#ifdef _MSC_VER
-#pragma message("Warning: Used in only one place (and for debug purposes): OBJECTP.CPP !!! FIX !!!")
-#else
 #warning "Used in only one place (and for debug purposes): OBJECTP.CPP !!! FIX !!!"
-#endif // _MSC_VER
 uint16_t TOMGetVDB(void)
 {
 	return GET16(tomRam8, VDB);
@@ -987,12 +977,7 @@ TOM: Vertical Interrupt written by M68K: 491
 	{
 		if (inActiveDisplayArea)
 		{
-//NOTE: The following doesn't put BORDER color on the sides... !!! FIX !!!
-#ifdef _MSC_VER
-#pragma message("Warning: The following doesn't put BORDER color on the sides... !!! FIX !!!")
-#else
 #warning "The following doesn't put BORDER color on the sides... !!! FIX !!!"
-#endif // _MSC_VER
 			if (vjs.renderType == RT_NORMAL)
 			{
 				scanline_render[TOMGetVideoMode()](TOMCurrentLine);
@@ -1555,11 +1540,7 @@ if (offset >= 0xF02000 && offset <= 0xF020FF)
 		// Writing to one CLUT writes to the other
 		offset &= 0x5FF;		// Mask out $F00600 (restrict to $F00400-5FF)
 // Watch out for unaligned writes here! (Not fixed yet)
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Watch out for unaligned writes here !!! FIX !!!")
-#else
 #warning "!!! Watch out for unaligned writes here !!! FIX !!!"
-#endif // _MSC_VER
 		SET16(tomRam8, offset, data);
 		SET16(tomRam8, offset + 0x200, data);
 	}
@@ -1567,11 +1548,7 @@ if (offset >= 0xF02000 && offset <= 0xF020FF)
 	offset &= 0x3FFF;
 	if (offset == 0x28)			// VMODE (Why? Why not OBF?)
 //Actually, we should check to see if the Enable bit of VMODE is set before doing this... !!! FIX !!!
-#ifdef _MSC_VER
-#pragma message("Warning: Actually, we should check to see if the Enable bit of VMODE is set before doing this... !!! FIX !!!")
-#else
 #warning "Actually, we should check to see if the Enable bit of VMODE is set before doing this... !!! FIX !!!"
-#endif // _MSC_VER
 		objectp_running = 1;
 
 	if (offset >= 0x30 && offset <= 0x4E)
@@ -1651,11 +1628,7 @@ if (offset == HEQ)
 // handle this kind of crap.
 // NOTE: This is needed somehow, need to get rid of the dependency on this crap.
 //       N.B.: It's used in the rendering functions... So...
-#ifdef _MSC_VER
-#pragma message("Warning: !!! Need to get rid of this dependency !!!")
-#else
 #warning "!!! Need to get rid of this dependency !!!"
-#endif // _MSC_VER
 #if 1
 	if ((offset >= 0x28) && (offset <= 0x4F))
 	{
@@ -1665,11 +1638,7 @@ if (offset == HEQ)
 		{
 			tomWidth = width, tomHeight = height;
 
-#ifdef _MSC_VER
-#pragma message("Warning: !!! TOM: ResizeScreen commented out !!!")
-#else
 #warning "!!! TOM: ResizeScreen commented out !!!"
-#endif // _MSC_VER
 // No need to resize anything, since we're prepared for this...
 //			if (vjs.renderType == RT_NORMAL)
 //				ResizeScreen(tomWidth, tomHeight);

@@ -21,9 +21,6 @@
 #include "jagbios.h"
 #include "wavetable.h"
 
-
-#ifdef USE_NEW_MMU
-
 /*
 Addresses to be handled:
 
@@ -201,9 +198,9 @@ struct MemDesc {
 
 MemDesc memoryMap[] = {
 	{ 0x000000, 0x1FFFFF, MM_RAM,  jaguarMainRAM },
-	{ 0x200000, 0x3FFFFF, MM_RAM,  jaguarMainRAM }, // Mirror of 1st 2 megs or next 2nd 2 megs of ram
-	{ 0x400000, 0x5FFFFF, MM_RAM,  jaguarMainRAM }, // "         "          or next 3rd 2 megs of ram
-	{ 0x600000, 0x7FFFFF, MM_RAM,  jaguarMainRAM }, // "         "          or next 4th 2 megs of ram
+	{ 0x200000, 0x3FFFFF, MM_RAM,  jaguarMainRAM }, // Mirror of 1st 2 megs
+	{ 0x400000, 0x5FFFFF, MM_RAM,  jaguarMainRAM }, // "         "
+	{ 0x600000, 0x7FFFFF, MM_RAM,  jaguarMainRAM }, // "         "
 	{ 0x800000, 0xDFFEFF, MM_ROM,  jaguarMainROM },
 
 	{ 0xDFFF00, 0xDFFF03, MM_IO,   &butch }, // base of Butch == interrupt control register, R/W
@@ -518,7 +515,7 @@ uint8_t MMURead8(uint32_t address, uint32_t who/*= UNKNOWN*/)
 	}
 
 	uint32_t offset = address - memory.startAddr;
-	//uint32_t size = memory.endAddr - memory.startAddr + 1;
+	uint32_t size = memory.endAddr - memory.startAddr + 1;
 	uint8_t byteShift[8] = { 0, 8, 16, 24, 32, 40, 48, 56 };
 
 	if (memory.type == MM_RAM || memory.type == MM_ROM)
@@ -609,5 +606,3 @@ uint64_t MMURead64(uint32_t address, uint32_t who/*= UNKNOWN*/)
 	return 0;
 }
 
-
-#endif
