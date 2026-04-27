@@ -18,7 +18,12 @@ public:
         CRT,         // CRT completo: scanlines + vignette + curvatura + phosphor
         Smooth,      // Bilinear suave
         LCD,         // Grid LCD — especifico pro Lynx
-        LCDBlur      // LCD com ghosting/blur — simula tela original do Lynx
+        LCDBlur,     // LCD com ghosting/blur — simula tela original do Lynx
+        AV,          // Composite (AV) — simula artefatos de cor e sinal
+        SVideo,      // S-Video — separação luma/chroma melhorada
+        VGA,         // VGA — alta resolução com scanlines finas (31kHz)
+        RGB_RGB,     // RGB — cores puras com máscara de fósforo
+        Crispy       // "Pixels Crocantes" — Nearest Neighbor puro
     };
 
     explicit DisplayWidget(QWidget* parent = nullptr);
@@ -50,6 +55,14 @@ private:
     void drawScanlines(QPainter& painter, const QRect& rect);
     void drawCRT(QPainter& painter, const QRect& rect);
     void drawLCD(QPainter& painter, const QRect& rect);
+    
+    // Novas funcoes de filtro para Jaguar/CatBox
+    void drawAVArtifacts(QPainter& painter, const QRect& rect);
+    void drawSVideoArtifacts(QPainter& painter, const QRect& rect);
+    void drawVGAScanlines(QPainter& painter, const QRect& rect);
+    void drawRGBMask(QPainter& painter, const QRect& rect);
+    void drawBloom(QPainter& painter, const QRect& rect);
+
     QImage applyLCDBlur(const QImage& src) const;
 
     QImage m_current_frame;

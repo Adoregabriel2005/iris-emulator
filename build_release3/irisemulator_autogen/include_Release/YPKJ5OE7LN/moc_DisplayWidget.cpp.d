@@ -2,7 +2,6 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/YPKJ5O
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/QList \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/QObject \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/QRect \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/QScopedPointer \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/QSize \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/QSizeF \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/q20functional.h \
@@ -138,9 +137,7 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/YPKJ5O
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qyieldcpu.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/QImage \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/QKeyEvent \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/QOpenGLFunctions \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/QPaintEvent \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/QSurfaceFormat \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/QTransform \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qaction.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qbitmap.h \
@@ -152,7 +149,6 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/YPKJ5O
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qfont.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qfontinfo.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qfontmetrics.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qgenericmatrix.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qguiapplication.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qguiapplication_platform.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qicon.h \
@@ -160,53 +156,28 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/YPKJ5O
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qinputdevice.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qinputmethod.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qkeysequence.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qmatrix4x4.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qopengl.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qopenglcontext.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qopenglcontext_platform.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qopenglext.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qopenglfunctions.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qpaintdevice.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qpalette.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qpixelformat.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qpixmap.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qpointingdevice.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qpolygon.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qquaternion.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qregion.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qrgb.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qrgba64.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qscreen.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qscreen_platform.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qsurfaceformat.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qtgui-config.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qtguiexports.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qtguiglobal.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qtransform.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qvector2d.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qvector3d.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qvector4d.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qvectornd.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qwindowdefs.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qwindowdefs_win.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGL/QOpenGLBuffer \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGL/QOpenGLShaderProgram \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGL/QOpenGLTexture \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGL/QOpenGLVertexArrayObject \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGL/qopenglbuffer.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGL/qopenglshaderprogram.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGL/qopengltexture.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGL/qopenglvertexarrayobject.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGL/qtopenglexports.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGL/qtopenglglobal.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGLWidgets/QOpenGLWidget \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGLWidgets/qopenglwidget.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGLWidgets/qtopenglwidgetsexports.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtOpenGLWidgets/qtopenglwidgetsglobal.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtWidgets/QWidget \
   D:/Qt/6.8.3/msvc2022_64/include/QtWidgets/qsizepolicy.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtWidgets/qtwidgets-config.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtWidgets/qtwidgetsexports.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtWidgets/qtwidgetsglobal.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtWidgets/qwidget.h \
-  D:/vcpkg/installed/x64-windows/include/GL/gl.h
+  D:/Qt/6.8.3/msvc2022_64/include/QtWidgets/qwidget.h

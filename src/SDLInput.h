@@ -152,7 +152,9 @@ public:
 
 private:
     void openController();
+    void openController(int index);
     void closeController();
+    void applyProfile(const QString& profileName);
     bool isActionActive(const InputBinding& binding, const Uint8* keys) const;
     static SDL_Scancode qtKeyToSdlScancode(int qtKey);
 

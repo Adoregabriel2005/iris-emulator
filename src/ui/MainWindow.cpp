@@ -397,43 +397,41 @@ void MainWindow::connectSignals()
 
     // Emulation timer -> drives frame stepping
     connect(m_emulation_timer, &QTimer::timeout, this, [this]() {
-        if (m_active_core && m_active_core->isRunning())
-        {
-            // Poll SDL input — use system-specific input when available
-            if (m_jaguar_core && m_active_core == m_jaguar_core) {
-                JaguarInputState js = m_sdl_input->pollJaguar();
-                m_jaguar_core->setJaguarInputState(js);
-            } else if (m_lynx_core && m_active_core == m_lynx_core) {
-                LynxInputState js = m_sdl_input->pollLynx();
-                m_lynx_core->setLynxInputState(js);
-            } else {
-                JoystickState js = m_sdl_input->poll();
-                m_active_core->setJoystickState(js);
-            }
-
-            // Step one frame
-            m_active_core->step();
-
-            // Get frame and display it
-            QImage frame = m_active_core->getFrame();
-            if (!frame.isNull())
+        try {
+            if (m_active_core && m_is_running && !m_ui.actionPause->isChecked())
             {
-                m_display_widget->updateFrame(frame);
-            }
+                if (m_jaguar_core && m_active_core == m_jaguar_core) {
+                    JaguarInputState js = m_sdl_input->pollJaguar();
+                    m_jaguar_core->setJaguarInputState(js);
+                } else if (m_lynx_core && m_active_core == m_lynx_core) {
+                    LynxInputState js = m_sdl_input->pollLynx();
+                    m_lynx_core->setLynxInputState(js);
+                } else {
+                    JoystickState js = m_sdl_input->poll();
+                    m_active_core->setJoystickState(js);
+                }
 
-            // FPS counter
-            m_fps_frame_count++;
-            qint64 elapsed = m_fps_timer.elapsed();
-            if (elapsed >= 1000)
-            {
-                double fps = m_fps_frame_count * 1000.0 / elapsed;
-                double speed = fps / 60.0 * 100.0;
-                m_status_fps_widget->setText(QString("%1 FPS (%2%)")
-                    .arg(fps, 0, 'f', 1).arg(speed, 0, 'f', 0));
-                m_status_fps_widget->show();
-                m_fps_frame_count = 0;
-                m_fps_timer.restart();
+                // qDebug() << "MainWindow: Ticking core...";
+                m_active_core->step();
+                
+                QImage frame = m_active_core->getFrame();
+                if (!frame.isNull())
+                {
+                    m_display_widget->updateFrame(frame);
+                }
+                
+                m_fps_frame_count++;
+                if (m_fps_timer.elapsed() >= 1000)
+                {
+                    float fps = m_fps_frame_count / (m_fps_timer.elapsed() / 1000.0f);
+                    m_status_fps_widget->setText(QString("FPS: %1").arg(fps, 0, 'f', 1));
+                    m_fps_frame_count = 0;
+                    m_fps_timer.restart();
+                }
             }
+        } catch (...) {
+            qCritical() << "MainWindow: CRASH in emulation timer loop!";
+            stopEmulation();
         }
     });
 }
@@ -852,6 +850,8 @@ void MainWindow::onFrameReady(const QImage& frame)
 {
     if (m_display_widget)
         m_display_widget->updateFrame(frame);
+    if (m_separate_display)
+        m_separate_display->updateFrame(frame);
 }
 
 // --- View switching (PCSX2 pattern) ---
@@ -959,6 +959,28 @@ void MainWindow::startROM(const QString& path)
 
     m_active_core->start();
 
+    // Check for Separate Window mode (Jaguar only)
+    if (actualConsole == ConsoleMode::AtariJaguar) {
+        QSettings settings;
+        if (settings.value("Jaguar/SeparateWindow", false).toBool()) {
+        if (!m_separate_window) {
+            m_separate_window = new QMainWindow(this);
+            m_separate_window->setWindowTitle(tr("Íris - Jaguar Display [%1]").arg(m_current_game_title));
+            m_separate_window->setMinimumSize(640, 480);
+            m_separate_display = new DisplayWidget(m_separate_window);
+            m_separate_window->setCentralWidget(m_separate_display);
+            m_separate_window->show();
+            
+            // Connect close event of separate window to stop emulation
+            connect(m_separate_window, &QMainWindow::destroyed, this, [this]() {
+                m_separate_window = nullptr;
+                m_separate_display = nullptr;
+                stopEmulation();
+            });
+        }
+    }
+}
+
     // Initialize audio output
     {
         QSettings audioSettings;
@@ -998,6 +1020,13 @@ void MainWindow::stopEmulation()
         m_active_core->closeAudio();
     }
 
+    if (m_separate_window) {
+        m_separate_window->close();
+        m_separate_window->deleteLater();
+        m_separate_window = nullptr;
+        m_separate_display = nullptr;
+    }
+
     m_active_core = nullptr;
     m_current_rom_path.clear();
     m_current_game_title.clear();
@@ -1010,17 +1039,23 @@ void MainWindow::applyVideoSettings()
     QSettings settings;
     QString filterStr = settings.value("Video/Filter", "none").toString();
     QString lynxFilterStr = settings.value("Video/LynxFilter", "smooth").toString();
+    QString jagFilterStr = settings.value("Jaguar/VideoMode", "crispy").toString();
 
     // Escolhe o filtro certo baseado no console ativo
     bool isLynx = (m_active_core == m_lynx_core);
-    QString activeFilter = isLynx ? lynxFilterStr : filterStr;
+    bool isJag  = (m_active_core == m_jaguar_core);
+    QString activeFilter = isJag ? jagFilterStr : (isLynx ? lynxFilterStr : filterStr);
 
     auto strToFilter = [](const QString& s) {
         if (s == "scanlines") return DisplayWidget::ScreenFilter::Scanlines;
         if (s == "crt")       return DisplayWidget::ScreenFilter::CRT;
-        if (s == "smooth")    return DisplayWidget::ScreenFilter::Smooth;
+        if (s == "smooth" || s == "bilinear")    return DisplayWidget::ScreenFilter::Smooth;
         if (s == "lcd")       return DisplayWidget::ScreenFilter::LCD;
         if (s == "lcdblur")   return DisplayWidget::ScreenFilter::LCDBlur;
+        if (s == "av")        return DisplayWidget::ScreenFilter::AV;
+        if (s == "svideo")    return DisplayWidget::ScreenFilter::SVideo;
+        if (s == "vga")       return DisplayWidget::ScreenFilter::VGA;
+        if (s == "crispy")    return DisplayWidget::ScreenFilter::Crispy;
         return DisplayWidget::ScreenFilter::None;
     };
 

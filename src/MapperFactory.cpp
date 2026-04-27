@@ -71,19 +71,40 @@ std::unique_ptr<Mapper> MapperFactory::createMapperForROM(const QByteArray *rom,
         return std::make_unique<MapperNone>(rom);
     }
 
-    // Detect Superchip: look for accesses to $1000-$10FF in ROM
+    // Detect Superchip: 
+    // 1. Signature check: look for empty/FF space in the first 256 bytes of each 4KB bank
+    // 2. Opcode check: look for accesses to $1000-$10FF in ROM
     bool hasSC = false;
-    if (rom) {
-        const char* d = rom->constData();
+    if (rom && size > 0) {
+        const uint8_t* d = reinterpret_cast<const uint8_t*>(rom->constData());
+        
+        // Heuristic A: Content Signature (RAM space in ROM is usually null or FF)
+        bool scSignature = true;
+        for (int i = 0; i < size; i += 0x1000) {
+            // Only check if we have at least 256 bytes in the bank
+            int limit = qMin(256, size - i);
+            bool allZero = true;
+            bool allFF   = true;
+            for (int k = 0; k < limit; k++) {
+                if (d[i + k] != 0x00) allZero = false;
+                if (d[i + k] != 0xFF) allFF   = false;
+            }
+            if (!allZero && !allFF) {
+                scSignature = false;
+                break;
+            }
+        }
+
+        // Heuristic B: Opcode access detection (Check if code actually tries to use the RAM area)
         int scCount = 0;
-        for (int i = 0; i < size - 1; i++) {
-            uint8_t lo = static_cast<uint8_t>(d[i]);
-            uint8_t hi = static_cast<uint8_t>(d[i+1]);
+        for (int i = 0; i < size - 2; i++) {
+            uint8_t lo = d[i];
+            uint8_t hi = d[i+1];
             // Look for addresses $1000-$10FF (STA $10xx or LDA $10xx)
             if (hi == 0x10 && lo <= 0xFF) {
                 // Check if previous byte is a load/store opcode
                 if (i > 0) {
-                    uint8_t op = static_cast<uint8_t>(d[i-1]);
+                    uint8_t op = d[i-1];
                     // Common absolute addressing opcodes: LDA=0xAD, STA=0x8D, LDX=0xAE, STX=0x8E, LDY=0xAC, STY=0x8C
                     if (op == 0xAD || op == 0x8D || op == 0xAE || op == 0x8E || op == 0xAC || op == 0x8C) {
                         scCount++;
@@ -91,7 +112,10 @@ std::unique_ptr<Mapper> MapperFactory::createMapperForROM(const QByteArray *rom,
                 }
             }
         }
-        hasSC = (scCount >= 8);
+        
+        // Combine them: if it has the signature, we only need a few accesses (or even none if size > 4KB)
+        // If it doesn't have the signature, it's definitely NOT Superchip (prevents F8/H.E.R.O misdetection)
+        hasSC = scSignature && (scCount >= 2);
     }
 
     // Heuristics by common ROM sizes

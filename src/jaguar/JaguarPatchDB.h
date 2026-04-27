@@ -92,17 +92,10 @@ static constexpr JagPatchEntry kCMPatches[] = {
 // ── Master patch table ────────────────────────────────────────────────────────
 // CRC32 values will be matched against jaguarMainROMCRC32 at load time.
 // Values marked TODO need to be confirmed by loading the ROM and logging the CRC.
-// --- Rayman ---
-// CRC32: 0xA9F8A00E (World)
-static constexpr JagPatchEntry kRaymanPatches[] = {
-    { 0x00000000, JagPatchAction::Doom_MenuStall }, // Dummy, substitua pelo hack real depois
-};
-
 static constexpr JagGamePatch kJagPatchDB[] = {
     { 0x00000000, "DOOM",           kDoomPatches, 1 }, // TODO: confirm CRC32
     { 0x00000000, "Checkered Flag", kCFPatches,   5 }, // TODO: confirm CRC32
     { 0x00000000, "AvP",            kAvPPatches,  1 }, // TODO: confirm CRC32
     { 0x00000000, "Cybermorph",     kCMPatches,   4 }, // TODO: confirm CRC32
-    { 0xA9F8A00E, "Rayman",         kRaymanPatches, 1 }, // Dummy patch, troque pelo real depois
 };
 static constexpr int kJagPatchDBCount = 4;

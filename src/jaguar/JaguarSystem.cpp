@@ -14,6 +14,12 @@
 #include "file.h"
 #include "event.h"
 #include "modelsBIOS.h"
+#include <QDebug>
+#include <QDir>
+#include <QFileInfo>
+#include <QSettings>
+#include <QDateTime>
+#include "SDLInput.h"
 #include "m68000/m68kinterface.h"
 #include "log.h"
 
@@ -72,13 +78,13 @@ bool JaguarSystem::loadROM(const QString &path)
     QSettings qs;
     memset(&vjs, 0, sizeof(vjs));
     vjs.hardwareTypeNTSC        = (qs.value("Jaguar/TVStandard", "NTSC").toString() != "PAL");
-    vjs.GPUEnabled              = true;
-    vjs.DSPEnabled              = true;
-    vjs.usePipelinedDSP         = false;
-    vjs.audioEnabled            = true;
-    vjs.useJaguarBIOS           = false;
-    vjs.useRetailBIOS           = false;
-    vjs.useFastBlitter          = false;
+    vjs.GPUEnabled              = qs.value("Jaguar/GPUEnabled", true).toBool();
+    vjs.DSPEnabled              = qs.value("Jaguar/DSPEnabled", true).toBool();
+    vjs.usePipelinedDSP         = qs.value("Jaguar/PipelinedDSP", false).toBool();
+    vjs.audioEnabled            = qs.value("Audio/Enabled", true).toBool();
+    vjs.useJaguarBIOS           = qs.value("Jaguar/UseBIOS", false).toBool();
+    vjs.useRetailBIOS           = qs.value("Jaguar/RetailBIOS", false).toBool();
+    vjs.useFastBlitter          = qs.value("Jaguar/FastBlitter", false).toBool();
     vjs.DRAM_size               = 0x200000;
     vjs.jaguarModel             = JAG_M_SERIES;
     vjs.biosType                = BT_M_SERIES;
@@ -98,19 +104,29 @@ bool JaguarSystem::loadROM(const QString &path)
     JaguarSetScreenBuffer(m_framebuffer.data());
     JaguarSetScreenPitch(kTexW);
 
+    qDebug() << "JaguarSystem: loading ROM" << path;
     QByteArray pathBytes = path.toLocal8Bit();
-    if (!JaguarLoadFile(pathBytes.data())) {
-        qWarning() << "JaguarSystem: failed to load" << path;
-        DACDone();
-        JaguarDone();
-        m_initialized = false;
+    try {
+        qDebug() << "JaguarSystem: calling JaguarLoadFile...";
+        if (!JaguarLoadFile(pathBytes.data())) {
+            qWarning() << "JaguarSystem: failed to load" << path;
+            DACDone();
+            JaguarDone();
+            m_initialized = false;
+            return false;
+        }
+        qDebug() << "JaguarSystem: ROM loaded successfully. CRC32:" << Qt::hex << jaguarMainROMCRC32;
+    } catch (...) {
+        qCritical() << "JaguarSystem: FATAL CRASH in JaguarLoadFile for" << path;
         return false;
     }
+    qDebug() << "JaguarSystem: ROM loaded, CRC32:" << Qt::hex << jaguarMainROMCRC32;
 
     m_activePatch = nullptr;
+    QString filenameUpper = QFileInfo(path).fileName().toUpper();
     for (int i = 0; i < kJagPatchDBCount; ++i) {
-        if (kJagPatchDB[i].crc32 != 0 &&
-            kJagPatchDB[i].crc32 == jaguarMainROMCRC32) {
+        if ((kJagPatchDB[i].crc32 != 0 && kJagPatchDB[i].crc32 == jaguarMainROMCRC32) ||
+            filenameUpper.contains(QString(kJagPatchDB[i].name).toUpper())) {
             m_activePatch = &kJagPatchDB[i];
             qDebug() << "JaguarSystem: patch active for" << kJagPatchDB[i].name;
             break;
@@ -124,7 +140,9 @@ bool JaguarSystem::loadROM(const QString &path)
     m_cmUploadPrgAddr  = 0;
     m_cmCurrentBufAddr = 0;
 
+    qDebug() << "JaguarSystem: resetting core...";
     JaguarReset();
+    qDebug() << "JaguarSystem: core reset complete. Pausing audio thread...";
     DACPauseAudioThread(false);
 
     memset(m_joypad0, 0, sizeof(m_joypad0));
@@ -140,6 +158,7 @@ bool JaguarSystem::loadROM(const QString &path)
 void JaguarSystem::start()
 {
     m_running = true;
+    qDebug() << "JaguarSystem: start() called";
     if (m_initialized)
         DACPauseAudioThread(false);
 }
@@ -147,19 +166,33 @@ void JaguarSystem::start()
 void JaguarSystem::stop()
 {
     m_running = false;
+    qDebug() << "JaguarSystem: stop() called";
     if (m_initialized)
         DACPauseAudioThread(true);
 }
 
 void JaguarSystem::step()
 {
-    if (!m_running || !m_initialized)
-        return;
+    if (m_initialized && m_running) {
+        try {
+            // Update input stubs
+            memcpy(joypad0Buttons, m_joypad0, sizeof(m_joypad0));
+            
+            // Execute core
+            qDebug() << "JaguarSystem: executing core step...";
+            JaguarExecuteNew();
+            qDebug() << "JaguarSystem: core step finished.";
+        } catch (...) {
+            qCritical() << "JaguarSystem: CRASH in JaguarExecuteNew!";
+            m_running = false;
+        }
+    }
+    static int stepCount = 0;
+    if (stepCount % 60 == 0) qDebug() << "JaguarSystem: step" << stepCount;
+    stepCount++;
 
-    memcpy(joypad0Buttons, m_joypad0, sizeof(m_joypad0));
     memcpy(joypad1Buttons, m_joypad1, sizeof(m_joypad1));
 
-    JaguarExecuteNew();
 
     applyPatches();
 

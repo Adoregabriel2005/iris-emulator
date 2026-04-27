@@ -260,6 +260,7 @@ SettingsDialog::SettingsDialog(SDLInput* input, QWidget* parent)
     addCategory(tr("Lynx Controls"), QStringLiteral("controller-line"));
     addCategory(tr("Directories"), QStringLiteral("folder-add-line"));
     addCategory(tr("Interface"), QStringLiteral("settings-3-line"));
+    addCategory(tr("Atari Jaguar"), QStringLiteral("flashlight-line")); // Icone que lembra o formato do Jag?
     addCategory(tr("Discord"), QStringLiteral("discord-line"));
 
     bodyLayout->addWidget(m_category_list);
@@ -358,6 +359,7 @@ void SettingsDialog::createPages()
     m_page_stack->addWidget(createLynxControllerPage());
     m_page_stack->addWidget(createDirectoriesPage());
     m_page_stack->addWidget(createInterfacePage());
+    m_page_stack->addWidget(createJaguarPage());
     m_page_stack->addWidget(createDiscordPage());
 }
 
@@ -1257,6 +1259,196 @@ QWidget* SettingsDialog::createDiscordPage()
     return page;
 }
 
+// ==================== JAGUAR CONTROLLER PAGE ====================
+
+JaguarJoystickWidget::JaguarJoystickWidget(SDLInput* input, QWidget* parent)
+    : QWidget(parent), m_input(input)
+{
+    setMinimumSize(400, 380);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    setMouseTracking(true);
+    setCursor(Qt::PointingHandCursor);
+
+    m_capture_timer = new QTimer(this);
+    m_capture_timer->setInterval(50);
+    connect(m_capture_timer, &QTimer::timeout, this, &JaguarJoystickWidget::onCaptureTimerTick);
+
+    buildZones();
+}
+
+void JaguarJoystickWidget::buildZones()
+{
+    m_zones.clear();
+    // D-pad
+    m_zones.append({{0.12, 0.10, 0.10, 0.10}, static_cast<int>(InputAction::JagUp), "UP"});
+    m_zones.append({{0.12, 0.30, 0.10, 0.10}, static_cast<int>(InputAction::JagDown), "DOWN"});
+    m_zones.append({{0.05, 0.20, 0.10, 0.10}, static_cast<int>(InputAction::JagLeft), "LEFT"});
+    m_zones.append({{0.19, 0.20, 0.10, 0.10}, static_cast<int>(InputAction::JagRight), "RIGHT"});
+
+    // Buttons
+    m_zones.append({{0.80, 0.25, 0.12, 0.12}, static_cast<int>(InputAction::JagA), "A"});
+    m_zones.append({{0.68, 0.20, 0.12, 0.12}, static_cast<int>(InputAction::JagB), "B"});
+    m_zones.append({{0.56, 0.15, 0.12, 0.12}, static_cast<int>(InputAction::JagC), "C"});
+
+    // Pause / Option
+    m_zones.append({{0.38, 0.15, 0.08, 0.08}, static_cast<int>(InputAction::JagPause), "PAUSE"});
+    m_zones.append({{0.48, 0.15, 0.08, 0.08}, static_cast<int>(InputAction::JagOption), "OPT"});
+
+    // Keypad (Grid 3x4)
+    double kw = 0.08, kh = 0.07;
+    double kx = 0.38, ky = 0.45;
+    for (int r = 0; r < 4; r++) {
+        for (int c = 0; c < 3; c++) {
+            int val = r * 3 + c + 1;
+            int action;
+            QString label;
+            if (val <= 9) { action = static_cast<int>(InputAction::Jag1) + (val - 1); label = QString::number(val); }
+            else if (val == 10) { action = static_cast<int>(InputAction::JagStar); label = "*"; }
+            else if (val == 11) { action = static_cast<int>(InputAction::Jag0); label = "0"; }
+            else { action = static_cast<int>(InputAction::JagHash); label = "#"; }
+            
+            m_zones.append({{kx + c * (kw + 0.02), ky + r * (kh + 0.02), kw, kh}, action, label});
+        }
+    }
+}
+
+void JaguarJoystickWidget::paintEvent(QPaintEvent*)
+{
+    QPainter p(this);
+    p.setRenderHint(QPainter::Antialiasing);
+
+    int w = width();
+    int h = height();
+
+    // Body (The "Toilet Seat" shape)
+    p.setBrush(QColor(40, 40, 42));
+    p.setPen(QPen(QColor(60, 60, 65), 2));
+    p.drawRoundedRect(w * 0.05, h * 0.05, w * 0.90, h * 0.90, 40, 40);
+
+    // D-pad area
+    p.setBrush(QColor(30, 30, 32));
+    p.drawEllipse(w * 0.05, h * 0.10, w * 0.25, h * 0.25);
+
+    // Buttons area
+    p.drawEllipse(w * 0.55, h * 0.10, w * 0.40, h * 0.30);
+
+    // Draw buttons
+    for (const auto& zone : m_zones) {
+        bool capturing = (m_capture_action == zone.action);
+        QRectF r(zone.rect.x() * w, zone.rect.y() * h, zone.rect.width() * w, zone.rect.height() * h);
+        
+        if (capturing) {
+            p.setBrush(QColor(200, 50, 50));
+            p.setPen(QColor(255, 255, 255));
+        } else {
+            p.setBrush(zone.label.length() > 2 ? QColor(50, 50, 55) : QColor(70, 70, 75));
+            p.setPen(QColor(150, 150, 160));
+        }
+        
+        if (zone.label == "A" || zone.label == "B" || zone.label == "C")
+            p.drawEllipse(r);
+        else
+            p.drawRoundedRect(r, 5, 5);
+
+        p.setPen(Qt::white);
+        p.drawText(r, Qt::AlignCenter, zone.label);
+    }
+}
+
+void JaguarJoystickWidget::mousePressEvent(QMouseEvent* event)
+{
+    QPointF p(event->pos().x() / (double)width(), event->pos().y() / (double)height());
+    for (const auto& zone : m_zones) {
+        if (zone.rect.contains(p)) {
+            startCapture(zone.action);
+            return;
+        }
+    }
+}
+
+void JaguarJoystickWidget::startCapture(int action) { m_capture_action = action; m_capture_countdown = 100; setFocus(); grabKeyboard(); m_capture_timer->start(); update(); }
+void JaguarJoystickWidget::stopCapture() { m_capture_action = -1; m_capture_timer->stop(); releaseKeyboard(); if (m_input) m_input->clearAllKeyStates(); update(); }
+void JaguarJoystickWidget::keyPressEvent(QKeyEvent* e) { if (m_capture_action >= 0) { if (m_input && !e->isAutoRepeat()) m_input->setQtKeyState(e->key(), true); e->accept(); return; } QWidget::keyPressEvent(e); }
+void JaguarJoystickWidget::keyReleaseEvent(QKeyEvent* e) { if (m_capture_action >= 0) { if (m_input && !e->isAutoRepeat()) m_input->setQtKeyState(e->key(), false); e->accept(); return; } QWidget::keyReleaseEvent(e); }
+void JaguarJoystickWidget::focusOutEvent(QFocusEvent* e) { if (m_capture_action >= 0) stopCapture(); QWidget::focusOutEvent(e); }
+void JaguarJoystickWidget::onCaptureTimerTick() {
+    if (m_capture_action < 0) { stopCapture(); return; }
+    m_capture_countdown--;
+    if (m_capture_countdown <= 0) { stopCapture(); return; }
+    InputBinding binding = m_input->pollForBinding(true, true);
+    if (binding.isValid()) {
+        m_input->setBinding(static_cast<InputAction>(m_capture_action), binding);
+        m_input->saveBindings();
+        stopCapture();
+        emit bindingChanged();
+    }
+}
+
+QWidget* SettingsDialog::createJaguarPage()
+{
+    QSettings settings;
+    auto* page = new QWidget(this);
+    auto* scroll = new QScrollArea(this);
+    auto* inner = new QWidget();
+    auto* layout = new QVBoxLayout(inner);
+    scroll->setWidget(inner);
+    scroll->setWidgetResizable(true);
+    scroll->setFrameShape(QFrame::NoFrame);
+    auto* pageLayout = new QVBoxLayout(page);
+    pageLayout->addWidget(scroll);
+
+    addSectionTitle(layout, tr("Video & Display"));
+    
+    auto* vidRow = new QHBoxLayout();
+    vidRow->addWidget(new QLabel(tr("Output Mode:"), inner));
+    m_jag_video_combo = new QComboBox(inner);
+    m_jag_video_combo->addItem(tr("RGB (Crispy)"), "crispy");
+    m_jag_video_combo->addItem(tr("Composite (AV)"), "av");
+    m_jag_video_combo->addItem(tr("S-Video (High Quality)"), "svideo");
+    m_jag_video_combo->addItem(tr("VGA (31kHz Monitor)"), "vga");
+    m_jag_video_combo->addItem(tr("Bilinear (Smooth)"), "bilinear");
+    QString curVid = settings.value("Jaguar/VideoMode", "crispy").toString();
+    m_jag_video_combo->setCurrentIndex(m_jag_video_combo->findData(curVid));
+    vidRow->addWidget(m_jag_video_combo, 1);
+    layout->addLayout(vidRow);
+
+    m_separate_window_check = new QCheckBox(tr("Run in separate window"), inner);
+    m_separate_window_check->setChecked(settings.value("Jaguar/SeparateWindow", false).toBool());
+    layout->addWidget(m_separate_window_check);
+
+    addSectionTitle(layout, tr("Hardware & Accessories"));
+    m_jag_gpu_check = new QCheckBox(tr("Enable GPU (Required for most games)"), inner);
+    m_jag_gpu_check->setChecked(settings.value("Jaguar/EnableGPU", true).toBool());
+    layout->addWidget(m_jag_gpu_check);
+
+    m_jag_dsp_check = new QCheckBox(tr("Enable DSP (Audio/Extra Logic)"), inner);
+    m_jag_dsp_check->setChecked(settings.value("Jaguar/EnableDSP", true).toBool());
+    layout->addWidget(m_jag_dsp_check);
+
+    auto* linkRow = new QHBoxLayout();
+    m_jaglink_check = new QCheckBox(tr("JagLink (Network Play)"), inner);
+    m_jaglink_check->setChecked(settings.value("Jaguar/EnableJagLink", false).toBool());
+    linkRow->addWidget(m_jaglink_check);
+    
+    linkRow->addWidget(new QLabel(tr("Port:"), inner));
+    m_jaglink_port_spin = new QSpinBox(inner);
+    m_jaglink_port_spin->setRange(1024, 65535);
+    m_jaglink_port_spin->setValue(settings.value("Jaguar/JagLinkPort", 5026).toInt());
+    linkRow->addWidget(m_jaglink_port_spin);
+    layout->addLayout(linkRow);
+
+    addSectionTitle(layout, tr("Jaguar Controller Mapping"));
+    auto* info = new QLabel(tr("Click on the buttons below to map keys or gamepad buttons."), inner);
+    info->setStyleSheet("color: #aaa;");
+    layout->addWidget(info);
+
+    m_jag_joystick_widget = new JaguarJoystickWidget(m_input, inner);
+    layout->addWidget(m_jag_joystick_widget);
+
+    layout->addStretch();
+    return page;
+}
+
 // ==================== SAVE ====================
 
 void SettingsDialog::onAccepted()
@@ -1304,6 +1496,16 @@ void SettingsDialog::onAccepted()
         settings.setValue("Discord/Enabled", cb->isChecked());
     if (auto* le = findChild<QLineEdit*>("discord_appid"))
         settings.setValue("Discord/AppId", le->text());
+
+    // Jaguar
+    if (m_jag_video_combo) {
+        settings.setValue("Jaguar/VideoMode", m_jag_video_combo->currentData().toString());
+        settings.setValue("Jaguar/SeparateWindow", m_separate_window_check->isChecked());
+        settings.setValue("Jaguar/EnableGPU", m_jag_gpu_check->isChecked());
+        settings.setValue("Jaguar/EnableDSP", m_jag_dsp_check->isChecked());
+        settings.setValue("Jaguar/EnableJagLink", m_jaglink_check->isChecked());
+        settings.setValue("Jaguar/JagLinkPort", m_jaglink_port_spin->value());
+    }
 
     accept();
 }

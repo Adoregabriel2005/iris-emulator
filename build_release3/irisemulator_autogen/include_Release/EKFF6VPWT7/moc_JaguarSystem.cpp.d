@@ -1,9 +1,9 @@
 D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/EKFF6VPWT7/moc_JaguarSystem.cpp: D:/PROJETOS/ATARI2600/src/jaguar/JaguarSystem.h \
   D:/PROJETOS/ATARI2600/src/IEmulatorCore.h \
-  D:/PROJETOS/ATARI2600/src/SDLInput.h \
+  D:/PROJETOS/ATARI2600/src/jaguar/JaguarPatchDB.h \
+  D:/PROJETOS/ATARI2600/src/jaguar/tom_utils.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/QByteArray \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/QObject \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/QSettings \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/QString \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/q20functional.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/q20iterator.h \
@@ -35,10 +35,8 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/EKFF6V
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qcontainerfwd.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qcontainerinfo.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qcontainertools_impl.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qcontiguouscache.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qdarwinhelpers.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qdatastream.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qdebug.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qexceptionhandling.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qflags.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qfloat16.h \
@@ -48,7 +46,6 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/EKFF6V
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qgenericatomic.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qglobal.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qglobalstatic.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qhash.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qhashfunctions.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qiodevicebase.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qiterable.h \
@@ -58,7 +55,6 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/EKFF6V
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qlist.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qlogging.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qmalloc.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qmap.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qmargins.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qmath.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qmetacontainer.h \
@@ -78,12 +74,6 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/EKFF6V
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qrefcount.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qscopedpointer.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qscopeguard.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qset.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qsettings.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qshareddata.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qshareddata_impl.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qsharedpointer.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qsharedpointer_impl.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qsize.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qspan.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qstring.h \
@@ -109,7 +99,6 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/EKFF6V
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qtdeprecationdefinitions.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qtdeprecationmarkers.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qtenvironmentvariables.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qtextstream.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qtmetamacros.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qtnoop.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qtpreprocessorsupport.h \
@@ -121,8 +110,6 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/EKFF6V
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qtypeinfo.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qtypes.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qutf8stringview.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qvariant.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtCore/qvarlengtharray.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qversiontagging.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qxptype_traits.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtCore/qyieldcpu.h \
@@ -140,54 +127,4 @@ D:/PROJETOS/ATARI2600/build_release3/irisemulator_autogen/include_Release/EKFF6V
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qtguiglobal.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qtransform.h \
   D:/Qt/6.8.3/msvc2022_64/include/QtGui/qwindowdefs.h \
-  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qwindowdefs_win.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_assert.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_atomic.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_audio.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_blendmode.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_clipboard.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_config.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_cpuinfo.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_endian.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_error.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_events.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_filesystem.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_gamecontroller.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_gesture.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_guid.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_haptic.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_hidapi.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_hints.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_joystick.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_keyboard.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_keycode.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_loadso.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_locale.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_log.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_main.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_messagebox.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_metal.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_misc.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_mouse.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_mutex.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_pixels.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_platform.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_power.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_quit.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_rect.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_render.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_rwops.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_scancode.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_sensor.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_shape.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_stdinc.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_surface.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_system.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_thread.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_timer.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_touch.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_version.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/SDL_video.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/begin_code.h \
-  D:/vcpkg/installed/x64-windows/include/SDL2/close_code.h
+  D:/Qt/6.8.3/msvc2022_64/include/QtGui/qwindowdefs_win.h

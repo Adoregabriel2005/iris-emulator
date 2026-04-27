@@ -113,6 +113,9 @@ private:
     void stopEmulation();
     void applyVideoSettings();
 
+    QMainWindow* m_separate_window = nullptr;
+    DisplayWidget* m_separate_display = nullptr;
+
     void loadSaveStateSlot(int slot);
     void saveSaveStateSlot(int slot);
     void populateLoadStateMenu(QMenu* menu);

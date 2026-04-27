@@ -22,6 +22,11 @@ DisplayWidget::DisplayWidget(QWidget* parent)
     else if (filterStr == "smooth")    m_filter = ScreenFilter::Smooth;
     else if (filterStr == "lcd")       m_filter = ScreenFilter::LCD;
     else if (filterStr == "lcdblur")   m_filter = ScreenFilter::LCDBlur;
+    else if (filterStr == "av")        m_filter = ScreenFilter::AV;
+    else if (filterStr == "svideo")    m_filter = ScreenFilter::SVideo;
+    else if (filterStr == "vga")       m_filter = ScreenFilter::VGA;
+    else if (filterStr == "rgb")       m_filter = ScreenFilter::RGB_RGB;
+    else if (filterStr == "crispy")    m_filter = ScreenFilter::Crispy;
     else                               m_filter = ScreenFilter::None;
 
     m_scanline_intensity = settings.value("Video/ScanlineIntensity", 50).toInt();
@@ -150,6 +155,7 @@ void DisplayWidget::paintEvent(QPaintEvent* event)
     case ScreenFilter::CRT:
         painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
         painter.drawImage(dr, frameToDraw);
+        drawBloom(painter, dr);
         drawScanlines(painter, dr);
         drawCRT(painter, dr);
         break;
@@ -164,6 +170,39 @@ void DisplayWidget::paintEvent(QPaintEvent* event)
         painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
         painter.drawImage(dr, frameToDraw);
         drawLCD(painter, dr);
+        break;
+
+    case ScreenFilter::AV:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter.drawImage(dr, frameToDraw);
+        drawBloom(painter, dr);
+        drawAVArtifacts(painter, dr);
+        drawScanlines(painter, dr);
+        break;
+
+    case ScreenFilter::SVideo:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter.drawImage(dr, frameToDraw);
+        drawSVideoArtifacts(painter, dr);
+        drawScanlines(painter, dr);
+        break;
+
+    case ScreenFilter::VGA:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter.drawImage(dr, frameToDraw);
+        drawVGAScanlines(painter, dr);
+        break;
+
+    case ScreenFilter::RGB_RGB:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        painter.drawImage(dr, frameToDraw);
+        drawRGBMask(painter, dr);
+        drawScanlines(painter, dr);
+        break;
+
+    case ScreenFilter::Crispy:
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
+        painter.drawImage(dr, frameToDraw);
         break;
     }
 }
@@ -328,6 +367,99 @@ QImage DisplayWidget::applyLCDBlur(const QImage& src) const
         }
     }
     return result;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AV (Composite) — Blur horizontal + Bleeding + Noise
+// ─────────────────────────────────────────────────────────────────────────────
+void DisplayWidget::drawAVArtifacts(QPainter& painter, const QRect& rect)
+{
+    // Simula sinal composto com bleed de cores
+    painter.setCompositionMode(QPainter::CompositionMode_Plus);
+    painter.setOpacity(0.15);
+    painter.drawImage(rect.adjusted(2, 0, 2, 0), m_scaled_frame); // Red shift
+    painter.drawImage(rect.adjusted(-2, 0, -2, 0), m_scaled_frame); // Blue shift
+    painter.setOpacity(1.0);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+    
+    // Leve noise
+    painter.setBrush(QColor(255, 255, 255, 5));
+    for (int i = 0; i < 500; i++) {
+        int x = rect.left() + rand() % rect.width();
+        int y = rect.top() + rand() % rect.height();
+        painter.drawPoint(x, y);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// S-Video — Sharpness melhorada + Luma/Chroma separadas
+// ─────────────────────────────────────────────────────────────────────────────
+void DisplayWidget::drawSVideoArtifacts(QPainter& painter, const QRect& rect)
+{
+    // S-Video eh bem limpo, mas tem um "glow" sutil nas bordas de contraste
+    painter.setOpacity(0.1);
+    painter.drawImage(rect.adjusted(1, 0, 1, 0), m_scaled_frame);
+    painter.setOpacity(1.0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VGA — 31kHz fine scanlines
+// ─────────────────────────────────────────────────────────────────────────────
+void DisplayWidget::drawVGAScanlines(QPainter& painter, const QRect& rect)
+{
+    painter.setPen(QColor(0, 0, 0, 40));
+    for (int y = rect.top(); y < rect.bottom(); y += 2) {
+        painter.drawLine(rect.left(), y, rect.right(), y);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RGB Mask — Aperture Grill / Shadow Mask
+// ─────────────────────────────────────────────────────────────────────────────
+void DisplayWidget::drawRGBMask(QPainter& painter, const QRect& rect)
+{
+    painter.setPen(Qt::NoPen);
+    for (int x = rect.left(); x < rect.right(); x += 3) {
+        painter.setBrush(QColor(255, 0, 0, 30));
+        painter.drawRect(x, rect.top(), 1, rect.height());
+        painter.setBrush(QColor(0, 255, 0, 30));
+        painter.drawRect(x + 1, rect.top(), 1, rect.height());
+        painter.setBrush(QColor(0, 0, 255, 30));
+        painter.drawRect(x + 2, rect.top(), 1, rect.height());
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bloom — Simula o vazamento de luz de cores brilhantes (Phosphor Bleed)
+// ─────────────────────────────────────────────────────────────────────────────
+void DisplayWidget::drawBloom(QPainter& painter, const QRect& rect)
+{
+    if (m_scaled_frame.isNull()) return;
+
+    // Reduz o frame e blura para criar o mapa de bloom
+    QImage bloom = m_scaled_frame.scaled(rect.width() / 4, rect.height() / 4, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    
+    // Filtro de brilho: mantém só o que é bem brilhante
+    for (int y = 0; y < bloom.height(); y++) {
+        QRgb* line = reinterpret_cast<QRgb*>(bloom.scanLine(y));
+        for (int x = 0; x < bloom.width(); x++) {
+            int gray = qGray(line[x]);
+            if (gray < 150) line[x] = qRgba(0, 0, 0, 0);
+            else {
+                // Aumenta a saturação do bloom
+                int r = std::min(255, qRed(line[x]) * 2);
+                int g = std::min(255, qGreen(line[x]) * 2);
+                int b = std::min(255, qBlue(line[x]) * 2);
+                line[x] = qRgba(r, g, b, 120);
+            }
+        }
+    }
+
+    painter.setCompositionMode(QPainter::CompositionMode_Plus);
+    painter.setOpacity(0.3);
+    painter.drawImage(rect, bloom);
+    painter.setOpacity(1.0);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
 }
 
 void DisplayWidget::resizeEvent(QResizeEvent* event)

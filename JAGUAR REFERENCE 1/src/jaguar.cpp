@@ -228,7 +228,7 @@ if (inRoutine)
 		WriteLog("Jaguar: VBL interrupt is %s\n", ((TOMIRQEnabled(IRQ_VIDEO)) && (JaguarInterruptHandlerIsValid(64))) ? "enabled" : "disabled");
 		M68K_show_context();
 		LogDone();
-		exit(0);
+		//exit(0);
 	}
 
 	// Disassemble everything
@@ -1426,18 +1426,8 @@ unsigned int m68k_read_memory_16(unsigned int address)
 // Alert message in case of exception vector request
 bool m68k_read_exception_vector(unsigned int address, char *text)
 {
-	QString msg;
-	QMessageBox msgBox;
-
-#if 0
-	msg = QString::asprintf("68000 exception\n%s at $%06x", text, pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF]);
-#else
-	msg = QString::asprintf("68000 exception\n$%06x: %s", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], text);
-#endif
-	msgBox.setText(msg);
-	msgBox.setStandardButtons(QMessageBox::Abort);
-	msgBox.setDefaultButton(QMessageBox::Abort);
-	msgBox.exec();
+	WriteLog("M68K: 68000 exception at $%06x: %s\n", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], text);
+	frameDone = true;
 	return M68KDebugHalt();
 }
 
@@ -1522,7 +1512,6 @@ bool m68k_write_unknown_alert(unsigned int address, char *bits, unsigned int val
 #ifdef LOG_UNMAPPED_MEMORY_ACCESSES
 	WriteLog("$%06x: Writing at this unknown memory location $%06x with a (%s bits) value of $%0x\n", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], address, bits, value);
 #endif
-	// Não alerta, não interrompe, apenas loga se ativado
 	return false;
 }
 
@@ -1530,33 +1519,8 @@ bool m68k_write_unknown_alert(unsigned int address, char *bits, unsigned int val
 // Alert message in case of writing to cartridge/ROM memory location
 bool m68k_write_cartridge_alert(unsigned int address, char *bits, unsigned int value)
 {
-	if (!M68KDebugHaltStatus())
-	{
-		QString msg;
-		QMessageBox msgBox;
-
-		msg = QString::asprintf("$%06x: Writing at this ROM cartridge location $%06x with a (%s bits) value of $%0x", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], address, bits, value);
-		msgBox.setText(msg);
-
-		msgBox.setInformativeText("Do you want to continue?");
-		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-		msgBox.setDefaultButton(QMessageBox::No);
-
-		int retVal = msgBox.exec();
-
-		if (retVal == QMessageBox::Yes)
-		{
-			return false;
-		}
-		else
-		{
-			return M68KDebugHalt();
-		}
-	}
-	else
-	{
-		return 1;
-	}
+	WriteLog("M68K: Writing to ROM at $%06x: address $%06x, value $%0x (%s bits)\n", pcQueue[pcQPtr ? (pcQPtr - 1) : 0x3FF], address, value, bits);
+	return false;
 }
 
 

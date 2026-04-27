@@ -146,7 +146,7 @@ unsigned long CPUFUNC(op_4e72_5)(uint32_t opcode) /* STOP */
 }
 #endif
 //tmp...
-void WriteLog(const char * text, ...);
+// WriteLog is now in inlines.h
 void Exception(int nr, uint32_t oldpc, int ExceptionSource)
 {
 	uint32_t currpc = m68k_getpc(), newpc;

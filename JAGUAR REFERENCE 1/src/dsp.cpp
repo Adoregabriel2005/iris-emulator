@@ -1550,7 +1550,8 @@ for(int k=0; k<2; k++)
 			WriteLog("Instruction for pipelined core: %04X\n", lastExec);
 
 			log_done();
-			exit(1);
+			WriteLog("DSP: Core divergence detected! (exit suppressed)\n");
+			//exit(1);
 		}
 
 		count++;

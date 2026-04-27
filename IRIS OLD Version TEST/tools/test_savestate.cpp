@@ -1,7 +1,11 @@
 #include <QApplication>
 #include <QDebug>
 #include <QFile>
+#define SDL_MAIN_HANDLED
 #include "EmulatorCore.h"
+
+// Required by Gearlynx log.h
+bool g_mcp_stdio_mode = false;
 
 int main(int argc, char **argv)
 {

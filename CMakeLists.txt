@@ -166,3 +166,38 @@ if(EXISTS ${ZLIB_DLL})
 endif()
 
 install(TARGETS irisemulator RUNTIME DESTINATION bin)
+
+# Test tool for savestates
+add_executable(test_savestate
+    tools/test_savestate.cpp
+    src/EmulatorCore.cpp
+    src/IEmulatorCore.h
+    src/CPU6507.cpp
+    src/TIA.cpp
+    src/RIOT.cpp
+    src/mapper/MapperNone.cpp
+    src/mapper/MapperBanked.cpp
+    src/MapperFactory.cpp
+    src/jaguar/JaguarSystem.cpp
+    src/jaguar/jaguar_gui_stubs.cpp
+    src/jaguar/jaguar_file_stub.cpp
+    src/jaguar/tom_utils.cpp
+    src/jaguar/jaguarcore_link_stubs.cpp
+    src/lynx/LynxSystem.cpp
+    src/DiscordRPC.cpp
+    ${GEARLYNX_SRC}
+    ${M68K_SRC}
+)
+target_include_directories(test_savestate PRIVATE 
+    ${CMAKE_SOURCE_DIR}/src 
+    ${CMAKE_SOURCE_DIR}/src/mapper
+    ${CMAKE_SOURCE_DIR}/src/lynx
+    ${CMAKE_SOURCE_DIR}/src/jaguar
+    ${CMAKE_SOURCE_DIR}/src/audio
+    "${JAG_DIR}"
+    "${JAG_DIR}/m68000"
+    ${GEARLYNX_INCLUDE_DIR}
+    ${DISCORD_RPC_INCLUDE_DIR}
+    $<TARGET_PROPERTY:SDL2::SDL2,INTERFACE_INCLUDE_DIRECTORIES>
+)
+target_link_libraries(test_savestate PRIVATE Qt6::Widgets Qt6::Svg Qt6::Network Qt6::OpenGL Qt6::OpenGLWidgets SDL2::SDL2 ${DISCORD_RPC_LIB} ZLIB::ZLIB)

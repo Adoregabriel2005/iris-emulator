@@ -199,6 +199,37 @@ void SDLInput::openController()
     }
 }
 
+void SDLInput::openController(int index)
+{
+    if (m_controller)
+        SDL_GameControllerClose(m_controller);
+
+    m_controller = SDL_GameControllerOpen(index);
+    if (m_controller) {
+        const char* name = SDL_GameControllerName(m_controller);
+        qDebug() << "SDLInput: Opened controller:" << name;
+
+        // Auto-Mapping for premium controllers
+        QString controllerName = QString::fromUtf8(name).toLower();
+        if (controllerName.contains("xbox") || controllerName.contains("x-box") || controllerName.contains("microsoft")) {
+            applyProfile("Xbox");
+        } else if (controllerName.contains("dualsense") || controllerName.contains("playstation") || controllerName.contains("ps5") || controllerName.contains("ps4")) {
+            applyProfile("PlayStation");
+        } else if (controllerName.contains("8bitdo")) {
+            applyProfile("8BitDo");
+        } else {
+            applyProfile("Generic");
+        }
+    }
+}
+
+void SDLInput::applyProfile(const QString& profileName)
+{
+    qDebug() << "SDLInput: Applying auto-mapping profile:" << profileName;
+    // This would ideally reset m_bindings to defaults for the specific profile
+    // For now, we'll assume the user can still override via UI
+}
+
 void SDLInput::closeController()
 {
     if (m_controller) {

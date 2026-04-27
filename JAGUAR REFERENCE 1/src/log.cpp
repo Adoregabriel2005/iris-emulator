@@ -16,7 +16,7 @@
 //                  enough for anybody. ;-) Except when it isn't. :-P
 //
 
-//#include "log.h"
+#include "log.h"
 
 #include <stdlib.h>
 #include <stdio.h>
