@@ -32,6 +32,8 @@ static uint32_t logSize = 0;
 
 int LogInit(const char * path)
 {
+	LogDone();
+	logSize = 0;
 	log_stream = fopen(path, "w");
 
 	if (log_stream == NULL)
@@ -49,6 +51,7 @@ void LogDone(void)
 {
 	if (log_stream != NULL)
 		fclose(log_stream);
+	log_stream = NULL;
 }
 
 //

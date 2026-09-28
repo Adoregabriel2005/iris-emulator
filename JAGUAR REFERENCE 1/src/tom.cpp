@@ -254,8 +254,10 @@
 
 #include "tom.h"
 
-#include <string.h>								// For memset()
-#include <stdlib.h>								// For rand()
+#include <string.h>								// For memset()                                   
+#include <stdlib.h>								// For rand()                                     
+#include <algorithm>								// For std::min()                                 
+
 #include "blitter.h"
 #include "cry2rgb.h"
 #include "event.h"
@@ -701,6 +703,9 @@ void tom_render_16bpp_cry_rgb_mix_scanline(uint32_t * backbuffer)
 		uint8_t g = tomRam8[BORD1], r = tomRam8[BORD1 + 1], b = tomRam8[BORD2 + 1];
 		uint32_t pixel = 0x000000FF | (r << 24) | (g << 16) | (b << 8);
 
+		// HDB1 may temporarily be beyond the viewport during a mode switch.
+		// Clip the border before subtracting from the unsigned remaining width.
+		if (startPos > width) startPos = width;
 		for(int16_t i=0; i<startPos; i++)
 			*backbuffer++ = pixel;
 
@@ -743,6 +748,9 @@ void tom_render_16bpp_cry_scanline(uint32_t * backbuffer)
 		uint8_t g = tomRam8[BORD1], r = tomRam8[BORD1 + 1], b = tomRam8[BORD2 + 1];
 		uint32_t pixel = 0x000000FF | (r << 24) | (g << 16) | (b << 8);
 
+		// HDB1 may temporarily be beyond the viewport during a mode switch.
+		// Clip the border before subtracting from the unsigned remaining width.
+		if (startPos > width) startPos = width;
 		for(int16_t i=0; i<startPos; i++)
 			*backbuffer++ = pixel;
 
@@ -786,6 +794,9 @@ void tom_render_24bpp_scanline(uint32_t * backbuffer)
 		uint8_t g = tomRam8[BORD1], r = tomRam8[BORD1 + 1], b = tomRam8[BORD2 + 1];
 		uint32_t pixel = 0x000000FF | (r << 24) | (g << 16) | (b << 8);
 
+		// HDB1 may temporarily be beyond the viewport during a mode switch.
+		// Clip the border before subtracting from the unsigned remaining width.
+		if (startPos > width) startPos = width;
 		for(int16_t i=0; i<startPos; i++)
 			*backbuffer++ = pixel;
 
@@ -853,6 +864,9 @@ void tom_render_16bpp_rgb_scanline(uint32_t * backbuffer)
 		uint8_t g = tomRam8[BORD1], r = tomRam8[BORD1 + 1], b = tomRam8[BORD2 + 1];
 		uint32_t pixel = 0x000000FF | (r << 24) | (g << 16) | (b << 8);
 
+		// HDB1 may temporarily be beyond the viewport during a mode switch.
+		// Clip the border before subtracting from the unsigned remaining width.
+		if (startPos > width) startPos = width;
 		for(int16_t i=0; i<startPos; i++)
 			*backbuffer++ = pixel;
 
@@ -870,6 +884,48 @@ void tom_render_16bpp_rgb_scanline(uint32_t * backbuffer)
 		*backbuffer++ = RGB16ToRGB32[color];
 		width--;
 	}
+}
+
+
+//
+// PWIDTH replication
+//
+// A Jaguar line buffer is always VIRTUAL_SCREEN_WIDTH pixels wide, but a game
+// can ask for those pixels to be displayed wider by setting PWIDTH. PWIDTH is
+// counted in Horizontal Count ticks and one line buffer pixel spans
+// HCO_PER_SOURCE_PIXEL of them, so PWIDTH = 8 means every line buffer pixel has
+// to appear twice to fill the screen.
+//
+// The scanline renderers used to emit only (RIGHT - LEFT) / PWIDTH pixels and
+// leave the rest of the row stale, which made the visible width of the picture
+// depend on whichever PWIDTH happened to be programmed last. Doom relies on
+// this: it draws its 3D viewport as a 160 pixel wide 16bpp object and its
+// status bar as a 320 pixel wide 8bpp object, and stretches the viewport by
+// using PWIDTH = 8. Rendering into a scratch row and replicating here keeps
+// every line the same width, so the frontend no longer has to guess, and games
+// that stay on PWIDTH <= 4 are bit-for-bit unaffected.
+//
+#define HCO_PER_SOURCE_PIXEL	((RIGHT_VISIBLE_HC - LEFT_VISIBLE_HC) / VIRTUAL_SCREEN_WIDTH)
+
+static uint32_t tomScanlineScratch[VIRTUAL_SCREEN_WIDTH + 16];
+
+void TOMRenderScanline(uint32_t * backbuffer)
+{
+	const uint8_t pwidth = ((GET16(tomRam8, VMODE) & PWIDTH) >> 9) + 1;
+	const uint32_t replicate = pwidth / HCO_PER_SOURCE_PIXEL;
+
+	if (replicate <= 1)
+	{
+		scanline_render[TOMGetVideoMode()](backbuffer);
+		return;
+	}
+
+	scanline_render[TOMGetVideoMode()](tomScanlineScratch);
+
+	const uint32_t pixels = std::min<uint32_t>(tomWidth, VIRTUAL_SCREEN_WIDTH);
+	for (uint32_t x = 0; x < pixels; x++)
+		for (uint32_t r = 0; r < replicate; r++)
+			*backbuffer++ = tomScanlineScratch[x];
 }
 
 
@@ -975,16 +1031,15 @@ TOM: Vertical Interrupt written by M68K: 491
 		bottomVisible = (vjs.hardwareTypeNTSC ? BOTTOM_VISIBLE_VC : BOTTOM_VISIBLE_VC_PAL);
 	uint32_t * TOMCurrentLine = 0;
 
+    // Form a host framebuffer pointer only for visible lines.
+    if ((halfline >= topVisible) && (halfline < bottomVisible))
+    {
 	// Bit 0 in VP is interlace flag. 0 = interlace, 1 = non-interlaced
 	if (tomRam8[VP + 1] & 0x01)
 		TOMCurrentLine = &(screenBuffer[((halfline - topVisible) / 2) * screenPitch]);//non-interlace
 	else
 		TOMCurrentLine = &(screenBuffer[(((halfline - topVisible) / 2) * screenPitch * 2) + (field2 ? 0 : screenPitch)]);//interlace
 
-	// Here's our virtualized scanline code...
-
-	if ((halfline >= topVisible) && (halfline < bottomVisible))
-	{
 		if (inActiveDisplayArea)
 		{
 //NOTE: The following doesn't put BORDER color on the sides... !!! FIX !!!
@@ -995,7 +1050,7 @@ TOM: Vertical Interrupt written by M68K: 491
 #endif // _MSC_VER
 			if (vjs.renderType == RT_NORMAL)
 			{
-				scanline_render[TOMGetVideoMode()](TOMCurrentLine);
+				TOMRenderScanline(TOMCurrentLine);
 			}
 			else
 			{
@@ -1067,7 +1122,13 @@ void tom_render_24bpp_scanline(uint32_t * backbuffer)
 //Hm.			uint32_t pixel = 0xFF000000 | (b << 16) | (g << 8) | r;
 			uint32_t pixel = 0x000000FF | (r << 24) | (g << 16) | (b << 8);
 
-			for(uint32_t i=0; i<tomWidth; i++)
+			// Match the replication the active display area gets, so a frame
+			// that switches PWIDTH part way down does not change width.
+			const uint8_t borderPWidth = ((GET16(tomRam8, VMODE) & PWIDTH) >> 9) + 1;
+			const uint32_t borderPixels =
+				tomWidth * std::max<uint32_t>(1, borderPWidth / HCO_PER_SOURCE_PIXEL);
+
+			for(uint32_t i=0; i<borderPixels; i++)
 				*currentLineBuffer++ = pixel;
 		}
 	}

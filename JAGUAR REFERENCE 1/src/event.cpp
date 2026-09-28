@@ -20,6 +20,7 @@
 #include "event.h"
 
 #include <stdint.h>
+#include <limits>
 #include "log.h"
 
 
@@ -72,6 +73,10 @@ void InitializeEventList(void)
 //We just slap the next event into the list in the first available slot, no checking, no nada...
 void SetCallbackTime(void (* callback)(void), double time, int type/*= EVENT_MAIN*/)
 {
+#ifdef IRIS_SINGLE_THREAD
+    // All processors and peripherals advance on the emulation thread.
+    type = EVENT_MAIN;
+#endif
 	if (type == EVENT_MAIN)
 	{
 		for(uint32_t i=0; i<EVENT_LIST_SIZE; i++)
@@ -161,62 +166,33 @@ void AdjustCallbackTime(void (* callback)(void), double time)
 //
 double GetTimeToNextEvent(int type/*= EVENT_MAIN*/)
 {
-#if 0
-	double time = 0;
-	bool firstTime = true;
-
-	for(uint32 i=0; i<EVENT_LIST_SIZE; i++)
-	{
-		if (eventList[i].valid)
-		{
-			if (firstTime)
-				time = eventList[i].eventTime, nextEvent = i, firstTime = false;
-			else
-			{
-				if (eventList[i].eventTime < time)
-					time = eventList[i].eventTime, nextEvent = i;
-			}
-		}
-	}
-#else
-	if (type == EVENT_MAIN)
-	{
-		double time = eventList[0].eventTime;
-		nextEvent = 0;
-
-		for(uint32_t i=1; i<EVENT_LIST_SIZE; i++)
-		{
-			if (eventList[i].valid && (eventList[i].eventTime < time))
-			{
-				time = eventList[i].eventTime;
-				nextEvent = i;
-			}
-		}
-
-		return time;
-	}
-	else
-	{
-		double time = eventListJERRY[0].eventTime;
-		nextEventJERRY = 0;
-
-		for(uint32_t i=1; i<EVENT_LIST_SIZE; i++)
-		{
-			if (eventListJERRY[i].valid && (eventListJERRY[i].eventTime < time))
-			{
-				time = eventListJERRY[i].eventTime;
-				nextEventJERRY = i;
-			}
-		}
-
-		return time;
-	}
+#ifdef IRIS_SINGLE_THREAD
+    type = EVENT_MAIN;
 #endif
+    Event * list = type == EVENT_MAIN ? eventList : eventListJERRY;
+    uint32_t & next = type == EVENT_MAIN ? nextEvent : nextEventJERRY;
+    next = EVENT_LIST_SIZE;
+    double time = std::numeric_limits<double>::infinity();
+    for (uint32_t i = 0; i < EVENT_LIST_SIZE; ++i) {
+        if (list[i].valid && list[i].eventTime < time) {
+            time = list[i].eventTime;
+            next = i;
+        }
+    }
+    return time;
 }
 
 
 void HandleNextEvent(int type/*= EVENT_MAIN*/)
 {
+#ifdef IRIS_SINGLE_THREAD
+    type = EVENT_MAIN;
+#endif
+    // Callers may have removed/replaced the selected event while executing a CPU.
+    GetTimeToNextEvent(type);
+    if ((type == EVENT_MAIN ? nextEvent : nextEventJERRY) == EVENT_LIST_SIZE)
+        return;
+
 	if (type == EVENT_MAIN)
 	{
 		double elapsedTime = eventList[nextEvent].eventTime;

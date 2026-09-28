@@ -27,10 +27,12 @@
 
 #include "jaguar.h"
 //#include <QApplication>
-#include <QtWidgets/QMessageBox>
+
 #include <time.h>
-#include <SDL.h>
-#include "SDL_opengl.h"
+#include <cstring>
+#include <cmath>
+
+
 #include "blitter.h"
 #include "cdrom.h"
 #include "dac.h"
@@ -59,9 +61,13 @@
 //#define ABORT_ON_UNMAPPED_MEMORY_ACCESS
 //#define ABORT_ON_ILLEGAL_INSTRUCTIONS
 //#define ABORT_ON_OFFICIAL_ILLEGAL_INSTRUCTION
+#ifndef IRIS_SINGLE_THREAD
 #define CPU_DEBUG_MEMORY
+#endif
 //#define LOG_CD_BIOS_CALLS
+#ifndef IRIS_SINGLE_THREAD
 #define CPU_DEBUG_TRACING
+#endif
 #define ALPINE_FUNCTIONS
 
 // Private function prototypes
@@ -130,6 +136,13 @@ S_BrkInfo *brkInfo;
 size_t brkNbr;
 
 bool frameDone;
+
+// Execution watchdog for the headless regression tools. When irisWatchCount is
+// non-zero, every instruction fetched outside [irisWatchPCLow, irisWatchPCHigh]
+// dumps the recent PC history, so a bad branch can be located without a GUI.
+uint32_t irisWatchPCLow = 0;
+uint32_t irisWatchPCHigh = 0;
+uint32_t irisWatchCount = 0;
 
 //
 // Callback function to detect illegal instructions
@@ -206,6 +219,23 @@ if (inRoutine)
 	srQueue[pcQPtr] = m68k_get_reg(NULL, M68K_REG_SR);
 	pcQPtr++;
 	pcQPtr &= 0x3FF;
+
+	if (irisWatchCount && ((m68kPC < irisWatchPCLow) || (m68kPC > irisWatchPCHigh)))
+	{
+		static char wbuf[2048];
+
+		irisWatchCount--;
+		WriteLog("\nM68K: instruction fetched outside %08X-%08X at PC=%08X\n",
+			irisWatchPCLow, irisWatchPCHigh, m68kPC);
+		for (int i = 0x100; i > 0; i--)
+		{
+			const uint32_t pc = pcQueue[(pcQPtr + i) & 0x3FF];
+
+			m68k_disassemble(wbuf, pc, 0, 1);
+			WriteLog("  %08X: %s", pc, wbuf);
+		}
+		WriteLog("\n");
+	}
 
 	if (m68kPC & 0x01)		// Oops! We're fetching an odd address!
 	{
@@ -2570,10 +2600,17 @@ uint8_t * GetRamPtr(void)
 void JaguarExecuteNew(void)
 {
 	frameDone = false;
+	unsigned events = 0;
 
 	do
 	{
 		double timeToNextEvent = GetTimeToNextEvent();
+#ifdef IRIS_SINGLE_THREAD
+        if (!std::isfinite(timeToNextEvent) || timeToNextEvent < 0 || ++events > 100000) {
+            WriteLog("Jaguar: invalid event queue or frame failed to complete\n");
+            return;
+        }
+#endif
 //WriteLog("JEN: Time to next event (%u) is %f usec (%u RISC cycles)...\n", nextEvent, timeToNextEvent, USEC_TO_RISC_CYCLES(timeToNextEvent));
 
 		m68k_execute(USEC_TO_M68K_CYCLES(timeToNextEvent));
@@ -2581,7 +2618,13 @@ void JaguarExecuteNew(void)
 		if (vjs.GPUEnabled)
 			GPUExec(USEC_TO_RISC_CYCLES(timeToNextEvent));
 
-		HandleNextEvent();
+#ifdef IRIS_SINGLE_THREAD
+        if (vjs.DSPEnabled) {
+            if (vjs.usePipelinedDSP) DSPExecP2(USEC_TO_RISC_CYCLES(timeToNextEvent));
+            else DSPExec(USEC_TO_RISC_CYCLES(timeToNextEvent));
+        }
+#endif
+        HandleNextEvent();
  	}
 	while (!frameDone);
 }

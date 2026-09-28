@@ -7,45 +7,27 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-file(GLOB GEARLYNX_SRC "${CMAKE_SOURCE_DIR}/build/src/*.cpp")
-set(GEARLYNX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/build/src")
-
-# Virtual Jaguar RX core
-set(JAG_DIR "${CMAKE_SOURCE_DIR}/JAGUAR REFERENCE 1/src")
-file(GLOB JAG_SRC "${JAG_DIR}/*.cpp")
-list(FILTER JAG_SRC EXCLUDE REGEX ".*/debugger/.*")
-list(FILTER JAG_SRC EXCLUDE REGEX ".*/gui/.*")
-# file.cpp uses libelf/gelf which we don't have — replaced by jaguar_file_stub.cpp
-list(FILTER JAG_SRC EXCLUDE REGEX ".*/file\.cpp$")
-set(M68K_SRC
-    "${JAG_DIR}/m68000/cpuextra.c"
-    "${JAG_DIR}/m68000/readcpu.c"
-    "${JAG_DIR}/m68000/m68kdasm.c"
-    "${JAG_DIR}/m68000/obj/cpuemu.c"
-    "${JAG_DIR}/m68000/obj/cpustbl.c"
-    "${JAG_DIR}/m68000/obj/cpudefs.c"
-)
-if(MSVC)
-    set_source_files_properties(${JAG_SRC} PROPERTIES
-        COMPILE_OPTIONS "/Zc:strictStrings-;/wd4996;/wd4244;/wd4267;/wd4828"
-        COMPILE_DEFINITIONS "IRIS_HEADLESS=1;CPU_DEBUG_MEMORY=0;CPU_DEBUG_TRACING=0;ALPINE_FUNCTIONS=0"
-    )
+option(IRIS_BUILD_APP "Build the Qt frontend (requires Qt, SDL2 and Gearlynx)" ON)
+include(CTest)
+include(cmake/JaguarCore.cmake)
+if(BUILD_TESTING)
+    add_executable(test_jaguar tools/test_jaguar.cpp)
+    set_target_properties(test_jaguar PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+    target_link_libraries(test_jaguar PRIVATE iris_jaguar)
+    add_test(NAME jaguar_core COMMAND test_jaguar)
+    add_executable(jaguar_probe tools/jaguar_probe.cpp)
+    set_target_properties(jaguar_probe PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+    target_link_libraries(jaguar_probe PRIVATE iris_jaguar)
+endif()
+if(NOT IRIS_BUILD_APP)
+    return()
 endif()
 
-# Force Qt6 from official installer
-set(Qt6_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6" CACHE PATH "" FORCE)
-set(Qt6CoreTools_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6CoreTools" CACHE PATH "" FORCE)
-set(Qt6GuiTools_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6GuiTools" CACHE PATH "" FORCE)
-set(Qt6WidgetsTools_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6WidgetsTools" CACHE PATH "" FORCE)
-set(Qt6Core_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6Core" CACHE PATH "" FORCE)
-set(Qt6Gui_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6Gui" CACHE PATH "" FORCE)
-set(Qt6Widgets_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6Widgets" CACHE PATH "" FORCE)
-set(Qt6Svg_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6Svg" CACHE PATH "" FORCE)
-set(Qt6Network_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6Network" CACHE PATH "" FORCE)
-set(Qt6EntryPointPrivate_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6EntryPointPrivate" CACHE PATH "" FORCE)
-set(Qt6ZlibPrivate_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6ZlibPrivate" CACHE PATH "" FORCE)
-set(Qt6OpenGL_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6OpenGL" CACHE PATH "" FORCE)
-set(Qt6OpenGLWidgets_DIR "D:/Qt/6.8.3/msvc2022_64/lib/cmake/Qt6OpenGLWidgets" CACHE PATH "" FORCE)
+set(GEARLYNX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/build/src" CACHE PATH "Gearlynx source directory")
+file(GLOB GEARLYNX_SRC "${GEARLYNX_INCLUDE_DIR}/*.cpp")
+if(NOT EXISTS "${GEARLYNX_INCLUDE_DIR}/gearlynx.h")
+    message(FATAL_ERROR "Set GEARLYNX_INCLUDE_DIR to the Gearlynx src directory")
+endif()
 
 set(VCPKG_APPLOCAL_DEPS OFF CACHE BOOL "" FORCE)
 set(X_VCPKG_APPLOCAL_DEPS_INSTALL OFF CACHE BOOL "" FORCE)
@@ -54,8 +36,8 @@ find_package(Qt6 COMPONENTS Widgets Svg Network OpenGL OpenGLWidgets REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(ZLIB REQUIRED)
 
-find_path(DISCORD_RPC_INCLUDE_DIR discord_rpc.h PATHS "D:/vcpkg/installed/x64-windows/include" REQUIRED)
-find_library(DISCORD_RPC_LIB discord-rpc PATHS "D:/vcpkg/installed/x64-windows/lib" REQUIRED)
+find_path(DISCORD_RPC_INCLUDE_DIR discord_rpc.h PATHS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include" REQUIRED)
+find_library(DISCORD_RPC_LIB discord-rpc PATHS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib" REQUIRED)
 
 qt_add_executable(irisemulator
     src/main.cpp
@@ -112,18 +94,13 @@ qt_add_executable(irisemulator
     src/mapper/MapperFE.h
     src/jaguar/JaguarSystem.cpp
     src/jaguar/JaguarSystem.h
-    src/jaguar/jaguar_gui_stubs.cpp
-    src/jaguar/jaguar_file_stub.cpp
     src/jaguar/JaguarPatchDB.h
-    src/jaguar/tom_utils.cpp
-    src/jaguar/jaguarcore_link_stubs.cpp
     src/lynx/LynxSystem.cpp
     src/lynx/LynxSystem.h
     src/IEmulatorCore.h
     src/DiscordRPC.cpp
     src/DiscordRPC.h
     ${GEARLYNX_SRC}
-    ${M68K_SRC}
     src/resources/icons/resources.qrc
 )
 
@@ -143,7 +120,7 @@ target_include_directories(irisemulator PRIVATE
     $<TARGET_PROPERTY:SDL2::SDL2,INTERFACE_INCLUDE_DIRECTORIES>
     ${CMAKE_CURRENT_BINARY_DIR}
 )
-target_link_libraries(irisemulator PRIVATE Qt6::Widgets Qt6::Svg Qt6::Network Qt6::OpenGL Qt6::OpenGLWidgets SDL2::SDL2 ${DISCORD_RPC_LIB} ZLIB::ZLIB)
+target_link_libraries(irisemulator PRIVATE Qt6::Widgets Qt6::Svg Qt6::Network Qt6::OpenGL Qt6::OpenGLWidgets SDL2::SDL2 ${DISCORD_RPC_LIB} ZLIB::ZLIB iris_jaguar)
 
 get_filename_component(DISCORD_RPC_LIB_DIR ${DISCORD_RPC_LIB} DIRECTORY)
 get_filename_component(VCPKG_INSTALLED_DIR ${DISCORD_RPC_LIB_DIR} DIRECTORY)
@@ -179,14 +156,9 @@ add_executable(test_savestate
     src/mapper/MapperBanked.cpp
     src/MapperFactory.cpp
     src/jaguar/JaguarSystem.cpp
-    src/jaguar/jaguar_gui_stubs.cpp
-    src/jaguar/jaguar_file_stub.cpp
-    src/jaguar/tom_utils.cpp
-    src/jaguar/jaguarcore_link_stubs.cpp
     src/lynx/LynxSystem.cpp
     src/DiscordRPC.cpp
     ${GEARLYNX_SRC}
-    ${M68K_SRC}
 )
 target_include_directories(test_savestate PRIVATE 
     ${CMAKE_SOURCE_DIR}/src 
@@ -200,4 +172,4 @@ target_include_directories(test_savestate PRIVATE
     ${DISCORD_RPC_INCLUDE_DIR}
     $<TARGET_PROPERTY:SDL2::SDL2,INTERFACE_INCLUDE_DIRECTORIES>
 )
-target_link_libraries(test_savestate PRIVATE Qt6::Widgets Qt6::Svg Qt6::Network Qt6::OpenGL Qt6::OpenGLWidgets SDL2::SDL2 ${DISCORD_RPC_LIB} ZLIB::ZLIB)
+target_link_libraries(test_savestate PRIVATE Qt6::Widgets Qt6::Svg Qt6::Network Qt6::OpenGL Qt6::OpenGLWidgets SDL2::SDL2 ${DISCORD_RPC_LIB} ZLIB::ZLIB iris_jaguar)

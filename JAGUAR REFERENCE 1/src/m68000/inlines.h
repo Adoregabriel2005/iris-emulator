@@ -11,6 +11,7 @@
 #define __INLINES_H__
 
 #include "cpudefs.h"
+#include "m68kinterface.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

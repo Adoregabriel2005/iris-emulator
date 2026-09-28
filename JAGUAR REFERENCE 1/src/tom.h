@@ -35,6 +35,7 @@ void TOMWriteByte(uint32_t offset, uint8_t data, uint32_t who = UNKNOWN);
 void TOMWriteWord(uint32_t offset, uint16_t data, uint32_t who = UNKNOWN);
 
 void TOMExecHalfline(uint16_t halfline, bool render);
+void TOMRenderScanline(uint32_t * backbuffer);
 uint32_t TOMGetVideoModeWidth(void);
 uint32_t TOMGetVideoModeHeight(void);
 uint8_t TOMGetVideoMode(void);
