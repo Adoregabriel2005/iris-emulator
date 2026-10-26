@@ -232,6 +232,33 @@ void MainWindow::setupAdditionalUi()
     gearMenu->addAction(m_ui.actionScreenshot);
     gearMenu->addSeparator();
     gearMenu->addMenu(m_ui.menuTVStandard);
+    auto* speedMenu = gearMenu->addMenu(tr("Jaguar: limite de apresentação"));
+    auto* speedGroup = new QActionGroup(this);
+    const int savedLimit = settings.value("Jaguar/PresentationLimit", 30).toInt();
+    for (int limit : {30, 0}) {
+        auto* action = speedMenu->addAction(limit == 0
+            ? tr("Apresentação nativa (NTSC ~60 / PAL 50, velocidade 100%)")
+            : tr("30 FPS (velocidade do console 100%)"));
+        action->setCheckable(true);
+        action->setChecked(limit == (savedLimit == 30 ? 30 : 0));
+        speedGroup->addAction(action);
+        connect(action, &QAction::triggered, this, [this, limit]() {
+            QSettings().setValue("Jaguar/PresentationLimit", limit);
+            if (m_active_core == m_jaguar_core) configureFrameTimer();
+        });
+    }
+    auto* performanceAction = gearMenu->addAction(tr("Mostrar FPS e velocidade na imagem"));
+    performanceAction->setCheckable(true);
+    m_show_performance = settings.value("Video/ShowPerformance", true).toBool();
+    performanceAction->setChecked(m_show_performance);
+    connect(performanceAction, &QAction::toggled, this, [this](bool enabled) {
+        m_show_performance = enabled;
+        QSettings().setValue("Video/ShowPerformance", enabled);
+        if (!enabled) {
+            m_display_widget->setPerformanceText(QString());
+            if (m_separate_display) m_separate_display->setPerformanceText(QString());
+        }
+    });
     gearMenu->addSeparator();
     gearMenu->addAction(m_ui.actionViewGameList);
     gearMenu->addAction(m_ui.actionViewGameGrid);
@@ -400,8 +427,27 @@ void MainWindow::connectSignals()
         try {
             if (m_active_core && m_is_running && !m_ui.actionPause->isChecked())
             {
+                if (m_active_core == m_jaguar_core &&
+                    (!property("smokeTest").toBool() || property("smokePaced").toBool()) &&
+                    !m_jaguar_frame_pacer.shouldRun(m_jaguar_frame_clock.nsecsElapsed(),
+                        m_jaguar_frame_period, 2))
+                    return;
                 if (m_jaguar_core && m_active_core == m_jaguar_core) {
-                    JaguarInputState js = m_sdl_input->pollJaguar();
+                    JaguarInputState js = property("smokeTest").toBool()
+                        ? JaguarInputState{} : m_sdl_input->pollJaguar();
+                    if (property("smokeTest").toBool()) {
+                        const int frame = property("smokeInputFrame").toInt();
+                        setProperty("smokeInputFrame", frame + 1);
+                        for (const auto& entry : property("smokeInputScript").toList()) {
+                            const auto event = entry.toMap();
+                            if (frame < event.value("from").toInt() || frame >= event.value("to").toInt()) continue;
+                            const auto buttons = event.value("buttons").toStringList();
+                            js.a |= buttons.contains("a"); js.b |= buttons.contains("b"); js.c |= buttons.contains("c");
+                            js.up |= buttons.contains("up"); js.down |= buttons.contains("down");
+                            js.left |= buttons.contains("left"); js.right |= buttons.contains("right");
+                            js.option |= buttons.contains("option"); js.pause |= buttons.contains("pause");
+                        }
+                    }
                     m_jaguar_core->setJaguarInputState(js);
                 } else if (m_lynx_core && m_active_core == m_lynx_core) {
                     LynxInputState js = m_sdl_input->pollLynx();
@@ -413,24 +459,50 @@ void MainWindow::connectSignals()
 
                 // qDebug() << "MainWindow: Ticking core...";
                 m_active_core->step();
+                if (property("smokeTest").toBool() && m_active_core == m_jaguar_core)
+                    setProperty("audioDiagnostics", m_jaguar_core->audioDiagnostics());
+                if (!m_active_core->isRunning()) {
+                    emit emulationFailed(QStringLiteral("Core stopped during frame execution"));
+                    stopEmulation();
+                    return;
+                }
                 
                 QImage frame = m_active_core->getFrame();
-                if (!frame.isNull())
+                const bool present = m_active_core != m_jaguar_core ||
+                    m_presentation_pacer.shouldRun(m_jaguar_frame_clock.nsecsElapsed(), m_presentation_period);
+                if (!frame.isNull() && present)
                 {
                     m_display_widget->updateFrame(frame);
+                    if (m_separate_display) m_separate_display->updateFrame(frame);
+                    ++m_presented_frame_count;
+                    setProperty("presentedFrames", property("presentedFrames").toInt() + 1);
                 }
+                emit emulationFrameCompleted(frame);
                 
                 m_fps_frame_count++;
                 if (m_fps_timer.elapsed() >= 1000)
                 {
                     float fps = m_fps_frame_count / (m_fps_timer.elapsed() / 1000.0f);
-                    m_status_fps_widget->setText(QString("FPS: %1").arg(fps, 0, 'f', 1));
+                    QString performance = QString("FPS: %1").arg(fps, 0, 'f', 1);
+                    if (m_active_core == m_jaguar_core) {
+                        const double nativeRate = 1e9 / m_jaguar_core->framePeriodNanoseconds();
+                        const double presentationFps = m_presented_frame_count * 1000.0 / m_fps_timer.elapsed();
+                        performance = tr("FPS: %1 | console %2 Hz | velocidade %3% | limite %4")
+                            .arg(presentationFps, 0, 'f', 1).arg(fps, 0, 'f', 1)
+                            .arg(100.0 * fps / nativeRate, 0, 'f', 0)
+                            .arg(1e9 / m_presentation_period, 0, 'f', 0);
+                    }
+                    m_status_fps_widget->setText(performance);
+                    m_display_widget->setPerformanceText(m_show_performance ? performance : QString());
+                    if (m_separate_display) m_separate_display->setPerformanceText(m_show_performance ? performance : QString());
                     m_fps_frame_count = 0;
+                    m_presented_frame_count = 0;
                     m_fps_timer.restart();
                 }
             }
         } catch (...) {
             qCritical() << "MainWindow: CRASH in emulation timer loop!";
+            emit emulationFailed(QStringLiteral("Exception in emulation timer"));
             stopEmulation();
         }
     });
@@ -458,9 +530,8 @@ void MainWindow::onResetActionTriggered()
 {
     if (!m_active_core || !m_is_running)
         return;
-    m_active_core->stop();
-    m_active_core->loadROM(m_current_rom_path);
-    m_active_core->start();
+    const QString path = m_current_rom_path;
+    startROM(path); // Reopen audio and reset pacing through the normal load path.
 }
 
 void MainWindow::onPauseActionToggled(bool checked)
@@ -483,7 +554,8 @@ void MainWindow::onPauseActionToggled(bool checked)
     }
     else
     {
-        m_emulation_timer->start(16);
+        configureFrameTimer();
+        m_emulation_timer->start();
         m_status_verbose_widget->setText(tr("Running"));
         if (m_discord && m_is_running)
             m_discord->updatePlaying(m_current_game_title, activeConsoleName(), QString());
@@ -648,8 +720,8 @@ void MainWindow::onViewSystemDisplayTriggered()
 void MainWindow::onAboutActionTriggered()
 {
     QMessageBox::about(this, tr("About Íris Emulator"),
-        tr("Íris Emulator\n\nAn Atari 2600 (and future Atari Lynx) emulator built with Qt and SDL2.\n"
-           "Based on PCSX2 Qt interface design patterns."));
+        tr("Íris Emulator %1\n\nAtari 2600, Atari Lynx and Atari Jaguar emulator built with Qt and SDL2.\n"
+           "Based on PCSX2 Qt interface design patterns.").arg(QCoreApplication::applicationVersion()));
 }
 
 void MainWindow::onGameListEntryActivated()
@@ -762,12 +834,10 @@ void MainWindow::onSettingsTriggeredFromToolbar()
                 m_emu_core->setTVStandard(TVStandard::NTSC);
         }
 
-        // Apply VSync — adjust timer interval
+        // Reconfigure presentation timing without changing Jaguar emulation speed.
         if (m_is_running && m_emulation_timer->isActive())
         {
-            bool vsync = settings.value("Video/VSync", true).toBool();
-            // With VSync: target ~60fps (16ms). Without: run as fast as possible (1ms).
-            m_emulation_timer->setInterval(vsync ? 16 : 1);
+            configureFrameTimer();
         }
 
         // Apply audio settings
@@ -822,6 +892,7 @@ void MainWindow::onEmulationStarted()
             m_emu_core->getTVStandard() == TVStandard::NTSC ? 192 : 228));
     }
     m_status_resolution_widget->show();
+    m_status_fps_widget->setVisible(m_active_core == m_jaguar_core);
 
     // Discord RPC
     if (m_discord) {
@@ -921,7 +992,10 @@ void MainWindow::startROM(const QString& path)
 
     if (!m_active_core->loadROM(path))
     {
-        QMessageBox::critical(this, tr("Error"), tr("Failed to load ROM: %1").arg(path));
+        if (property("smokeTest").toBool())
+            emit emulationFailed(QStringLiteral("Failed to load ROM: %1").arg(path));
+        else
+            QMessageBox::critical(this, tr("Error"), tr("Failed to load ROM: %1").arg(path));
         m_active_core = nullptr;
         return;
     }
@@ -993,10 +1067,8 @@ void MainWindow::startROM(const QString& path)
         m_active_core->initAudio(audioDevice);
     }
 
-    // Start the frame timer — respect VSync setting
-    QSettings timerSettings;
-    bool vsync = timerSettings.value("Video/VSync", true).toBool();
-    m_emulation_timer->start(vsync ? 16 : 1); // VSync: ~60fps, No VSync: uncapped
+    configureFrameTimer();
+    m_emulation_timer->start();
     m_fps_frame_count = 0;
     m_fps_timer.restart();
 
@@ -1034,6 +1106,26 @@ void MainWindow::stopEmulation()
     onEmulationStopped();
 }
 
+void MainWindow::configureFrameTimer()
+{
+    m_emulation_timer->setTimerType(Qt::PreciseTimer);
+    if (m_active_core && m_active_core == m_jaguar_core) {
+        m_jaguar_frame_period = m_jaguar_core->framePeriodNanoseconds();
+        m_presentation_period = QSettings().value("Jaguar/PresentationLimit", 30).toInt() == 0
+            ? m_jaguar_frame_period : 33333333;
+        m_jaguar_frame_clock.start();
+        m_jaguar_frame_pacer.reset();
+        m_presentation_pacer.reset();
+        m_fps_frame_count = 0;
+        m_presented_frame_count = 0;
+        m_fps_timer.restart();
+        m_emulation_timer->setInterval(1);
+    } else {
+        QSettings settings;
+        m_emulation_timer->setInterval(settings.value("Video/VSync", true).toBool() ? 16 : 1);
+    }
+}
+
 void MainWindow::applyVideoSettings()
 {
     QSettings settings;
@@ -1063,9 +1155,8 @@ void MainWindow::applyVideoSettings()
     m_display_widget->setScanlineIntensity(settings.value("Video/ScanlineIntensity", 50).toInt());
     m_display_widget->setLCDGhostingStrength(settings.value("Video/LCDGhosting", 40).toInt());
 
-    bool vsync = settings.value("Video/VSync", true).toBool();
     if (m_is_running && m_emulation_timer->isActive())
-        m_emulation_timer->setInterval(vsync ? 16 : 1);
+        configureFrameTimer();
 
     if (m_emu_core && m_is_running && !isLynx) {
         QString tvStd = settings.value("Video/TVStandard", "NTSC").toString();
@@ -1306,6 +1397,8 @@ void MainWindow::dropEvent(QDropEvent* event)
 
 void MainWindow::keyPressEvent(QKeyEvent* event)
 {
+    if (m_sdl_input && m_is_running && !event->isAutoRepeat())
+        m_sdl_input->setQtKeyState(event->key(), true);
     if (event->key() == Qt::Key_Escape && m_is_running)
     {
         if (m_overlay_widget->isOverlayVisible())
@@ -1325,4 +1418,11 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
         return;
     }
     QMainWindow::keyPressEvent(event);
+}
+
+void MainWindow::keyReleaseEvent(QKeyEvent* event)
+{
+    if (m_sdl_input && !event->isAutoRepeat())
+        m_sdl_input->setQtKeyState(event->key(), false);
+    QMainWindow::keyReleaseEvent(event);
 }

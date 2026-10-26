@@ -7,6 +7,7 @@
 #include "log.h"
 #include "modelsBIOS.h"
 #include "JaguarAudio.h"
+#include "joystick.h"
 #include "m68000/m68kinterface.h"
 #include <algorithm>
 #include <cstdio>
@@ -58,7 +59,7 @@ void DumpFrameStats(const uint32_t* video, unsigned pitch, unsigned w, unsigned 
     for (unsigned y = 0; y < h; ++y) {
         bool blank = true;
         for (unsigned x = 0; x < w; ++x) {
-            const uint32_t p = video[y * pitch + x] & 0xFFFFFF;
+            const uint32_t p = video[y * pitch + x] >> 8; // core pixels are RRGGBBAA
             if (p) blank = false;
             ++histogram[p];
         }
@@ -81,7 +82,7 @@ void DumpFrameStats(const uint32_t* video, unsigned pitch, unsigned w, unsigned 
 int main(int argc, char** argv)
 {
     if (argc < 2) {
-        std::puts("Usage: jaguar_probe game.j64 [frames=1800|0] [output.ppm] [--watch|--oplog] [shot-every-frames]");
+        std::puts("Usage: jaguar_probe game.j64 [frames=1800|0] [output.ppm] [--watch|--oplog] [shot-every-frames] [--bios] [--fast] [--start]");
         return 2;
     }
     const int frames = argc > 2 ? std::atoi(argv[2]) : 1800;
@@ -90,6 +91,12 @@ int main(int argc, char** argv)
     const bool watch = argc > 4 && std::strcmp(argv[4], "--watch") == 0;
     const bool oplog = argc > 4 && std::strcmp(argv[4], "--oplog") == 0;
     const int every = argc > 5 ? std::atoi(argv[5]) : 0;
+    bool bios = false, fast = false, start = false;
+    for (int i = 4; i < argc; ++i) {
+        bios |= std::strcmp(argv[i], "--bios") == 0;
+        fast |= std::strcmp(argv[i], "--fast") == 0;
+        start |= std::strcmp(argv[i], "--start") == 0;
+    }
     LogInit("jaguar-probe.log");
     vjs.hardwareTypeNTSC = true;
     vjs.DRAM_size = 0x200000;
@@ -97,7 +104,9 @@ int main(int argc, char** argv)
     vjs.biosType = BT_M_SERIES;
     vjs.jaguarModel = JAG_M_SERIES;
     // Match the frontend defaults, without relying on host audio hardware.
-    vjs.useFastBlitter = false;
+    vjs.useFastBlitter = fast;
+    vjs.useJaguarBIOS = bios;
+    jaguarCartInserted = true;
     std::strcpy(vjs.EEPROMPath, ".");
     constexpr unsigned pitch = 2048, height = 512;
     std::vector<uint32_t> video(pitch * height, 0);
@@ -137,6 +146,8 @@ int main(int argc, char** argv)
         return 0;
     }
     for (int frame = 1; frame <= frames; ++frame) {
+        // A short A press after the logos lets ROM regressions enter gameplay.
+        joypad0Buttons[BUTTON_A] = start && frame >= 600 && frame % 120 < 6;
         // --oplog dumps the object list of the final frame only, which is what
         // tells us how wide the game thinks its objects are.
         op_start_log = (oplog && frame == frames) ? 1 : 0;

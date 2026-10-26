@@ -2344,7 +2344,11 @@ void JaguarSetScreenPitch(uint32_t pitch)
 void JaguarInit(void)
 {
 	// For randomizing RAM
-	srand((unsigned int)time(NULL));
+	const char * seedOverride = getenv("IRIS_JAGUAR_RAM_SEED");
+	const unsigned int ramSeed = seedOverride
+		? (unsigned int)strtoul(seedOverride, NULL, 0) : (unsigned int)time(NULL);
+	srand(ramSeed);
+	WriteLog("Jaguar: initial RAM seed=%u\n", ramSeed);
 
 	// Contents of local RAM are quasi-stable; we simulate this by randomizing RAM contents
 	for(uint32_t i=0; i<vjs.DRAM_size; i+=4)

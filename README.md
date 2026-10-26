@@ -5,20 +5,14 @@
 </p>
 
 <p align="center">
-<<<<<<< HEAD
-  <b>Multi-system Atari emulator — Atari 2600 + Atari Lynx + Jaguar</b><br>
-  Built with C++17 · Qt 6 · SDL2 · Gearlynx engine<br>
-  Developed by <b>Gorigamia</b> · Open Source · Constantly updated
-=======
   <b>Multi-system Atari emulator — Atari 2600 + Atari Lynx + Atari Jaguar</b><br>
-  Built with C++17 · Qt 6 · SDL2 · OpenGL 3.3<br>
+  Built with C++17 · Qt 6 · SDL2 · Gearlynx engine<br>
   Developed by <b>Gorigamia</b> &amp; <b>Aleister93MarkV</b> · Open Source · Constantly updated
->>>>>>> 5e58a56 (docs: bring README v1.18.1 to main branch)
 </p>
 
 <p align="center">
-  <a href="https://github.com/Adoregabriel2005/iris-emulator/releases/tag/v1.18.1">
-    <img src="https://img.shields.io/badge/release-v1.18.1-blue?style=flat-square"/>
+  <a href="https://github.com/Adoregabriel2005/iris-emulator/releases/tag/v1.18.2">
+    <img src="https://img.shields.io/badge/release-v1.18.2-blue?style=flat-square"/>
   </a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11%2064--bit-lightgrey?style=flat-square"/>
   <img src="https://img.shields.io/badge/license-GPL--3.0-green?style=flat-square"/>
@@ -27,6 +21,15 @@
 </p>
 
 ---
+
+## v1.18.2 — Jaguar fixes
+
+- 30 FPS presentation by default, with the console clock kept at normal NTSC/PAL speed.
+- Real stereo audio output, buffered playback and audio reopening after Reset.
+- DSP interrupt-return fix for Wolfenstein 3D and object-processor fix for clipped Super Burnout text.
+- Independent Jaguar keyboard bindings and regression tests for timing, input, audio and rendering.
+
+See [release notes](docs/RELEASE-v1.18.2.md) and [build instructions](docs/BUILDING.md). Compatibility remains incomplete; no ROMs or personal saves are included in the Windows package.
 
 ## What is Íris?
 
@@ -179,7 +182,7 @@ The **Atari Jaguar** was developed primarily by **Flare Technology** (Martin Bre
 | ❌ Does not open / crashes | ~6 titles | ~30% of tested library |
 | 🏆 100% completable | Tempest 2000, Rayman (partial) | ~10% of tested library |
 
-> The Jaguar core is in **alpha (~40%)**. The Jaguar library has ~67 commercial titles. GPU/blitter accuracy and CD-ROM support are the main remaining challenges.
+> The Jaguar core is experimental. Passing an opening test does not certify a complete game. Jaguar CD and some cartridge/homebrew formats remain unsupported.
 
 ---
 
@@ -281,24 +284,22 @@ The **Atari Jaguar** was developed primarily by **Flare Technology** (Martin Bre
 
 ---
 
-### Atari Jaguar — Works well ✅
+### Atari Jaguar — v1.18.2 validation
 
-| Game | Status |
+| Game | Verified scope |
 |---|---|
-| Tempest 2000 | ✅ Fully playable |
-| Wolfenstein 3D | ✅ Fully playable |
-| Alien vs Predator | ✅ Fully playable |
-| Rayman | ✅ Mostly playable (minor sprite glitches) |
-| Checkered Flag | ✅ Fully playable |
-| Cybermorph | ✅ Fully playable |
-| Club Drive | ✅ Fully playable |
+| Doom | 3D demo renders; user confirmed normal sound and speed; 30 FPS presentation |
+| Wolfenstein 3D | DSP boot hang fixed; 24 initial RAM states passed boot; audio output tested |
+| Super Burnout | Menu text clipping fixed; race rendering tested; sound survives Reset |
+| Rayman | Opening regression and audio generation tested |
+
+These checks do not certify every level, controls, sound effect or the whole Jaguar catalogue.
 
 ### Atari Jaguar — Has issues ⚠️
 
 | Game | Issue |
 |---|---|
 | Kasumi Ninja | Graphical corruption in some stages |
-|Doom | Broken Sound and Black Screen Logo Visible |
 | Brutal Sports Football | Audio desync |
 | Val d'Isère Skiing | Geometry glitches |
 | Iron Soldier | Occasional frame drops |

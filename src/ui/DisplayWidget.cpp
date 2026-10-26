@@ -50,6 +50,7 @@ void DisplayWidget::updateFrame(const QImage& frame)
 void DisplayWidget::clearFrame()
 {
     m_current_frame = QImage();
+    m_performance_text.clear();
     m_prev_frame    = QImage();
     m_scaled_frame  = QImage();
     m_scaled_frame_rect = QRect();
@@ -204,6 +205,18 @@ void DisplayWidget::paintEvent(QPaintEvent* event)
         painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
         painter.drawImage(dr, frameToDraw);
         break;
+    }
+    if (!m_performance_text.isEmpty()) {
+        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        QFont font = painter.font();
+        font.setPixelSize(16);
+        font.setBold(true);
+        painter.setFont(font);
+        const QRect box = painter.fontMetrics().boundingRect(m_performance_text)
+            .adjusted(-8, -5, 8, 5).translated(dr.topLeft() + QPoint(12, 24));
+        painter.fillRect(box, QColor(0, 0, 0, 190));
+        painter.setPen(Qt::white);
+        painter.drawText(box, Qt::AlignCenter, m_performance_text);
     }
 }
 

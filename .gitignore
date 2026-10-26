@@ -1,4 +1,8 @@
 # Build directories
+.build-deps/
+build_interface/
+dist/
+Atari Jaguar Rom Collection/
 build/
 build_release2/
 out/
@@ -9,6 +13,10 @@ ROMS/
 *.bin
 *.a26
 *.rom
+*.jag
+*.j64
+*.eeprom
+reports/
 *.lnx
 *.lyx
 *.zip

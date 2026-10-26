@@ -14,6 +14,8 @@
 #include <QCoreApplication>
 #include <QSettings>
 #include <QDebug>
+#include <QSaveFile>
+#include <QDataStream>
 #include <cstring>
 #include <algorithm>
 
@@ -27,6 +29,8 @@ JaguarSystem::JaguarSystem(QObject *parent)
     m_frame = QImage(326, 240, QImage::Format_RGB32);
     m_frame.fill(Qt::black);
     QString logPath = QCoreApplication::applicationDirPath() + "/jaguar_iris.log";
+    const QString smokeOutput = QCoreApplication::instance()->property("smokeOutput").toString();
+    if (!smokeOutput.isEmpty()) logPath = smokeOutput + "/jaguar_iris.log";
     LogInit(logPath.toLocal8Bit().data());
 }
 
@@ -45,6 +49,8 @@ bool JaguarSystem::loadROM(const QString &path)
 {
     stop();
     closeAudio();
+    m_audioSamples = m_nonzeroSamples = m_clippedSamples = 0;
+    m_audioPeak = m_audioQueueErrors = m_audioQueueResets = m_audioUnderruns = 0;
     if (m_initialized) {
         JaguarDone();
         m_initialized = false;
@@ -120,7 +126,7 @@ bool JaguarSystem::loadROM(const QString &path)
 void JaguarSystem::start()
 {
     m_running = m_initialized;
-    if (m_audioDevice) SDL_PauseAudioDevice(m_audioDevice, !m_running || !m_audioEnabled);
+    if (m_audioDevice) SDL_PauseAudioDevice(m_audioDevice, !m_running || !m_audioEnabled || !m_audioPrimed);
 }
 
 void JaguarSystem::stop()
@@ -129,6 +135,7 @@ void JaguarSystem::stop()
     if (m_audioDevice) {
         SDL_PauseAudioDevice(m_audioDevice, 1);
         SDL_ClearQueuedAudio(m_audioDevice);
+        m_audioPrimed = false;
     }
 }
 
@@ -145,12 +152,37 @@ void JaguarSystem::step()
     }
 
     auto samples = JaguarTakeAudioSamples();
+    const bool captureAudio = QCoreApplication::instance()->property("smokeAudio").toBool();
+    for (const auto sample : samples) {
+        ++m_audioSamples;
+        m_nonzeroSamples += sample != 0;
+        m_clippedSamples += sample == INT16_MIN || sample == INT16_MAX;
+        m_audioPeak = std::max(m_audioPeak, static_cast<unsigned>(std::abs(static_cast<int>(sample))));
+        if (captureAudio && m_audioCapture.size() < 48000 * 4 * 30) {
+            m_audioCapture.append(static_cast<char>(sample & 0xFF));
+            m_audioCapture.append(static_cast<char>(static_cast<uint16_t>(sample) >> 8));
+        }
+    }
     if (m_audioDevice && m_audioEnabled && !samples.empty()) {
         for (auto &sample : samples) sample = static_cast<int16_t>(sample * m_audioVolume / 100);
+        if (m_audioPrimed && SDL_GetQueuedAudioSize(m_audioDevice) == 0) {
+            ++m_audioUnderruns;
+            m_audioPrimed = false;
+            SDL_PauseAudioDevice(m_audioDevice, 1);
+        }
         // Limit latency in uncapped mode. This affects host playback only.
-        if (SDL_GetQueuedAudioSize(m_audioDevice) > 48000 * 4 / 5)
+        if (SDL_GetQueuedAudioSize(m_audioDevice) > std::max(Uint32(48000 * 4 / 5), m_audioPrebufferBytes * 3)) {
             SDL_ClearQueuedAudio(m_audioDevice);
-        SDL_QueueAudio(m_audioDevice, samples.data(), static_cast<Uint32>(samples.size() * sizeof(int16_t)));
+            m_audioPrimed = false;
+            ++m_audioQueueResets;
+        }
+        if (SDL_QueueAudio(m_audioDevice, samples.data(), static_cast<Uint32>(samples.size() * sizeof(int16_t))) != 0)
+            ++m_audioQueueErrors;
+        // Respect the configured latency and re-prime after an underrun.
+        if (!m_audioPrimed && SDL_GetQueuedAudioSize(m_audioDevice) >= m_audioPrebufferBytes) {
+            m_audioPrimed = true;
+            SDL_PauseAudioDevice(m_audioDevice, 0);
+        }
     }
 
     // Use exactly the same virtual viewport as TOM's scanline renderer.
@@ -170,6 +202,12 @@ void JaguarSystem::step()
 }
 
 QImage JaguarSystem::getFrame() const { return m_frame; }
+
+qint64 JaguarSystem::framePeriodNanoseconds() const
+{
+    // JaguarExecuteNew completes 525 NTSC or 625 PAL half-lines per call.
+    return vjs.hardwareTypeNTSC ? 16683333 : 20000000;
+}
 
 bool JaguarSystem::saveState(const QString &path) { Q_UNUSED(path); return false; }
 bool JaguarSystem::loadState(const QString &path) { Q_UNUSED(path); return false; }
@@ -224,16 +262,54 @@ void JaguarSystem::initAudio(const QString &deviceName)
     desired.format = AUDIO_S16SYS;
     desired.channels = 2;
     desired.samples = 1024;
+    m_audioPrebufferBytes = 48000 * 4 * std::clamp(QSettings().value("Audio/Latency", 128).toInt(), 16, 256) / 1000;
     const QByteArray name = deviceName.toUtf8();
-    const char *device = deviceName.isEmpty() || deviceName == "default" ? nullptr : name.constData();
+    const char *device = deviceName.isEmpty() || deviceName == "default" || deviceName == "System Default"
+        ? nullptr : name.constData();
     m_audioDevice = SDL_OpenAudioDevice(device, 0, &desired, nullptr, 0);
+    if (!m_audioDevice && device) {
+        qWarning() << "Jaguar audio device unavailable:" << deviceName
+                   << "- using the default device";
+        m_audioDevice = SDL_OpenAudioDevice(nullptr, 0, &desired, nullptr, 0);
+    }
     if (!m_audioDevice) qWarning() << "Jaguar audio:" << SDL_GetError();
-    else SDL_PauseAudioDevice(m_audioDevice, !m_running || !m_audioEnabled);
+    else {
+        m_audioPrimed = false;
+        SDL_PauseAudioDevice(m_audioDevice, 1);
+        qInfo() << "Jaguar audio opened:" << SDL_GetCurrentAudioDriver() << "48000 Hz stereo";
+    }
 }
 
 void JaguarSystem::closeAudio()
 {
     if (m_audioDevice) { SDL_CloseAudioDevice(m_audioDevice); m_audioDevice = 0; }
+    m_audioPrimed = false;
+    if (!m_audioCapture.isEmpty()) {
+        const QString output = QCoreApplication::instance()->property("smokeOutput").toString();
+        QSaveFile wav(output + "/audio.wav");
+        if (wav.open(QIODevice::WriteOnly)) {
+            QDataStream stream(&wav);
+            stream.setByteOrder(QDataStream::LittleEndian);
+            stream.writeRawData("RIFF", 4); stream << quint32(36 + m_audioCapture.size());
+            stream.writeRawData("WAVEfmt ", 8); stream << quint32(16) << quint16(1) << quint16(2)
+                << quint32(48000) << quint32(48000 * 4) << quint16(4) << quint16(16);
+            stream.writeRawData("data", 4); stream << quint32(m_audioCapture.size());
+            stream.writeRawData(m_audioCapture.constData(), m_audioCapture.size());
+            wav.commit();
+        }
+        m_audioCapture.clear();
+    }
+}
+
+QVariantMap JaguarSystem::audioDiagnostics() const
+{
+    return {{"deviceOpened", m_audioDevice != 0}, {"driver", QString::fromUtf8(SDL_GetCurrentAudioDriver() ? SDL_GetCurrentAudioDriver() : "")},
+        {"enabled", m_audioEnabled}, {"sampleRate", 48000}, {"channels", 2},
+        {"samples", QVariant::fromValue(m_audioSamples)}, {"nonzeroSamples", QVariant::fromValue(m_nonzeroSamples)},
+        {"clippedSamples", QVariant::fromValue(m_clippedSamples)}, {"peak", m_audioPeak},
+        {"queueErrors", m_audioQueueErrors}, {"queueResets", m_audioQueueResets}, {"underruns", m_audioUnderruns},
+        {"latencyMs", m_audioPrebufferBytes * 1000 / (48000 * 4)},
+        {"queuedBytes", m_audioDevice ? SDL_GetQueuedAudioSize(m_audioDevice) : 0}};
 }
 
 void JaguarSystem::setAudioVolume(int percent)
@@ -246,6 +322,7 @@ void JaguarSystem::setAudioEnabled(bool enabled)
     m_audioEnabled = enabled;
     if (m_audioDevice) {
         SDL_ClearQueuedAudio(m_audioDevice);
-        SDL_PauseAudioDevice(m_audioDevice, !m_running || !enabled);
+        m_audioPrimed = false;
+        SDL_PauseAudioDevice(m_audioDevice, 1);
     }
 }

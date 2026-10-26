@@ -64,6 +64,8 @@ SDL_Scancode SDLInput::qtKeyToSdlScancode(int qtKey)
     case Qt::Key_Right: return SDL_SCANCODE_RIGHT;
     // Common keys
     case Qt::Key_Space:     return SDL_SCANCODE_SPACE;
+    case Qt::Key_Asterisk:  return SDL_SCANCODE_KP_MULTIPLY;
+    case Qt::Key_NumberSign:return SDL_SCANCODE_NONUSHASH;
     case Qt::Key_Return:    return SDL_SCANCODE_RETURN;
     case Qt::Key_Enter:     return SDL_SCANCODE_KP_ENTER;
     case Qt::Key_Escape:    return SDL_SCANCODE_ESCAPE;
@@ -271,6 +273,27 @@ const char* SDLInput::actionName(InputAction action)
     case InputAction::LynxLeftShoulder:  return "Lynx L Shoulder";
     case InputAction::LynxRightShoulder: return "Lynx R Shoulder";
     case InputAction::LynxStart:         return "Lynx Start";
+    case InputAction::JagUp: return "Jaguar Up";
+    case InputAction::JagDown: return "Jaguar Down";
+    case InputAction::JagLeft: return "Jaguar Left";
+    case InputAction::JagRight: return "Jaguar Right";
+    case InputAction::JagA: return "Jaguar A";
+    case InputAction::JagB: return "Jaguar B";
+    case InputAction::JagC: return "Jaguar C";
+    case InputAction::JagOption: return "Jaguar Option";
+    case InputAction::JagPause: return "Jaguar Pause";
+    case InputAction::Jag1: return "Jaguar 1";
+    case InputAction::Jag2: return "Jaguar 2";
+    case InputAction::Jag3: return "Jaguar 3";
+    case InputAction::Jag4: return "Jaguar 4";
+    case InputAction::Jag5: return "Jaguar 5";
+    case InputAction::Jag6: return "Jaguar 6";
+    case InputAction::Jag7: return "Jaguar 7";
+    case InputAction::Jag8: return "Jaguar 8";
+    case InputAction::Jag9: return "Jaguar 9";
+    case InputAction::JagStar: return "Jaguar Star";
+    case InputAction::Jag0: return "Jaguar 0";
+    case InputAction::JagHash: return "Jaguar Hash";
     default: return "Unknown";
     }
 }
@@ -305,6 +328,28 @@ InputBinding SDLInput::defaultBinding(InputAction action)
     case InputAction::LynxLeftShoulder:   b.code = SDL_SCANCODE_A;      break;
     case InputAction::LynxRightShoulder:  b.code = SDL_SCANCODE_S;      break;
     case InputAction::LynxStart:          b.code = SDL_SCANCODE_RETURN; break;
+    // Native Jaguar controls, including the keypad used by Doom's weapons.
+    case InputAction::JagUp: b.code = SDL_SCANCODE_UP; break;
+    case InputAction::JagDown: b.code = SDL_SCANCODE_DOWN; break;
+    case InputAction::JagLeft: b.code = SDL_SCANCODE_LEFT; break;
+    case InputAction::JagRight: b.code = SDL_SCANCODE_RIGHT; break;
+    case InputAction::JagA: b.code = SDL_SCANCODE_Z; break;
+    case InputAction::JagB: b.code = SDL_SCANCODE_X; break;
+    case InputAction::JagC: b.code = SDL_SCANCODE_C; break;
+    case InputAction::JagOption: b.code = SDL_SCANCODE_O; break;
+    case InputAction::JagPause: b.code = SDL_SCANCODE_RETURN; break;
+    case InputAction::Jag1: b.code = SDL_SCANCODE_1; break;
+    case InputAction::Jag2: b.code = SDL_SCANCODE_2; break;
+    case InputAction::Jag3: b.code = SDL_SCANCODE_3; break;
+    case InputAction::Jag4: b.code = SDL_SCANCODE_4; break;
+    case InputAction::Jag5: b.code = SDL_SCANCODE_5; break;
+    case InputAction::Jag6: b.code = SDL_SCANCODE_6; break;
+    case InputAction::Jag7: b.code = SDL_SCANCODE_7; break;
+    case InputAction::Jag8: b.code = SDL_SCANCODE_8; break;
+    case InputAction::Jag9: b.code = SDL_SCANCODE_9; break;
+    case InputAction::JagStar: b.code = SDL_SCANCODE_KP_MULTIPLY; break;
+    case InputAction::Jag0: b.code = SDL_SCANCODE_0; break;
+    case InputAction::JagHash: b.code = SDL_SCANCODE_NONUSHASH; break;
     default: b.type = InputBinding::Type::None; break;
     }
     return b;
@@ -370,7 +415,7 @@ bool SDLInput::isActionActive(const InputBinding& binding, const Uint8* keys) co
 {
     switch (binding.type) {
     case InputBinding::Type::Keyboard:
-        return keys[binding.code];
+        return binding.code >= 0 && binding.code < SDL_NUM_SCANCODES && keys[binding.code];
     case InputBinding::Type::GamepadButton:
         if (m_controller)
             return SDL_GameControllerGetButton(m_controller,

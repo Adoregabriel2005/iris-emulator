@@ -31,6 +31,7 @@ public:
 
     void updateFrame(const QImage& frame);
     void clearFrame();
+    void setPerformanceText(const QString& text) { m_performance_text = text; update(); }
 
     bool hasFrame() const { return !m_current_frame.isNull(); }
 
@@ -66,6 +67,7 @@ private:
     QImage applyLCDBlur(const QImage& src) const;
 
     QImage m_current_frame;
+    QString m_performance_text;
     QImage m_prev_frame;          // para ghosting do LCD
     QImage m_scaled_frame;
     QRect m_scaled_frame_rect;

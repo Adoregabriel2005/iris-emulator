@@ -10,6 +10,7 @@
 #include <optional>
 
 #include "ui_MainWindow.h"
+#include "FramePacer.h"
 
 class QProgressBar;
 class QActionGroup;
@@ -45,6 +46,10 @@ public:
 public Q_SLOTS:
     void refreshGameList(bool invalidate_cache);
     void onStatusMessage(const QString& message);
+
+Q_SIGNALS:
+    void emulationFrameCompleted(const QImage& frame);
+    void emulationFailed(const QString& reason);
 
 private Q_SLOTS:
     void onStartFileActionTriggered();
@@ -83,6 +88,7 @@ protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dropEvent(QDropEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     void setupAdditionalUi();
@@ -112,6 +118,7 @@ private:
     void startROM(const QString& path);
     void stopEmulation();
     void applyVideoSettings();
+    void configureFrameTimer();
 
     QMainWindow* m_separate_window = nullptr;
     DisplayWidget* m_separate_display = nullptr;
@@ -150,6 +157,13 @@ private:
     bool m_was_paused = false;
     int m_fps_frame_count = 0;
     QElapsedTimer m_fps_timer;
+    QElapsedTimer m_jaguar_frame_clock;
+    FramePacer m_jaguar_frame_pacer;
+    FramePacer m_presentation_pacer;
+    qint64 m_jaguar_frame_period = 16683333;
+    qint64 m_presentation_period = 33333333;
+    int m_presented_frame_count = 0;
+    bool m_show_performance = true;
     QString m_current_rom_path;
     QString m_current_game_title;
 };

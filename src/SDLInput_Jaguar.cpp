@@ -1,11 +1,10 @@
 #include "SDLInput.h"
 
-JaguarInputState SDLInput::pollJaguar()
+JaguarInputState SDLInput::pollJaguarKeyboard() const
 {
     JaguarInputState s;
     if (!m_initialized) return s;
 
-    SDL_PumpEvents();
     const Uint8* keys = m_keystate;
 
     s.up     = isActionActive(m_bindings[static_cast<int>(InputAction::JagUp)],     keys);
@@ -29,6 +28,15 @@ JaguarInputState SDLInput::pollJaguar()
     s.star   = isActionActive(m_bindings[static_cast<int>(InputAction::JagStar)],   keys);
     s.n0     = isActionActive(m_bindings[static_cast<int>(InputAction::Jag0)],      keys);
     s.hash   = isActionActive(m_bindings[static_cast<int>(InputAction::JagHash)],   keys);
+
+    return s;
+}
+
+JaguarInputState SDLInput::pollJaguar()
+{
+    if (!m_initialized) return {};
+    SDL_PumpEvents();
+    JaguarInputState s = pollJaguarKeyboard();
 
     if (m_controller) {
         if (SDL_GameControllerGetButton(m_controller, SDL_CONTROLLER_BUTTON_DPAD_UP))    s.up = true;

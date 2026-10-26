@@ -471,8 +471,9 @@ if (specialLog)
 				{
 					dstdata = READ_RDATA(DSTDATA, a1, REG(A1_FLAGS), a1_phrase_mode);
 
+					// Depth reads are independent of destination colour reads.
 					if (DSTENZ)
-						dstzdata = READ_RDATA(DSTZ, a1, REG(A1_FLAGS), a1_phrase_mode);
+						dstzdata = READ_ZDATA(a1, REG(A1_FLAGS));
 				}
 
 /*This wasn't working...				// a1 clipping
@@ -775,8 +776,9 @@ Blit! (00098D90 <- 0081DDC0) count: 320 x 287, A1/2_FLAGS: 00004220/00004020 [cm
 				else
 				{
 					dstdata = READ_RDATA(DSTDATA, a2, REG(A2_FLAGS), a2_phrase_mode);
+					// Depth reads are independent of destination colour reads.
 					if (DSTENZ)
-						dstzdata = READ_RDATA(DSTZ, a2, REG(A2_FLAGS), a2_phrase_mode);
+						dstzdata = READ_ZDATA(a2, REG(A2_FLAGS));
 				}
 
 				if (GOURZ)

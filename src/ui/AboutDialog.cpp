@@ -1,4 +1,5 @@
 #include "AboutDialog.h"
+#include <QCoreApplication>
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -33,8 +34,9 @@ AboutDialog::AboutDialog(QWidget* parent)
     auto* titleLbl = new QLabel(tr("<h2>Íris Emulator</h2>"), this);
     titleLbl->setTextFormat(Qt::RichText);
     auto* verLbl = new QLabel(
-        tr("<span style='color:#aaa;'>Version 1.17 &nbsp;·&nbsp; "
-           "GPL-3.0 Open Source &nbsp;·&nbsp; Windows 10/11 64-bit</span>"), this);
+        tr("<span style='color:#aaa;'>Version %1 &nbsp;·&nbsp; "
+           "GPL-3.0 Open Source &nbsp;·&nbsp; Windows 10/11 64-bit</span>")
+            .arg(QCoreApplication::applicationVersion()), this);
     verLbl->setTextFormat(Qt::RichText);
     auto* devLbl = new QLabel(
         tr("<span style='color:#888;'>Developed by <b>Gorigamia</b> &amp; <b>Aleister93MarkV</b></span>"), this);

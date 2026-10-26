@@ -451,7 +451,7 @@ void DumpBitmapCore(uint64_t p0, uint64_t p1)
 #else
 #warning "Need to fix this so that when an GPU object IRQ happens, we can pick up OP processing where we left off. !!! FIX !!!"
 #endif // _MSC_VER
-void OPProcessList(int halfline, bool render)
+void OPProcessList(int halfline, bool render, bool processBitmaps)
 {
 #ifdef _MSC_VER
 #pragma message("Warning: !!! NEED TO HANDLE MULTIPLE FIELDS PROPERLY !!!")
@@ -604,7 +604,7 @@ WriteLog("    --> List end\n\n");
 if (inhibit && op_start_log)
 	WriteLog("!!! ^^^ This object is INHIBITED! ^^^ !!!\n");
 bitmapCounter++;
-if (!inhibit)	// For OP testing only!
+if (!inhibit && processBitmaps)
 // *** END OP PROCESSOR TESTING ONLY ***
 			if (halfline >= ypos && height > 0)
 			{
@@ -657,7 +657,7 @@ if (inhibit && op_start_log)
 	DumpScaledObject(p0, OPLoadPhrase(op_pointer), OPLoadPhrase(op_pointer+8));
 }
 bitmapCounter++;
-if (!inhibit)	// For OP testing only!
+if (!inhibit && processBitmaps)
 // *** END OP PROCESSOR TESTING ONLY ***
 			if (halfline >= ypos && height > 0)
 			{

@@ -581,16 +581,17 @@ QWidget* SettingsDialog::createAudioPage()
     auto* deviceRow = new QHBoxLayout();
     deviceRow->addWidget(new QLabel(tr("Output Device:"), page));
     m_audio_device_combo = new QComboBox(page);
-    m_audio_device_combo->addItem(tr("System Default"));
+    m_audio_device_combo->addItem(tr("System Default"), QStringLiteral("default"));
     // Enumerate SDL audio devices if available
     int audioDevCount = SDL_GetNumAudioDevices(0);
     for (int i = 0; i < audioDevCount; i++) {
         const char* name = SDL_GetAudioDeviceName(i, 0);
         if (name)
-            m_audio_device_combo->addItem(QString::fromUtf8(name));
+            m_audio_device_combo->addItem(QString::fromUtf8(name), QString::fromUtf8(name));
     }
     QString savedDevice = settings.value("Audio/Device", "").toString();
-    int devIdx = m_audio_device_combo->findText(savedDevice);
+    int devIdx = m_audio_device_combo->findData(savedDevice);
+    if (devIdx < 0) devIdx = m_audio_device_combo->findText(savedDevice);
     m_audio_device_combo->setCurrentIndex(devIdx >= 0 ? devIdx : 0);
     installTooltip(m_audio_device_combo, tr("Select the audio output device. 'System Default' uses whatever your OS reports."));
     deviceRow->addWidget(m_audio_device_combo, 1);
@@ -618,7 +619,7 @@ QWidget* SettingsDialog::createAudioPage()
     m_audio_latency_spin = new QSpinBox(page);
     m_audio_latency_spin->setRange(16, 256);
     m_audio_latency_spin->setSuffix(QStringLiteral(" ms"));
-    m_audio_latency_spin->setValue(settings.value("Audio/Latency", 64).toInt());
+    m_audio_latency_spin->setValue(settings.value("Audio/Latency", 128).toInt());
     installTooltip(m_audio_latency_spin, tr("Audio buffer size in milliseconds. Lower values reduce latency but may cause crackling."));
     latRow->addWidget(m_audio_latency_spin, 1);
     layout->addLayout(latRow);
@@ -1470,7 +1471,7 @@ void SettingsDialog::onAccepted()
     // Audio
     settings.setValue("Audio/Enabled", m_audio_enabled_check->isChecked());
     settings.setValue("Audio/Volume", m_volume_slider->value());
-    settings.setValue("Audio/Device", m_audio_device_combo->currentText());
+    settings.setValue("Audio/Device", m_audio_device_combo->currentData().toString());
     settings.setValue("Audio/Latency", m_audio_latency_spin->value());
 
     // Directories

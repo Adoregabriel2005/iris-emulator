@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(IrisEmulator VERSION 0.1 LANGUAGES CXX C)
+project(IrisEmulator VERSION 1.18.2 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,6 +11,10 @@ option(IRIS_BUILD_APP "Build the Qt frontend (requires Qt, SDL2 and Gearlynx)" O
 include(CTest)
 include(cmake/JaguarCore.cmake)
 if(BUILD_TESTING)
+    add_executable(test_frame_pacer tools/test_frame_pacer.cpp)
+    target_include_directories(test_frame_pacer PRIVATE "${CMAKE_SOURCE_DIR}/src")
+    set_target_properties(test_frame_pacer PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+    add_test(NAME frame_pacer COMMAND test_frame_pacer)
     add_executable(test_jaguar tools/test_jaguar.cpp)
     set_target_properties(test_jaguar PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
     target_link_libraries(test_jaguar PRIVATE iris_jaguar)
@@ -25,6 +29,12 @@ endif()
 
 set(GEARLYNX_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/build/src" CACHE PATH "Gearlynx source directory")
 file(GLOB GEARLYNX_SRC "${GEARLYNX_INCLUDE_DIR}/*.cpp")
+get_filename_component(GEARLYNX_ROOT "${GEARLYNX_INCLUDE_DIR}" DIRECTORY)
+set(GEARLYNX_MINIZ "${GEARLYNX_ROOT}/platforms/shared/dependencies/miniz")
+if(EXISTS "${GEARLYNX_MINIZ}/miniz.c")
+    list(APPEND GEARLYNX_SRC "${GEARLYNX_MINIZ}/miniz.c")
+    include_directories("${GEARLYNX_MINIZ}")
+endif()
 if(NOT EXISTS "${GEARLYNX_INCLUDE_DIR}/gearlynx.h")
     message(FATAL_ERROR "Set GEARLYNX_INCLUDE_DIR to the Gearlynx src directory")
 endif()
@@ -36,13 +46,22 @@ find_package(Qt6 COMPONENTS Widgets Svg Network OpenGL OpenGLWidgets REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(ZLIB REQUIRED)
 
+if(BUILD_TESTING)
+    add_executable(test_jaguar_input tools/test_jaguar_input.cpp src/SDLInput.cpp src/SDLInput_Jaguar.cpp)
+    set_target_properties(test_jaguar_input PROPERTIES AUTOMOC OFF AUTOUIC OFF AUTORCC OFF)
+    target_include_directories(test_jaguar_input PRIVATE "${CMAKE_SOURCE_DIR}/src")
+    target_link_libraries(test_jaguar_input PRIVATE Qt6::Core SDL2::SDL2)
+    add_test(NAME jaguar_input COMMAND test_jaguar_input)
+    set_tests_properties(jaguar_input PROPERTIES ENVIRONMENT "SDL_AUDIODRIVER=dummy")
+endif()
+
 find_path(DISCORD_RPC_INCLUDE_DIR discord_rpc.h PATHS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include" REQUIRED)
 find_library(DISCORD_RPC_LIB discord-rpc PATHS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib" REQUIRED)
 
 qt_add_executable(irisemulator
     src/main.cpp
     src/resources/iris_emulator.ico
-    iris_emulator.rc
+    $<$<NOT:$<BOOL:${MINGW}>>:iris_emulator.rc>
     src/ui/MainWindow.cpp
     src/ui/MainWindow.h
     src/ui/MainWindow.ui
@@ -104,6 +123,22 @@ qt_add_executable(irisemulator
     src/resources/icons/resources.qrc
 )
 
+if(MINGW)
+    set_target_properties(irisemulator PROPERTIES WIN32_EXECUTABLE TRUE)
+    # windres cannot pass the Jaguar include paths containing spaces to its
+    # preprocessor. The application resource needs only the project root.
+    set(IRIS_RESOURCE_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/iris_resource.o")
+    add_custom_command(OUTPUT "${IRIS_RESOURCE_OBJECT}"
+        COMMAND "${CMAKE_RC_COMPILER}" -O coff
+            -I "${CMAKE_CURRENT_SOURCE_DIR}"
+            -i "${CMAKE_CURRENT_SOURCE_DIR}/iris_emulator.rc"
+            -o "${IRIS_RESOURCE_OBJECT}"
+        DEPENDS iris_emulator.rc src/resources/iris_emulator.ico
+        VERBATIM)
+    target_sources(irisemulator PRIVATE "${IRIS_RESOURCE_OBJECT}")
+endif()
+
+target_compile_definitions(irisemulator PRIVATE IRIS_VERSION="${PROJECT_VERSION}")
 target_include_directories(irisemulator PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/lynx

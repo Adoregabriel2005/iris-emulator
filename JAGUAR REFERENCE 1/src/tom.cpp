@@ -999,13 +999,24 @@ TOM: Vertical Interrupt written by M68K: 491
 	// Initial values that "well behaved" programs use
 	uint16_t startingHalfline = GET16(tomRam8, VDB);
 	uint16_t endingHalfline = GET16(tomRam8, VDE);
+	uint16_t lateEndHalfline = 0;
 
 	// Simulate the OP start bug here!
 	// Really, this value is somewhere around 507 for an NTSC Jaguar. But this
 	// should work in a majority of cases, at least until we can figure it out
 	// properly.
 	if (endingHalfline > GET16(tomRam8, VP))
+	{
 		startingHalfline = 0;
+		// VDE=$FFFF must not consume sprite rows after a game's VBL handler
+		// rebuilds the list. Keep the entire visible window (not just VBB),
+		// then walk control objects without bitmap rendering or write-back.
+		const uint16_t visibleEnd = vjs.hardwareTypeNTSC ? BOTTOM_VISIBLE_VC : BOTTOM_VISIBLE_VC_PAL;
+		if (visibleEnd < endingHalfline) {
+			lateEndHalfline = GET16(tomRam8, VP);
+			endingHalfline = visibleEnd;
+		}
+	}
 
 	if ((halfline >= startingHalfline) && (halfline < endingHalfline))
 	{
@@ -1022,8 +1033,11 @@ TOM: Vertical Interrupt written by M68K: 491
 			OPProcessList(halfline, render);
 		}
 	}
-	else
+	else {
 		inActiveDisplayArea = false;
+		if (render && lateEndHalfline && halfline >= endingHalfline && halfline < lateEndHalfline)
+			OPProcessList(halfline, render, false);
+	}
 
 	// Take PAL into account...
 

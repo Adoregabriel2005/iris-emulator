@@ -26,6 +26,7 @@
 #include "jaguar.h"
 #include "jerry.h"
 #include "log.h"
+#include "settings.h"
 #include "m68000/m68kinterface.h"
 //#include "memory.h"
 
@@ -434,6 +435,7 @@ static uint8_t dsp_ram_8[0x2000];
 #define BRANCH_CONDITION(x)		dsp_branch_condition_table[(x) + ((jaguar_flags & 7) << 5)]
 
 static uint32_t dsp_in_exec = 0;
+static unsigned dsp_flags_retire_delay = 0;
 static uint32_t dsp_releaseTimeSlice_flag = 0;
 
 FILE * dsp_fp;
@@ -756,14 +758,20 @@ SET32(ram2, offset, data);
 			WriteLog("DSP: Writing %08X to DSP_FLAGS by %s (REGPAGE is %sset)...\n", data, whoName[who], (dsp_flags & REGPAGE ? "" : "not "));
 #endif
 //			bool IMASKCleared = (dsp_flags & IMASK) && !(data & IMASK);
-			IMASKCleared = (dsp_flags & IMASK) && !(data & IMASK);
+			IMASKCleared = IMASKCleared || ((dsp_flags & IMASK) && !(data & IMASK));
 			// NOTE: According to the JTRM, writing a 1 to IMASK has no effect; only the
 			//       IRQ logic can set it. So we mask it out here to prevent problems...
-			dsp_flags = data & (~IMASK);
+			dsp_flags = (data & ~IMASK) | (dsp_flags & data & IMASK);
 			dsp_flag_z = dsp_flags & 0x01;
 			dsp_flag_c = (dsp_flags >> 1) & 0x01;
 			dsp_flag_n = (dsp_flags >> 2) & 0x01;
-			DSPUpdateRegisterBanks();
+			// Keep the instruction after a DSP FLAGS store in the old bank.
+			if (who == DSP && dsp_in_exec && !vjs.usePipelinedDSP)
+				dsp_flags_retire_delay = 2;
+			else {
+				dsp_flags_retire_delay = 0;
+				DSPUpdateRegisterBanks();
+			}
 			dsp_control &= ~((dsp_flags & CINT04FLAGS) >> 3);
 			dsp_control &= ~((dsp_flags & CINT5FLAG) >> 1);
 			break;
@@ -1074,6 +1082,9 @@ ctrl2[0] = regs2[30] = dsp_pc;
 //
 void DSPHandleIRQsNP(void)
 {
+	// Finish a return branch and its delay slot before dispatching an IRQ.
+	if (dsp_flags_retire_delay || dsp_in_exec > 1)
+		return;
 //CC only!
 #ifdef DSP_DEBUG_CC
 		memcpy(dsp_ram_8, ram1, 0x2000);
@@ -1192,6 +1203,7 @@ ctrl1[8] = ctrl2[8] = dsp_control;
 	if (state)
 	{
 		dsp_control |= mask;						// Set the latch bit
+		IMASKCleared = true;
 #ifdef _MSC_VER
 #pragma message("Warning: !!! No checking done to see if we're using pipelined DSP or not !!!")
 #else
@@ -1253,6 +1265,7 @@ void DSPReset(void)
 
 	CLR_ZNC;
 	IMASKCleared = false;
+	dsp_flags_retire_delay = 0;
 	FlushDSPPipeline();
 	dsp_reset_stats();
 
@@ -1596,7 +1609,7 @@ if (dsp_pc == 0xF1B092)
 /*if (dsp_pc == 0xF1B140)
 	doDSPDis = true;//*/
 
-		if (IMASKCleared)						// If IMASK was cleared,
+		if (IMASKCleared && !dsp_flags_retire_delay && dsp_in_exec == 1)
 		{
 #ifdef DSP_DEBUG_IRQ
 			WriteLog("DSP: Finished interrupt. PC=$%06X\n", dsp_pc);
@@ -1626,6 +1639,8 @@ ptrPCQ %= 32;*/
 		dsp_opcode_second_parameter = opcode & 0x1F;
 		dsp_pc += 2;
 		dsp_opcode[index]();
+		if (dsp_flags_retire_delay && --dsp_flags_retire_delay == 0)
+			DSPUpdateRegisterBanks();
 		dsp_opcode_use[index]++;
 		cycles -= dsp_opcode_cycles[index];
 /*if (dsp_reg_bank_0[20] == 0xF1A100 & !R20Set)
@@ -1692,8 +1707,18 @@ const char * condition[32] =
 		WriteLog("Branched!\n");
 #endif
 		uint32_t delayed_pc = RM;
+		// Read the target from the pre-store bank, then retire before the slot.
+		if (dsp_flags_retire_delay) {
+			dsp_flags_retire_delay = 0;
+			DSPUpdateRegisterBanks();
+		}
 		DSPExec(1);
 		dsp_pc = delayed_pc;
+		// A FLAGS write in the slot becomes visible at the branch target.
+		if (dsp_flags_retire_delay) {
+			dsp_flags_retire_delay = 0;
+			DSPUpdateRegisterBanks();
+		}
 	}
 #ifdef DSP_DIS_JUMP
 	else
@@ -1729,8 +1754,16 @@ const char * condition[32] =
 #endif
 		int32_t offset = (IMM_1 & 0x10 ? 0xFFFFFFF0 | IMM_1 : IMM_1);		// Sign extend IMM_1
 		int32_t delayed_pc = dsp_pc + (offset * 2);
+		if (dsp_flags_retire_delay) {
+			dsp_flags_retire_delay = 0;
+			DSPUpdateRegisterBanks();
+		}
 		DSPExec(1);
 		dsp_pc = delayed_pc;
+		if (dsp_flags_retire_delay) {
+			dsp_flags_retire_delay = 0;
+			DSPUpdateRegisterBanks();
+		}
 	}
 #ifdef DSP_DIS_JR
 	else
