@@ -28,6 +28,9 @@
 - Real stereo audio output, buffered playback and audio reopening after Reset.
 - DSP interrupt-return fix for Wolfenstein 3D and object-processor fix for clipped Super Burnout text.
 - Independent Jaguar keyboard bindings and regression tests for timing, input, audio and rendering.
+- Buffered 48 kHz stereo output, audio restored after Reset, and visible FPS/speed counters.
+
+[Tested Jaguar games and current limitations](docs/JAGUAR_COMPATIBILITY.md) are listed below; the complete per-file audit is also available.
 
 See [release notes](docs/RELEASE-v1.18.2.md) and [build instructions](docs/BUILDING.md). Compatibility remains incomplete; no ROMs or personal saves are included in the Windows package.
 
@@ -284,45 +287,40 @@ The **Atari Jaguar** was developed primarily by **Flare Technology** (Martin Bre
 
 ---
 
-### Atari Jaguar — v1.18.2 validation
+### Atari Jaguar — supported/tested games in v1.18.2
 
-| Game | Verified scope |
+Jaguar support is experimental. The following games have targeted validation; the scope column states what was actually checked.
+
+| Game | Current result | Verified scope |
+|---|---|---|
+| **Doom** | 3D rendering, normal sound and speed confirmed | User confirmation plus real WASAPI audio; 30 FPS presentation |
+| **Wolfenstein 3D** | Intermittent boot hang fixed | 24 initial RAM states passed boot; extended demo and audio checks |
+| **Super Burnout** | Menu text clipping fixed; race renders | Menu comparison, race rendering, audio after Reset and PAL timing |
+| **Rayman** | Opening and audio regression passed | Timed startup and non-silent audio output; full game not certified |
+
+Additional titles that completed a 600-frame opening test with an image include **Alien vs Predator, Atari Karts, Attack of the Mutant Penguins, Checkered Flag, Club Drive, Cybermorph, Defender 2000, I-War, Iron Soldier, Missile Command 3D, NBA Jam TE, Pinball Fantasies, Power Drive Rally, Super Cross 3D, Syndicate, Tempest 2000, Theme Park, Ultra Vortek, Val d’Isère Skiing & Snowboarding, Zool 2 and Zoop!** Their gameplay and audio are not certified by that opening test.
+
+The full audit covers **139 files: 91 completed, 44 rejected by the loader and 4 timed out**. Some completed tests ended on black/solid-color images, so these totals are not counts of fully playable games. The audit predates final audio packaging and includes demos and alternate dumps.
+
+See the [complete Jaguar compatibility list](docs/JAGUAR_COMPATIBILITY.md) and [text-only results CSV](docs/JAGUAR_OPENING_AUDIT.csv) for every tested file and its observed outcome.
+
+### Atari Jaguar — remaining issues and unsupported software
+
+| Game / category | Current limitation |
 |---|---|
-| Doom | 3D demo renders; user confirmed normal sound and speed; 30 FPS presentation |
-| Wolfenstein 3D | DSP boot hang fixed; 24 initial RAM states passed boot; audio output tested |
-| Super Burnout | Menu text clipping fixed; race rendering tested; sound survives Reset |
-| Rayman | Opening regression and audio generation tested |
+| Brutal Sports Football | Supplied image rejected by the loader before execution |
+| Flip Out, Pitfall: The Mayan Adventure, Raiden, Ruiner Pinball, White Men Can't Jump | Last opening capture black/solid; gameplay unvalidated, requiring further investigation |
+| Kasumi Ninja, Val d’Isère Skiing, Zool 2, Bubsy | Historical graphics reports; affected scenes not revalidated after the fixes |
+| Iron Soldier | Historical frame-drop reports; sustained performance not certified |
+| Jaguar CD, including Battlemorph and Blue Lightning CD | CD-ROM not implemented in this frontend |
+| Other formats / unlisted games | No full compatibility claim; check the audit and report reproducible failures |
 
-These checks do not certify every level, controls, sound effect or the whole Jaguar catalogue.
-
-### Atari Jaguar — Has issues ⚠️
-
-| Game | Issue |
-|---|---|
-| Kasumi Ninja | Graphical corruption in some stages |
-| Brutal Sports Football | Audio desync |
-| Val d'Isère Skiing | Geometry glitches |
-| Iron Soldier | Occasional frame drops |
-| Zool 2 | Sprite priority errors |
-| Bubsy in Fractured Furry Tales | Minor graphical artifacts |
-
-### Atari Jaguar — Not working ❌
-
-| Game | Reason |
-|---|---|
-| All Jaguar CD titles | CD-ROM not implemented |
-| Battlemorph | CD-ROM not implemented |
-| Blue Lightning (CD) | CD-ROM not implemented |
-| Games requiring heavy DSP tricks | Jerry DSP accuracy incomplete |
 
 ---
 
 ## Hardware Requirements
 
-Rendering uses **OpenGL 3.3 Core Profile** (GPU-accelerated shaders for all filters).
-Emulation is **single-threaded** — 1 core for emulation + 1 for SDL audio.
-
-> **OpenGL 3.3 is required.** Intel GMA 950 and older integrated graphics do not support OpenGL 3.3 and will not run the emulator at all.
+Frame stepping runs on the UI/emulation thread, while SDL handles host audio playback. The current display widget uses Qt/QPainter for image presentation and filters; Qt OpenGL libraries remain build dependencies. The tables below are historical hardware guidance, not newly verified v1.18.2 minimum requirements.
 
 ### Atari 2600 — Minimum (60 FPS stable)
 
@@ -350,9 +348,11 @@ Emulation is **single-threaded** — 1 core for emulation + 1 for SDL audio.
 | **GPU (dedicated AMD)** | AMD Radeon HD 2400 (2007) | AMD Radeon HD 6790 (2011) |
 | **GPU (integrated)** | Intel GMA X4500 — G45 chipset (2008) | Intel HD Graphics 2000 — Sandy Bridge (2011) |
 
-### Atari Jaguar — Minimum (50+ FPS)
+### Atari Jaguar — 30 FPS presentation, normal console speed
 
-The Jaguar is **significantly more demanding** than the 2600 and Lynx. It emulates three processors simultaneously (68000 + Tom + Jerry) and the RF/S-Video filters run as real GPU shaders every frame.
+Jaguar defaults to **30 FPS presentation**, with approximately **59.94 emulated updates/s in NTSC or 50 in PAL** to preserve normal speed and audio. The on-screen counter shows presentation FPS, console frequency and speed percentage separately. Audio defaults to stereo 48 kHz and a 128 ms buffer; existing volume preferences are retained.
+
+Hardware figures below are historical guidance, not new v1.18.2 benchmarks. Emulation and display-filter costs depend on the game and settings.
 
 | Component | Minimum | Recommended |
 |---|---|---|
@@ -364,19 +364,7 @@ The Jaguar is **significantly more demanding** than the 2600 and Lynx. It emulat
 | **GPU (integrated)** | Intel HD Graphics 4000 — Ivy Bridge (2012) | Intel HD Graphics 4600 — Haswell (2013) |
 | **OpenGL** | 3.3 Core Profile | 3.3 Core Profile |
 
-> **Why does Jaguar need a GTX 460 / HD 6850 minimum?**
-> The RF Cable and S-Video filters are real GLSL fragment shaders running on the GPU at 60 Hz. Combined with 1080p upscaling, the GPU needs to sustain a full-screen shader pass every frame. The GTX 460 and HD 6850 are the oldest cards tested that do this without dropping frames.
-> Intel HD Graphics 3000 (Sandy Bridge) may work at native resolution with no filter, but will drop frames with RF/S-Video or at 720p+ upscaling.
-
-### Maximum tested (no bottleneck at any setting)
-
-| Component | Value |
-|---|---|
-| **CPU** | Intel Core i9-13900K / AMD Ryzen 9 7950X |
-| **GPU** | NVIDIA RTX 4090 / AMD RX 7900 XTX |
-| **RAM** | 64 GB DDR5 |
-
-> At recommended or higher hardware, all three consoles run at full speed with all filters enabled simultaneously — RF, S-Video, 1080p upscaling and VST3 plugin chains.
+> Check the speed percentage on your machine. A 30 FPS presentation limit does not compensate for a CPU that cannot emulate a game in real time.
 
 ---
 
@@ -390,14 +378,14 @@ The Jaguar is **significantly more demanding** than the 2600 and Lynx. It emulat
 | Button C | — | — | — | — | C | X |
 | L Shoulder | — | — | A | LB | — | — |
 | R Shoulder | — | — | S | RB | — | — |
-| Option | — | — | — | — | A | LB |
+| Option | — | — | — | — | O | LB |
 | Select | Tab | Back | — | — | — | — |
 | Reset / Start / Pause | Backspace | Start | Enter | Start | Enter | Start |
 | Quick Save | F5 | — | F5 | — | F5 | — |
 | Quick Load | F7 | — | F7 | — | F7 | — |
 | Pause overlay | Escape | — | Escape | — | Escape | — |
 
-All bindings are remappable in Settings → Controls.
+Jaguar keypad defaults to digits 0–9, `*` and `#`. Each Jaguar action has its own saved binding. All bindings are remappable in Settings → Controls.
 
 ---
 
